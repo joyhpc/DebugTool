@@ -1,0 +1,93 @@
+id: CLR-125
+quality_tier: T0
+source:
+  title: "AMD MIPI CSI-2 RX Hardware Debug"
+  url: "https://docs.amd.com/r/en-US/pg232-mipi-csi2-rx/Hardware-Debug"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The AMD no-packet and error-register guidance was revealed after drafting D-PHY versus CSI-controller split."
+blind_input:
+  symptom: "MIPI CSI-2 RX subsystem receives no valid frames or reports no packets/errors."
+  background: "Receiver exposes D-PHY and CSI-2 controller registers, packet counts, image information, and interrupt status."
+  observations:
+  - "no valid frames can mean no D-PHY packets, bad packets, lane mismatch, or downstream bandwidth issue"
+  - "the receiver can expose D-PHY packet count separately from CSI frame status"
+  constraints:
+  - "do not tune HS_SETTLE before lane mapping and packet counter evidence are checked"
+predicted_debug_tree:
+- node: A1
+  type: decision
+  check: "Read D-PHY and CSI-2 RX enable/status registers and confirm cores are enabled."
+  why: "disabled core status can mimic a dead physical interface."
+  expected: "both D-PHY and CSI-2 RX controller report enabled state."
+  p_hit: 0.40
+  p_exclude: 0.50
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.043
+- node: A2
+  type: decision
+  check: "Read D-PHY packet counters, CSI packet count, data type, byte count, and frame received bit."
+  why: "zero D-PHY packets and bad CSI parsing require different branches."
+  expected: "counters locate the failure at source-to-D-PHY, packet decode, or frame assembly."
+  p_hit: 0.65
+  p_exclude: 0.70
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.033
+- node: A3
+  type: action
+  check: "If packet-level errors exist, compare lane positions and inspect ECC/CRC/SoT/SoT-sync status."
+  why: "lane position mismatch and sync errors are common packet rejection causes."
+  expected: "lane mismatch, ECC/CRC, or SoT status explains invalid frames."
+  p_hit: 0.55
+  p_exclude: 0.55
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.021
+- node: A4
+  type: terminal
+  check: "Tune HS_SETTLE only after source output timing and gross signal integrity are bounded."
+  why: "settle timing is real but can hide lane or SI root causes if used first."
+  expected: "HS_SETTLE adjustment changes SoT/SoT-sync errors after mapping is correct."
+  p_hit: 0.40
+  p_exclude: 0.35
+  time_min: 45
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.010
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "AMD's CSI-2 RX debug recommends reading enable state, lane configuration, output bandwidth and line-buffer status, packet count, data type, byte count, frame received bit, D-PHY packet count, ECC errors, lane-position matching, HS_SETTLE, and PPI signals."
+  evidence:
+  - "the guide says zero D-PHY packet count should branch to source-to-D-PHY path"
+  - "the guide identifies lane-position mismatch, noise, ECC/CRC, and HS_SETTLE as packet-error branches"
+coverage:
+  result: hit
+  matched_nodes:
+  - A1
+  - A2
+  - A3
+  - A4
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "CSI no-frame debug should be counter-driven: D-PHY packets first, CSI decode second, output bandwidth third."
+  - "HS_SETTLE belongs after mapping and signal-path evidence."
+  what_to_change_in_assets:
+  - "Add packet count/data type/byte count/frame received fields to MIPI CSI signature."
+  anti_pattern_observed:
+  - "tuning receiver timing without knowing whether any packets reached the D-PHY"
+promotion:
+  proposed_assets:
+  - "SIG-MIPI-CSI-NO-FRAME-PACKET-COUNTERS-FIRST"
+  - "LM-MIPI-DSI-CSI-DPHY"
+  regression_candidate: "REG-MIPI-CSI-PACKET-COUNTERS-BEFORE-SETTLE"
+status: reviewed

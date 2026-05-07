@@ -1,0 +1,381 @@
+version: 0.99
+tests:
+- id: REG-USB-NO-SPI
+  input: LA1010 LED on, KingstVIS -105
+  must_select: Fast Path
+  must_include:
+  - USB
+  - Device Manager
+  - driver
+  must_not_include:
+  - SPI CPOL/CPHA first
+- id: REG-I2C-STUCK-NO-ADDR
+  input: I2C SDA stuck low
+  must_include:
+  - pull-up
+  - isolate
+  must_not_include:
+  - address confusion first
+- id: REG-PCIE-NO-DRIVER-FIRST
+  input: PCIe not enumerating, REFCLK missing
+  must_include:
+  - REFCLK
+  must_not_include:
+  - driver first
+- id: REG-HOTSWAP-SAFETY
+  input: High-side MOSFET hot-swap burns with large capacitor
+  must_include:
+  - current limit
+  - SOA
+  - VGS
+  - VDS
+  - ID
+  must_not_include:
+  - repeat full-power hot-plug
+- id: REG-VIDEO-NO-FAST
+  input: HDMI receiver to FPGA to LVDS panel, intermittent black screen with temperature
+  must_not_select: Fast Path
+  must_include:
+  - video link
+  - temperature
+  - isolation
+- id: REG-KB-FACTS
+  input: Project KB available, 1.2V rail no output
+  must_select: Knowledge-Linked
+  must_include:
+  - Fact Table
+  - source
+  - revision
+- id: REG-POWER-CHAIN-NO-REGULATOR-FIRST
+  input: VIN OK, EN low, 1.2V VOUT missing
+  must_include:
+  - EN
+  - UVLO
+  - sequencing
+  must_not_include:
+  - replace regulator first
+- id: REG-HOTSWAP-SOA-SAFE-ENVELOPE
+  input: High-side MOSFET burns during hot-plug into large capacitor bank
+  must_include:
+  - current-limited safe envelope
+  - VGS
+  - VDS
+  - ID
+  - SOA
+  must_not_include:
+  - repeat full-power hot-plug
+- id: REG-POWER-RIPPLE-MEASUREMENT-FIRST
+  input: DCDC output ripple is 100 mVpp, customer requires 40 mVpp
+  must_include:
+  - ground spring
+  - probe
+  - bandwidth limit
+  - measurement setup
+  must_not_include:
+  - replace regulator first
+- id: REG-HCNR201-LM358-HEADROOM-FIRST
+  input: HCNR201 isolated voltage sampling uses LM358, op amp heats, small-signal linearity is poor
+  must_include:
+  - output swing
+  - rail-to-rail
+  - LED current
+  - virtual short
+  - supply headroom
+  must_not_include:
+  - change RC first
+- id: REG-I2C-SDA-STUCK-RESET-OVERLAP
+  input: I2C SDA stuck low intermittently when target reset overlaps traffic to another device
+  must_include:
+  - isolate device pulling SDA
+  - reset timing
+  - I2C transaction overlap
+  - scope SDA SCL reset together
+  must_not_include:
+  - address confusion first
+- id: REG-SPI-ALL-FF-LINK-LAYER-FIRST
+  input: SPI sensor register reads all return 0xFF while API reports transaction success
+  must_include:
+  - MISO
+  - chip select
+  - logic analyzer
+  - SPI mode
+  - transaction framing
+  must_not_include:
+  - configure sensor registers first
+- id: REG-MCU-CORE-SUPPLY-PACKAGE-MODE-FIRST
+  input: MCU internal core LDO has no output but external Vcore injection allows programming
+  must_include:
+  - package power mode
+  - SMPS
+  - Vcore
+  - external injection
+  - datasheet
+  must_not_include:
+  - replace MCU first
+- id: REG-I2C-STUCK-FALSE-CLOCK-RECOVERY
+  input: I2C SDA is stuck low while SCL is high after noise or hot insertion
+  must_include:
+  - isolate device pulling SDA
+  - false clock edge
+  - recovery clocks
+  - reset
+  must_not_include:
+  - address confusion first
+- id: REG-SERIAL-HIDDEN-PUSHPULL-CONTENTION
+  input: Shared SPI or GPIO line is stuck and two devices may both drive the net
+  must_include:
+  - push-pull
+  - tri-state
+  - current
+  - isolate
+  must_not_include:
+  - change SPI mode first
+- id: REG-OSCILLATOR-NO-START-MARGIN-FIRST
+  input: MCU external crystal starts only on some boards or when probed
+  must_include:
+  - load capacitance
+  - ESR
+  - startup margin
+  - high-impedance probe
+  must_not_include:
+  - replace MCU first
+- id: REG-COST-AWARE-DEBUG-ORDERING
+  input: Several plausible hardware debug branches exist, but time is limited
+  must_include:
+  - p_hit
+  - p_exclude
+  - time_min
+  - priority_score
+  must_not_include:
+  - most familiar branch first
+- id: REG-I2C-STUCK-FOLLOWS-DEVICE
+  input: I2C SDA remains low after reset and recovery clocks, and the failed sensor pulls SDA low on another PCB
+  must_include:
+  - isolate device pulling SDA
+  - recovery clocks
+  - follows the device
+  - ESD
+  - latch-up
+  must_not_include:
+  - address confusion first
+- id: REG-SPI-ALL-FF-API-FRAMING-FIRST
+  input: SPI sensor reads all 0xFF, API reports success, and wiring appears correct
+  must_include:
+  - MISO
+  - chip select
+  - command phase
+  - address phase
+  - dummy clocks
+  - transaction framing
+  must_not_include:
+  - configure sensor registers first
+- id: REG-SERIAL-LAYERED-DEBUG-FIRST
+  input: Serial peripheral communication fails but root cause could be mechanical, electrical, protocol, driver, or application
+  must_include:
+  - mechanical
+  - electrical
+  - protocol
+  - driver
+  - application
+  must_not_include:
+  - application code first
+- id: REG-I2C-RANDOM-NACK-RISETIME-FIRST
+  input: I2C sensor randomly NACKs on a long bus with rounded rising edges
+  must_include:
+  - rise time
+  - pull-up
+  - bus capacitance
+  - oscilloscope
+  must_not_include:
+  - rewrite driver first
+- id: REG-SERIAL-VOLTAGE-THRESHOLD-FIRST
+  input: SPI or I2C communication is intermittent between 1.8V and 3.3V devices
+  must_include:
+  - VIH
+  - VIL
+  - voltage domain
+  - level translator
+  - receiver
+  must_not_include:
+  - decode only
+- id: REG-SPI-MULTICS-TRISTATE-FIRST
+  input: SPI bus works with one device but fails when multiple chip-select devices share MISO
+  must_include:
+  - MISO
+  - tri-state
+  - chip select
+  - contention
+  must_not_include:
+  - change SPI mode first
+- id: REG-JTAG-CABLE-SEEN-NO-TCK-PHYSICAL-PATH-FIRST
+  input: Vivado sees Xilinx cable but no FPGA device, and FPGA-side TCK TDI TDO have no waveform
+  must_include:
+  - JTAG header
+  - cable ribbon
+  - VREF
+  - continuity
+  - TCK
+  must_not_include:
+  - bitstream first
+- id: REG-LSE-PROBE-START-FLUX-LEAKAGE
+  input: 32 kHz LSE oscillator starts only when touched by a scope probe
+  must_include:
+  - probe loading
+  - leakage
+  - flux residue
+  - contamination
+  - startup margin
+  must_not_include:
+  - change capacitors only
+- id: REG-SPI-ALL-FF-CS-MAPPING-FIRST
+  input: Linux SPI ADC returns only 0xFF while spidev opens successfully
+  must_include:
+  - chip select
+  - device tree
+  - spidev
+  - MISO
+  - logic analyzer
+  must_not_include:
+  - change SPI mode first
+- id: REG-I2C-ACK-LOW-THRESHOLD-FIRST
+  input: I2C ACK is visible on scope but receiver may not see it as logic low
+  must_include:
+  - VIL
+  - receiver
+  - low level
+  - series resistor
+  - pull-up domain
+  must_not_include:
+  - decoder only
+- id: REG-I2C-RECOVERY-FAILS-CONTROLLER-PERIPHERAL-BRANCH
+  input: I2C bus locks, recovery clocks fail, but the same slave works with bit-banged I2C
+  must_include:
+  - controller peripheral
+  - bit-bang
+  - alternate MCU
+  - recovery clocks
+  must_not_include:
+  - replace slave first
+- id: REG-I2C-HUMIDITY-GPIO-POWERED-MODULE-DAMAGE
+  input: I2C SDA stuck low after humid field exposure and modules powered from GPIO pins
+  must_include:
+  - moisture
+  - contamination
+  - GPIO-powered
+  - backfeed
+  - damaged IO
+  must_not_include:
+  - address confusion first
+- id: REG-INTEL-FPGA-QUARTUS-SCAN-CHAIN-PHYSICAL-FIRST
+  input: Quartus sees Intel FPGA Download Cable but Auto Detect reports unable to scan device chain
+  must_include:
+  - jtagconfig
+  - VREF
+  - TCK
+  - TDI
+  - TDO
+  - board power
+  must_not_include:
+  - change bitstream first
+- id: REG-INTEL-FPGA-JTAG-NCONFIG-NSTATUS-GATE
+  input: Quartus programmer fails to recognize Intel FPGA device ID over JTAG
+  must_include:
+  - nCONFIG
+  - nSTATUS
+  - CONF_DONE
+  - MSEL
+  - TCK
+  must_not_include:
+  - programming file first
+- id: REG-INTEL-FPGA-CONFDONE-DCLK-DATA-FIRST
+  input: Intel FPGA nCONFIG and nSTATUS are high but CONF_DONE never rises after configuration
+  must_include:
+  - CONF_DONE
+  - nSTATUS
+  - DCLK
+  - DATA
+  - FPGA end
+  must_not_include:
+  - regenerate bitstream first
+- id: REG-INTEL-FPGA-NIOS-ELF-HARDWARE-MAP-FIRST
+  input: Quartus programs SOF successfully but Nios II ELF download fails
+  must_include:
+  - SOF
+  - sopcinfo
+  - reset
+  - clock
+  - pin assignments
+  - jtagconfig
+  must_not_include:
+  - reinstall Eclipse first
+- id: REG-INTEL-FPGA-IOPLL-LOCK-RESET-CLOCK-FIRST
+  input: Arria 10 IOPLL locked output stays low during bring-up
+  must_include:
+  - reset
+  - reference clock
+  - stable
+  - lock
+  - filter
+  must_not_include:
+  - replace FPGA first
+- id: REG-MIPI-DSI-BRIDGE-LP11-HSCLK-FIRST
+  input: MIPI DSI to LVDS bridge has no display after power-up
+  must_include:
+  - LP11
+  - HS
+  - DSI clock
+  - initialization sequence
+  - PLL_EN
+  - SOFT_RESET
+  must_not_include:
+  - change panel timing first
+- id: REG-MIPI-DSI-TEST-PATTERN-LINE-TIME-FIRST
+  input: SN65DSI83 bridge is configured but live video is blank or distorted
+  must_include:
+  - test pattern
+  - line time
+  - active pixels
+  - lane count
+  - error registers
+  must_not_include:
+  - replace display first
+- id: REG-MIPI-CSI-PACKET-COUNTERS-BEFORE-SETTLE
+  input: MIPI CSI receiver reports no frames from a camera sensor
+  must_include:
+  - D-PHY packet count
+  - data type
+  - byte count
+  - frame received
+  - ECC
+  - CRC
+  must_not_include:
+  - tune HS_SETTLE first
+- id: REG-MIPI-DPHY-LP11-STOPSTATE-HS-ORDER
+  input: MIPI D-PHY link does not enter high-speed data transfer
+  must_include:
+  - LP11
+  - T_INIT
+  - stopstate
+  - HS clock
+  - HS data
+  must_not_include:
+  - packet layer first
+- id: REG-MIPI-CSI-UNUSED-LANES-NOT-FLOATING
+  input: MIPI CSI one-lane design has no frame detection and unused data lanes are floating
+  must_include:
+  - unused lanes
+  - grounded
+  - no frame
+  - hardware requirement
+  must_not_include:
+  - firmware workaround first
+- id: REG-MIPI-DSI-NO-WAVEFORM-HOST-BINDING-FIRST
+  input: MIPI DSI display has no waveform in one software profile but works in another
+  must_include:
+  - device tree
+  - DSI host
+  - binding
+  - boot log
+  - enabled
+  must_not_include:
+  - routing failure first

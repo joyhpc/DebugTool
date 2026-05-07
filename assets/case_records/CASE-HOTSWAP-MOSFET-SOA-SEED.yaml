@@ -1,0 +1,51 @@
+asset_type: case_record
+id: CASE-HOTSWAP-MOSFET-SOA-SEED
+title: Seed Case - High-Side MOSFET Hot-Swap Fails During Large-Cap Startup
+version: 0.96.0
+domain: power
+applicability: general
+use_when:
+- condition: MOSFET fails during startup into large output capacitance
+  weight: high
+- condition: replacing with lower RDS(on) part did not fix failure
+  weight: medium
+do_not_use_when:
+- validated root cause is wrong pinout, reverse polarity, or pure steady-state thermal overload
+required_evidence:
+- kind: schematic
+  must_be: present
+  description: high-side FET, gate drive, load capacitance
+- kind: waveform
+  must_be: present
+  description: safe captured VGS/VDS/ID startup waveform for promotion beyond seed
+root_cause: Seed pattern - MOSFET transient SOA overstress during inrush; not yet a validated real case.
+effective_fix: Define current-limited test envelope; reduce or stage inrush; select hot-swap/eFuse controller or MOSFET based on transient SOA; tune gate ramp/current limit/fault timer.
+strong_indicators:
+- failure at plug-in/startup
+- large downstream capacitance
+- long VDS and ID overlap
+- slow gate/Miller plateau
+- steady-state loss estimate looks acceptable but startup fails
+misleading_paths:
+- replace FET by lower RDS(on) only
+- repeat full-power hot-plug
+- increase output capacitance without SOA recalculation
+references:
+- id: SIG-HOTSWAP-INRUSH-SOA-RISK
+  relation: supports
+- id: LM-HOTSWAP-HIGHSIDE-MOSFET
+  relation: supports
+safety_level: S3
+destructive: true
+source:
+  type: hypothesis
+  citation: Seed case for founder-pilot only; not a validated field record.
+confidence: medium
+counterexamples:
+- description: The observed failure may be caused by downstream short.
+  evidence_required: load isolation test
+- description: The observed failure may be caused by VGS abs-max violation rather than SOA.
+  evidence_required: VGS waveform during plug-in
+status: draft
+last_validated: ''
+review_due: ''

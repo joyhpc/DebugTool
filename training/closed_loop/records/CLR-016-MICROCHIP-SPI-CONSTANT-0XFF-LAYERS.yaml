@@ -1,0 +1,92 @@
+id: CLR-016
+source:
+  title: "Microchip TB3331 SPI Constant 0xFF Example"
+  url: "https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ApplicationNotes/ApplicationNotes/TB3331-Debug-SerialInterf-EmbeddedSystems-DS90003331.pdf"
+  type: vendor_app_note
+domain: digital_interface
+blindness_note: "The brief gives an all-0xFF example; blind tree checks whether our SPI model covers the right branches."
+blind_input:
+  symptom: "An SPI sensor always returns 0xFF."
+  background: "The system includes an MCU SPI master and a sensor on a PCB or module."
+  observations:
+  - "read ID or known register does not match"
+  - "all bytes are 0xFF"
+  - "driver call may complete without error"
+  constraints:
+  - "do not configure higher-level sensor features until the link-layer read works"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Determine whether 0xFF is a physical MISO-high/open symptom or API-buffer symptom."
+  why: "constant ones can come from mechanical, electrical, protocol, or driver layer."
+  expected: "scope/LA shows whether MISO is actually high during clocks."
+  p_hit: 0.45
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.029
+- node: A1
+  type: action
+  check: "Capture CS, SCLK, MOSI, and MISO for a chip-ID transaction."
+  why: "the actual transaction must be compared with the datasheet."
+  expected: "CS asserts, clocks run, command is valid, and MISO changes if target responds."
+  p_hit: 0.50
+  p_exclude: 0.50
+  time_min: 15
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.025
+- node: D2
+  type: decision
+  check: "Check soldering/connection, logic levels, SPI mode, pin mux, and driver transaction shape."
+  why: "Microchip's example spans mechanical, electrical, protocol, and driver layers."
+  expected: "one layer explains the constant value."
+  p_hit: 0.55
+  p_exclude: 0.40
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.019
+- node: T1
+  type: terminal
+  check: "Only after chip ID is stable, continue to application-level sensor setup."
+  why: "higher-level debugging is low value before a known register is readable."
+  expected: "link proof gates later configuration."
+  p_hit: 0.20
+  p_exclude: 0.20
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.020
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Microchip's SPI constant-return example lists soldering, logic-level mismatch, incorrect timing, analog GPIO mode, and driver operation as separate layer hypotheses that should be eliminated with documentation and measurement."
+  evidence:
+  - "constant 0xFF is not automatically a sensor configuration issue"
+  - "oscilloscope or logic analyzer measurement can verify timing waveform"
+  - "driver and pin configuration remain plausible after electrical checks"
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Constant SPI return values should fan out by abstraction layer, not by repeated mode guessing."
+  - "A chip-ID read is the cheapest useful gate before application-level work."
+  what_to_change_in_assets:
+  - "Keep SIG-SPI-ALL-FF-TRANSACTION-SHAPE and LM-SPI-TRANSACTION aligned."
+  anti_pattern_observed:
+  - "changing CPOL/CPHA repeatedly without proving CS/MISO/command shape"
+promotion:
+  proposed_assets:
+  - "SIG-SPI-ALL-FF-TRANSACTION-SHAPE"
+  regression_candidate: "REG-SPI-ALL-FF-API-FRAMING-FIRST"
+status: reviewed

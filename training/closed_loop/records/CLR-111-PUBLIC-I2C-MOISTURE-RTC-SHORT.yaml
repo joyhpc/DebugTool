@@ -1,0 +1,94 @@
+id: CLR-111
+quality_tier: T1
+public_case_id: PUB-016
+source:
+  title: "I2C / TWI freezing with SDA stuck at LOW"
+  url: "https://electronics.stackexchange.com/questions/381672/i2c-twi-freezing-with-sda-stuck-at-low"
+  type: public_solved_case
+domain: digital_interface
+blindness_note: "Final answer was read after drafting contamination, damaged-device, and GPIO-powered-module branches."
+blind_input:
+  symptom: "Arduino-class board with several I2C modules freezes; SDA goes low and remains stuck during writes."
+  background: "Boards were installed in humid enclosures. Some sensors were powered from GPIOs and multiple breakout modules share I2C."
+  observations:
+  - "moisture deposits were seen inside enclosures"
+  - "some boards recovered after removing an RTC breakout and moving pull-ups to VCC"
+  - "one accelerometer SCL pin appeared damaged"
+  constraints:
+  - "do not treat this as pure protocol until contamination and damaged IO are isolated"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Isolate each I2C module and measure SDA/SCL voltage and leakage with humidity/contamination context."
+  why: "one damaged or contaminated module can clamp the whole bus."
+  expected: "removing a module releases SDA/SCL or changes the abnormal voltage."
+  p_hit: 0.55
+  p_exclude: 0.60
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.027
+- node: D2
+  type: decision
+  check: "Check whether GPIO-powered modules or pull-ups create backfeed or IO overstress."
+  why: "powering modules through GPIOs can create illegal current paths and damage IO."
+  expected: "moving power/pull-ups to VCC or removing a module changes bus behavior."
+  p_hit: 0.50
+  p_exclude: 0.45
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.020
+- node: A1
+  type: action
+  check: "Compare damaged board line impedance and clamp voltage against known-good."
+  why: "short-to-supply or partial clamp appears as non-rail bus voltages."
+  expected: "damaged module shows abnormal resistance or clamps bus near an intermediate voltage."
+  p_hit: 0.55
+  p_exclude: 0.40
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.025
+- node: T1
+  type: terminal
+  check: "Remove/replace damaged module, fix power topology, clean/coat for humidity, and retest."
+  why: "the durable fix must remove the clamp and environmental stressor."
+  expected: "I2C bus returns to normal rail levels and survives humidity exposure."
+  p_hit: 0.55
+  p_exclude: 0.10
+  time_min: 60
+  setup_min: 60
+  risk_penalty: 1
+  priority_score: 0.005
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The public answer interpreted the scope shots as SDA/SCL IOs shorted to the supply, dragging the supply near 2 V; the case context included moisture deposits and module removal changing behavior."
+  evidence:
+  - "moisture deposits were present in failed enclosures"
+  - "removing RTC breakout and changing pull-up/power topology restored some boards"
+  - "answer identified a short/clamp to the supply rather than a protocol-only issue"
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - D2
+  - A1
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "I2C stuck-low in humid field conditions needs contamination and damaged-IO branches early."
+  - "GPIO-powered modules can create backfeed/overstress paths that normal protocol debug misses."
+  what_to_change_in_assets:
+  - "LM-I2C-BUS should include environmental contamination and GPIO-powered module backfeed branches."
+  anti_pattern_observed:
+  - "trying I2C software recovery while a module is physically clamping the bus"
+promotion:
+  proposed_assets:
+  - "LM-I2C-BUS"
+  regression_candidate: "REG-I2C-HUMIDITY-GPIO-POWERED-MODULE-DAMAGE"
+status: reviewed

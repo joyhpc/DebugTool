@@ -1,0 +1,90 @@
+id: CLR-118
+quality_tier: T0
+source:
+  title: "USB-Blaster not detected by Quartus Programmer when recognized in Device Manager"
+  url: "https://www.intel.com/content/www/us/en/support/programmable/articles/000073673.html"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The KB resolution was revealed after drafting host-service, driver, and target-board split branches."
+blind_input:
+  symptom: "Altera USB-Blaster is recognized correctly in Windows Device Manager, but Quartus Programmer does not detect it."
+  background: "The symptom occurs before any target FPGA chain can be scanned."
+  observations:
+  - "Device Manager visibility proves only USB driver enumeration"
+  - "Quartus Programmer hardware list can still be empty"
+  constraints:
+  - "do not start board-level JTAG rework until Quartus can see the cable"
+predicted_debug_tree:
+- node: U1
+  type: decision
+  check: "Check jtagserver process/service state and whether Quartus is using the expected JTAG server."
+  why: "a host-side JTAG server failure is upstream of target-board debug."
+  expected: "restarting or disabling the service changes cable visibility."
+  p_hit: 0.55
+  p_exclude: 0.65
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.058
+- node: U2
+  type: decision
+  check: "Verify Quartus version, Stand-Alone Programmer version, and driver binding are compatible."
+  why: "tool-version and driver mismatch can preserve Device Manager success while Quartus fails."
+  expected: "the cable appears when using a supported driver/tool combination."
+  p_hit: 0.40
+  p_exclude: 0.50
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.022
+- node: U3
+  type: action
+  check: "Only after Quartus lists the cable, connect target board and scan the chain."
+  why: "target JTAG cannot be tested through a host tool that has no cable object."
+  expected: "chain scan is attempted with a visible programmer hardware entry."
+  p_hit: 0.25
+  p_exclude: 0.30
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.027
+- node: U4
+  type: terminal
+  check: "If host-side recovery fails, reinstall driver or toolchain under a clean admin-supported environment."
+  why: "the remaining cause is still host environment, not target board."
+  expected: "new installation or service reset restores Quartus cable visibility."
+  p_hit: 0.35
+  p_exclude: 0.35
+  time_min: 60
+  setup_min: 20
+  risk_penalty: 0
+  priority_score: 0.007
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Intel's KB attributes this symptom to JTAGServer not working properly as a user-mode application and recommends Windows Safe Mode plus disabling the Altera JTAG Server service before rebooting."
+  evidence:
+  - "the KB distinguishes Device Manager recognition from Quartus Programmer cable detection"
+  - "the official resolution changes the host JTAG server/service state"
+coverage:
+  result: hit
+  matched_nodes:
+  - U1
+  - U2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Cable recognized by the OS is not equivalent to cable usable by FPGA tools."
+  - "This case should trigger host-service checks before any board measurements."
+  what_to_change_in_assets:
+  - "Keep host tool/jtagserver as the first stage in FPGA JTAG/config debug."
+  anti_pattern_observed:
+  - "probing or modifying the board while Quartus has not yet acquired the cable"
+promotion:
+  proposed_assets:
+  - "LM-FPGA-JTAG-CONFIG"
+  regression_candidate: "REG-INTEL-FPGA-USB-BLASTER-HOST-SERVICE-FIRST"
+status: reviewed

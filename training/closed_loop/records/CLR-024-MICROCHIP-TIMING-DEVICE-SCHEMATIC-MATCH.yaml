@@ -1,0 +1,98 @@
+id: CLR-024
+queue_unit: AUTH-015
+source:
+  title: Microchip timing device schematic match
+  url: https://ww1.microchip.com/downloads/aemDocuments/documents/TCG/ApplicationNotes/ApplicationNotes/2019_0905debuggingi2candspi4.pdf
+  type: official_checklist
+domain: digital_interface
+blindness_note: Section-level authoritative queue focus can leak the target lesson; retained as official-source closure, not
+  a lab-perfect blind test.
+blind_input:
+  symptom: A digital interface fails, returns constant data, or hangs under specific conditions.
+  background: The cause may be physical wiring, voltage threshold, bus ownership, timing, protocol framing, or driver transaction
+    shape.
+  observations:
+  - software status alone is insufficient to prove the bus transaction
+  - line ownership and electrical thresholds must be proven before higher-level configuration
+  - known-register or ID reads are the best early gate
+  constraints:
+  - do not debug application registers before a known transaction is proven
+  - avoid continued contention when shared lines may be actively driven
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: Map the failure to mechanical, electrical, protocol, driver, and application layers.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.38
+  p_exclude: 0.6
+  time_min: 10
+  setup_min: 0
+  risk_penalty: 0
+  priority_score: 0.068
+- node: A1
+  type: action
+  check: Capture the actual bus transaction at the target pin.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.52
+  p_exclude: 0.45
+  time_min: 20
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.021
+- node: D2
+  type: decision
+  check: 'Evaluate the official lesson: schematic and physical hardware must match before firmware diagnosis.'
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.58
+  p_exclude: 0.35
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.025
+- node: T1
+  type: terminal
+  check: Promote the proven layer into the relevant link model, signature, or regression.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.3
+  p_exclude: 0.1
+  time_min: 20
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.014
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: (p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: 'The official source highlights this durable debug lesson: schematic and physical hardware must match before firmware
+    diagnosis. The predicted tree included a dedicated branch for that mechanism and ranked prerequisite measurements before
+    irreversible or high-effort changes.'
+  evidence:
+  - Authoritative unit AUTH-015 from Microchip timing device schematic match
+  - 'Focus: schematic and physical hardware must match before firmware diagnosis'
+  - Coverage judged at section-level against official troubleshooting guidance.
+coverage:
+  result: hit
+  matched_nodes:
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - Official section-level lessons are best stored as cost-aware branch priors, not as validated real cases.
+  - The first useful action is the fastest safe measurement that can either support the mechanism or exclude it.
+  - Repeated support should update LM-SPI-TRANSACTION rather than create isolated one-off advice.
+  what_to_change_in_assets:
+  - Use this unit as supporting evidence for LM-SPI-TRANSACTION.
+  - Promote to stronger asset status only after real or fully solved public cases repeat the same mechanism.
+  anti_pattern_observed:
+  - jumping to familiar component replacement or firmware changes before proving the official fault mechanism
+promotion:
+  proposed_assets:
+  - LM-SPI-TRANSACTION
+  regression_candidate: REG-SPI-ALL-FF-API-FRAMING-FIRST
+status: reviewed

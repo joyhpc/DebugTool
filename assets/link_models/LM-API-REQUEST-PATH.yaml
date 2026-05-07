@@ -1,0 +1,36 @@
+asset_type: link_model
+id: LM-API-REQUEST-PATH
+title: API Request Path Model
+version: 0.9.1
+domain: software
+applicability: general
+use_when:
+- condition: API intermittent timeout
+  weight: high
+- condition: retry succeeds after timeout
+  weight: high
+- condition: service latency spike
+  weight: high
+- condition: DB pool wait or downstream latency suspected
+  weight: medium
+do_not_use_when: []
+required_evidence: []
+causal_order:
+- client
+- gateway/load balancer
+- service handler
+- DB/cache/downstream
+- response path
+debug_rules:
+- Locate slow segment before increasing timeout.
+references: []
+safety_level: S0
+destructive: false
+source:
+  type: seed
+  citation: ''
+confidence: medium
+counterexamples: []
+status: candidate
+last_validated: ''
+review_due: ''

@@ -1,0 +1,107 @@
+id: CLR-010
+source:
+  title: "Analog Devices MOSFET Safe Operating Area and Hot Swap Circuits"
+  url: "https://www.analog.com/en/resources/technical-articles/mosfet-safe-operating-area-and-hot-swap-circuits.html"
+  type: vendor_app_note
+domain: power
+blindness_note: "The article title reveals SOA; the blind exercise focuses on safe and fastest evidence ordering for hot-swap failure."
+blind_input:
+  symptom: "A high-side MOSFET in a hot-swap path burns or overheats when plugging into a large capacitive load."
+  background: "The MOSFET may be selected for low RDS(on), while startup forces it through a linear-mode VDS and ID transient."
+  observations:
+  - "steady-state load current is within the MOSFET current rating"
+  - "failure occurs during plug-in or startup, not normal steady operation"
+  - "large downstream capacitance creates inrush demand"
+  constraints:
+  - "do not repeat full-power hot-plug without a current-limited safe envelope"
+  - "do not judge the MOSFET by DC current rating or RDS(on) alone"
+predicted_debug_tree:
+- node: G1
+  type: decision
+  check: "Establish a current-limited, instrumented startup envelope before reproducing the failure."
+  why: "the next test can destroy hardware if VDS and ID are uncontrolled."
+  expected: "bench supply, fuse/eFuse/current limit, and discharge path are defined."
+  p_hit: 0.20
+  p_exclude: 0.40
+  time_min: 10
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.016
+- node: A1
+  type: action
+  check: "Capture VDS, ID or sense voltage, VGS, and output voltage during controlled startup."
+  why: "SOA is voltage-current-time, not a single current number."
+  expected: "startup trace shows how long the MOSFET sits in the high-dissipation region."
+  p_hit: 0.60
+  p_exclude: 0.40
+  time_min: 30
+  setup_min: 30
+  risk_penalty: 1
+  priority_score: 0.013
+- node: D1
+  type: decision
+  check: "Compare the measured VDS x ID pulse duration with the MOSFET SOA curve at temperature."
+  why: "a MOSFET can pass steady-state current and still fail during linear-mode startup."
+  expected: "measured pulse exceeds or approaches SOA boundary with insufficient margin."
+  p_hit: 0.70
+  p_exclude: 0.35
+  time_min: 25
+  setup_min: 20
+  risk_penalty: 0
+  priority_score: 0.019
+- node: D2
+  type: decision
+  check: "Check gate ramp, Miller plateau, controller current limit, timer, and foldback behavior."
+  why: "gate control determines how long the MOSFET dissipates startup energy."
+  expected: "slow or uncontrolled ramp keeps the MOSFET in linear mode too long."
+  p_hit: 0.55
+  p_exclude: 0.30
+  time_min: 25
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.018
+- node: T1
+  type: terminal
+  check: "Fix by reducing inrush energy, adding current limit/foldback/timer, selecting linear-mode SOA MOSFET, or splitting capacitance."
+  why: "the corrective action must reduce measured stress below SOA with margin."
+  expected: "controlled startup trace stays within SOA across voltage and temperature."
+  p_hit: 0.65
+  p_exclude: 0.10
+  time_min: 60
+  setup_min: 60
+  risk_penalty: 2
+  priority_score: 0.006
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Analog Devices frames hot-swap MOSFET selection around SOA: the device must survive a specific VDS, ID, and time exposure during startup. Low RDS(on) and steady-state current rating are not enough when the MOSFET is used as a controlled linear element into a capacitive load."
+  evidence:
+  - "SOA curves specify allowed voltage-current exposure for defined pulse durations."
+  - "hot-swap startup into capacitance stresses the MOSFET before steady-state operation."
+  - "tools or measurement are needed to evaluate the actual transient rather than relying on DC ratings."
+coverage:
+  result: hit
+  matched_nodes:
+  - G1
+  - A1
+  - D1
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Safety gates override raw priority score for destructive power faults."
+  - "For hot-swap failures, the fastest theoretical path is not the fastest safe path unless the safe envelope already exists."
+  - "Rating-name shortcuts such as current rating and RDS(on) are weak evidence for transient linear-mode survival."
+  what_to_change_in_assets:
+  - "LM-HOTSWAP-HIGHSIDE-MOSFET should require VDS/ID/VGS/time capture before replacement advice."
+  - "SIG-HOTSWAP-INRUSH-SOA-RISK should carry an explicit destructive-reproduction gate."
+  anti_pattern_observed:
+  - "repeating uncontrolled hot-plug tests to see whether the MOSFET burns again"
+promotion:
+  proposed_assets:
+  - "DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING"
+  regression_candidate: "REG-HOTSWAP-SOA-SAFE-ENVELOPE"
+status: reviewed

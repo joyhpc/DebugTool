@@ -1,0 +1,94 @@
+id: CLR-107
+quality_tier: T1
+public_case_id: PUB-010
+source:
+  title: "LSE 32.768 kHz oscillator on STM32L433 will not start reliably"
+  url: "https://electronics.stackexchange.com/questions/293524/lse-32-768-khz-oscillator-on-stm32l433-wont-start-reliably"
+  type: public_solved_case
+domain: clock_reset
+blindness_note: "Public title exposes oscillator class; final answer was hidden until the blind tree was drafted."
+blind_input:
+  symptom: "STM32L433 32.768 kHz LSE oscillator starts only after touching the crystal node with a 10x scope probe."
+  background: "Two-board revision; one board is unreliable. Load capacitors and cleaning attempts were tried."
+  observations:
+  - "touching the oscillator with a probe makes it start"
+  - "changing load capacitors did not immediately solve it"
+  - "failure is board-specific"
+  constraints:
+  - "avoid treating probe-start as proof the measurement is passive"
+  - "do not keep changing capacitors without leakage/contamination branch"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Verify LSE configuration, supply, backup-domain state, and non-invasive clock evidence."
+  why: "configuration and supply failures can mimic oscillator margin problems."
+  expected: "LSE is enabled correctly and failure remains physical."
+  p_hit: 0.30
+  p_exclude: 0.55
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.038
+- node: A1
+  type: action
+  check: "Inspect and clean oscillator area, then compare leakage/contamination against the good board."
+  why: "32 kHz oscillator nodes are high impedance and vulnerable to residue leakage."
+  expected: "cleaning/evaporation/heating changes startup behavior."
+  p_hit: 0.55
+  p_exclude: 0.45
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.026
+- node: D2
+  type: decision
+  check: "Evaluate load capacitance, ESR, layout, and probe loading only after contamination is considered."
+  why: "probe-start can mean either margin or leakage; both must be separated."
+  expected: "one branch explains why added capacitance or leakage changes startup."
+  p_hit: 0.45
+  p_exclude: 0.35
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.018
+- node: T1
+  type: terminal
+  check: "If residue is root cause, change cleaning/process/keepout and validate startup across boards."
+  why: "production fix must remove leakage source, not just tune one board."
+  expected: "LSE starts reliably after process correction."
+  p_hit: 0.55
+  p_exclude: 0.10
+  time_min: 60
+  setup_min: 60
+  risk_penalty: 1
+  priority_score: 0.005
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The solved public case reports no-clean flux residue as the cause; after time/evaporation the boards began working, and a related comment reported hot air causing residue to emerge and startup to recover."
+  evidence:
+  - "scope probe touch changed startup, indicating the act of measurement affected the oscillator"
+  - "final answer identified no-clean flux residue"
+  - "startup recovered after residue/evaporation process effect"
+coverage:
+  result: hit
+  matched_nodes:
+  - A1
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Low-frequency crystal failures need a leakage/contamination branch, not only CL/ESR/layout."
+  - "Probe-start is a symptom of circuit perturbation and should not be treated as clean evidence."
+  what_to_change_in_assets:
+  - "LM-CLOCK-RESET-TREE should add contamination/leakage branch for low-power oscillators."
+  anti_pattern_observed:
+  - "changing crystal capacitors repeatedly while ignoring residue leakage"
+promotion:
+  proposed_assets:
+  - "LM-CLOCK-RESET-TREE"
+  regression_candidate: "REG-LSE-PROBE-START-FLUX-LEAKAGE"
+status: reviewed

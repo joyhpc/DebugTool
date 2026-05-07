@@ -1,0 +1,60 @@
+V0.99.5 Validation Report
+Date: 2026-05-02
+
+Scope
+-----
+MIPI DSI/CSI training branch, specialized source queue, closure index,
+first 10 closed-loop MIPI records, MIPI DSI/CSI D-PHY link model, two
+signatures, and six regression structure cases.
+
+Commands
+--------
+python -m py_compile scripts\output_validator.py scripts\run_output_validator_smoke.py scripts\lint_assets.py scripts\regression_suite_linter.py scripts\regression_runner.py scripts\lint_closed_loop.py scripts\lint_real_project_cases.py scripts\close_authoritative_queue.py scripts\lint_dataset_1000.py
+python scripts\lint_dataset_1000.py
+python scripts\lint_closed_loop.py
+python scripts\regression_suite_linter.py
+python scripts\lint_assets.py
+python scripts\lint_real_project_cases.py
+python scripts\run_output_validator_smoke.py
+
+Results
+-------
+Python compile: PASS
+
+Dataset 1000 lint:
+PASS
+
+Closed-loop training lint:
+PASS: 130 records
+
+Regression suite structure:
+PASS: 40 tests
+
+Asset lint:
+PASS: 34 assets
+Warnings:
+- CASE-LA1010-USB-CABLE has no misleading_paths.
+- Legacy link_models still need counterexamples.
+
+Real project case lint:
+PASS: 1 case file
+
+Output validator smoke:
+PASS: 5 cases
+
+Training State
+--------------
+- target_count: 1000
+- closed_loop_records_total: 130
+- official_source_prior_closed: 116
+- public_or_forum_reviewed_records: 13
+- real_project_reviewed_cases: 1
+- near_hit_or_miss_records: 2
+- regression_tests: 40
+
+Known Limits
+------------
+- The MIPI branch is a seeded training branch, not a complete DSI/CSI corpus.
+- Most records in this batch are official-source priors, not solved field cases.
+- More solved public/vendor cases are needed for real panels, image sensors,
+  bridges, production-yield failures, retimers, and board-level SI problems.

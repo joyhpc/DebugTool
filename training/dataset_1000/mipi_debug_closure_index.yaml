@@ -1,0 +1,37 @@
+focus_area: mipi_dsi_csi_dphy
+target_count: 100
+reviewed_cases: 10
+case_to_records:
+- case_id: MIPI-001
+  records:
+  - CLR-121
+- case_id: MIPI-002
+  records:
+  - CLR-122
+- case_id: MIPI-005
+  records:
+  - CLR-123
+- case_id: MIPI-006
+  records:
+  - CLR-124
+- case_id: MIPI-007
+  records:
+  - CLR-125
+- case_id: MIPI-008
+  records:
+  - CLR-126
+- case_id: MIPI-009
+  records:
+  - CLR-127
+- case_id: MIPI-010
+  records:
+  - CLR-128
+- case_id: MIPI-011
+  records:
+  - CLR-129
+- case_id: MIPI-018
+  records:
+  - CLR-130
+limits:
+- "Official MIPI/vendor/IP-guide content is treated as prior knowledge, not solved field evidence."
+- "Forum cases are public/vendor records unless later matched by project evidence."

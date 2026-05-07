@@ -1,0 +1,77 @@
+version: 0.9.1
+levels:
+  S0: normal low-risk debug
+  S1: equipment-risk
+  S2: hardware-damage-risk
+  S3: operator-safety-risk
+global_rules:
+- Do not repeat destructive reproduction after a failure without a changed hypothesis.
+- Do not bypass current limits for first reproduction.
+- Do not probe unknown high-energy nodes without verifying reference and rating.
+triggers:
+- keywords:
+  - hot-swap
+  - hotswap
+  - inrush
+  - MOSFET fail
+  - FET burn
+  - 烧MOS
+  - 烧掉
+  - 大电容
+  safety_level: S2
+  require:
+  - current_limit
+  - do_not_repeat_full_power_reproduction
+  - VGS_VDS_ID_capture
+  - SOA_check
+- keywords:
+  - battery
+  - Li-ion
+  - LiPo
+  - lithium
+  - 电池
+  safety_level: S3
+  require:
+  - BMS_state
+  - thermal_runaway_risk
+  - fire_safety
+- keywords:
+  - high voltage
+  - HV
+  - 400V
+  - 800V
+  - DC bus
+  - 高压
+  safety_level: S3
+  require:
+  - discharge_verified
+  - insulated_probe
+  - one_hand_rule
+- keywords:
+  - laser
+  - Class 3
+  - Class 4
+  - 激光
+  safety_level: S3
+  require:
+  - interlock
+  - eyewear
+  - beam_path_control
+- keywords:
+  - motor
+  - BLDC
+  - regen
+  - brake
+  - 电机
+  safety_level: S2
+  require:
+  - mechanical_clearance
+  - regen_path
+  - bus_clamp
+- patterns:
+  - voltage > 60V
+  - current > 10A
+  - energy > 100J
+  safety_level: S2
+  require:
+  - risk_assessment

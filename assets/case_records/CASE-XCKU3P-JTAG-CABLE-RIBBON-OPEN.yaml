@@ -1,0 +1,56 @@
+asset_type: case_record
+id: CASE-XCKU3P-JTAG-CABLE-RIBBON-OPEN
+title: XCKU3P JTAG Not Detected Due Broken Downloader Ribbon Wire
+version: 0.99.3
+domain: digital_interface
+applicability: fpga_bringup
+use_when:
+- condition: Vivado sees Xilinx cable but no FPGA device appears in Hardware Manager
+  weight: high
+- condition: FPGA-side TCK/TDI/TDO have no waveform during refresh
+  weight: high
+- condition: FPGA power rails and schematic are already confirmed good
+  weight: medium
+do_not_use_when:
+- TCK/TDI/TMS reach FPGA pins and only TDO is missing
+- Vivado cannot see the cable at all
+required_evidence:
+- kind: measurement
+  must_be: present
+  description: target-side TCK/TDI/TDO waveform or absence during Vivado refresh
+- kind: isolation
+  must_be: preferred
+  description: cable/header continuity or known-good cable substitution
+root_cause: One conductor in the Xilinx downloader ribbon cable was open between downloader and board JTAG connector.
+final_root_cause: Broken target-side physical path in downloader-to-JTAG-connector ribbon cable.
+fix:
+- Replace or repair the Xilinx downloader ribbon cable.
+- Re-run Vivado Hardware Manager scan and confirm XCKU3P IDCODE appears.
+diagnostic_path:
+- Vivado saw the cable, proving USB/cable control path only.
+- FPGA-side TCK/TDI/TDO had no waveform, proving the scan did not reach the target pins.
+- Schematic, power rails, and STM32 interference were ruled out.
+- Fault was localized upstream of the JTAG connector; one ribbon wire was found open.
+misleading_paths:
+- assuming FPGA configuration or bitstream issue before IDCODE scan exists
+- continuing FPGA power/debug theory after TCK/TDI do not reach the board
+- treating cable enumeration as proof of target-side JTAG signal integrity
+references:
+- id: DP-MEASUREMENT-BEFORE-DESIGN-CHANGE
+  relation: supports
+- id: DP-EXPECTED-VALUE-BEFORE-HABIT
+  relation: supports
+safety_level: S0
+destructive: false
+source:
+  type: real_case
+  citation: "Anonymized user-provided XCKU3P + STM32H745IIK6 board bring-up case, 2026-05-02."
+confidence: medium
+counterexamples:
+- description: Header-side TCK/TDI/TMS are present but FPGA near pins are not.
+  evidence_required: waveform at header and no waveform after board-side series elements
+- description: TCK/TDI/TMS reach the FPGA but TDO is missing.
+  evidence_required: FPGA-side waveforms showing incoming JTAG activity and absent return data
+status: validated_real_case
+last_validated: '2026-05-02'
+review_due: ''

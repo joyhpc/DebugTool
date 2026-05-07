@@ -1,0 +1,45 @@
+id: CLR-000
+source:
+  title: ''
+  url: ''
+  type: public_forum | public_article | vendor_app_note | vendor_design_guide | vendor_training | official_checklist | datasheet | user_provided_article
+queue_unit: AUTH-000
+domain: power | measurement | digital_interface | clock_reset | analog | production | other
+blindness_note: ''
+blind_input:
+  symptom: ''
+  background: ''
+  observations: []
+  constraints: []
+predicted_debug_tree:
+- node: D1
+  type: decision | action | terminal
+  check: ''
+  why: ''
+  expected: ''
+  p_hit: 0.0
+  p_exclude: 0.0
+  time_min: 0
+  setup_min: 0
+  risk_penalty: 0
+  priority_score: 0.0
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: '(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)'
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: ''
+  evidence: []
+coverage:
+  result: hit | near_hit | miss | blocked
+  matched_nodes: []
+  missing_nodes: []
+meta_reflection:
+  what_generalized: []
+  what_to_change_in_assets: []
+  anti_pattern_observed: []
+promotion:
+  proposed_assets: []
+  regression_candidate: ''
+status: draft | reviewed | promoted

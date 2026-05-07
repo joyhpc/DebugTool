@@ -1,0 +1,91 @@
+id: CLR-124
+quality_tier: T0
+source:
+  title: "Debugging NvMedia CSI Capture Errors"
+  url: "https://developer.nvidia.com/docs/drive/drive-os/6.0.8/public/drive-os-linux-sdk/common/topics/nvmedia_debugging_csi_errors/DebuggingNvMediaCSICaptureErrors1.html"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The NVIDIA capture-error instrumentation list was revealed after drafting trace/counter branches."
+blind_input:
+  symptom: "NVIDIA DRIVE CSI capture fails, drops frames, or reports CSI/VI errors."
+  background: "NVCSI receives MIPI CSI packets and VI writes frame data to memory; error instrumentation includes traces and registers."
+  observations:
+  - "errors can be physical, packet-layer, or VI/memory side"
+  - "ECC/CRC information exists in packet headers/footers and receiver status"
+  constraints:
+  - "do not infer root cause from application timeout alone"
+predicted_debug_tree:
+- node: V1
+  type: decision
+  check: "Enable capture traces and inspect CSI/VI error logs around frame start/end."
+  why: "trace timing anchors whether the failure occurs before or after capture engine programming."
+  expected: "trace shows CSI errors, VI sync timeouts, or no stream events."
+  p_hit: 0.50
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.031
+- node: V2
+  type: decision
+  check: "Read CSI/VI registers, frame count, stream select, and channel status."
+  why: "register state separates no-stream, bad packet, and downstream write failures."
+  expected: "frame count increments or stalls at a specific engine."
+  p_hit: 0.55
+  p_exclude: 0.60
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.028
+- node: V3
+  type: action
+  check: "Check ECC, CRC, data type, and user-defined data type override requirements."
+  why: "packet headers/footers can be valid enough for detection but wrong for VI write."
+  expected: "packet error counters or unsupported data type explains missing frame output."
+  p_hit: 0.45
+  p_exclude: 0.45
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.017
+- node: V4
+  type: terminal
+  check: "After packet evidence, branch to sensor timing, lane errors, or memory bandwidth."
+  why: "the capture path must be located before changing hardware."
+  expected: "one layer owns the failure: sensor stream, NVCSI packet decode, or VI memory write."
+  p_hit: 0.45
+  p_exclude: 0.40
+  time_min: 45
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.011
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "NVIDIA's DRIVE CSI guide organizes debug around NvMedia logs, RCE traces, CSI/VI registers, VI frame count, CSI debug counters, and VI channel registers, and defines ECC/CRC as packet-level evidence relevant to capture errors."
+  evidence:
+  - "the guide provides trace and register-based instrumentation for CSI/VI debug"
+  - "the guide distinguishes CSI packet evidence such as ECC/CRC from VI frame write evidence"
+coverage:
+  result: hit
+  matched_nodes:
+  - V1
+  - V2
+  - V3
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "For CSI capture, frame timeout is an observation, not a diagnosis."
+  - "Packet-layer evidence and VI write evidence need separate counters."
+  what_to_change_in_assets:
+  - "Add CSI/VI trace and frame-count branches to the MIPI CSI signature."
+  anti_pattern_observed:
+  - "changing sensor registers from a userspace timeout without reading receiver status"
+promotion:
+  proposed_assets:
+  - "SIG-MIPI-CSI-NO-FRAME-PACKET-COUNTERS-FIRST"
+  regression_candidate: "REG-MIPI-CSI-TRACE-COUNTERS-FIRST"
+status: reviewed

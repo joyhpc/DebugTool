@@ -1,0 +1,193 @@
+asset_type: link_model
+id: LM-MIPI-DSI-CSI-DPHY
+title: MIPI DSI CSI D-PHY Bring-Up Model
+version: 0.99.5
+domain: digital_interface
+applicability: mipi_display_camera_bridge_fpga_soc
+use_when:
+- condition: MIPI DSI display has no image, flicker, stripes, or intermittent video
+  weight: high
+- condition: MIPI CSI camera is detected by I2C but produces no frames or frame timeouts
+  weight: high
+- condition: D-PHY LP11, stopstate, HS clock, HS data, ECC, CRC, or SoT errors appear
+  weight: high
+- condition: DSI bridge or CSI receiver packet counters and error registers are available
+  weight: high
+- condition: MIPI works in one lane count or mode but fails in another
+  weight: medium
+do_not_use_when:
+- symptom is already isolated to a downstream image-processing algorithm with clean CSI/DSI packet evidence
+required_evidence:
+- kind: control_path
+  must_be: preferred
+  description: I2C/SPI register access to sensor, bridge, panel, or PHY and any error/status register dump
+- kind: phy_state
+  must_be: preferred
+  description: LP11/stopstate, HS clock active, HS data active, or D-PHY packet/error counters
+- kind: host_config
+  must_be: preferred
+  description: lane count, lane order/polarity, clock mode, data type, virtual channel, pixel clock, and device-tree/IP parameters
+causal_order:
+- power / reset / reference clock / enable sequencing
+- control path / register initialization / start stream
+- lane count / lane order / polarity / unused lane handling
+- LP state / LP11 / stopstate / T_INIT / ULPS exit
+- HS clock lane / continuous or discontinuous clock mode
+- HS data lanes / SoT / EoT / HS_SETTLE / lane skew / deskew
+- packet layer / virtual channel / data type / byte count / ECC / CRC
+- bridge or receiver timing / line time / active pixels / bandwidth
+- host driver / device tree / IP parameters / graph binding
+- output pipeline / panel timing / capture memory / AXI or VI bandwidth
+- signal integrity / routing / impedance / probing limits
+stage_model:
+- stage: power / reset / reference clock / enable sequencing
+  measurement_points:
+  - bridge/sensor/panel rails
+  - reset GPIO
+  - enable pin
+  - MCLK or reference clock
+  strong_indicators:
+  - I2C NACKs or wrong chip ID
+  - D-PHY status never leaves reset/default
+  actions:
+  - verify power-on order, clock presence, reset release, and mandatory delays before MIPI waveform debug
+- stage: control path / register initialization / start stream
+  measurement_points:
+  - I2C/SPI transaction log
+  - mode table
+  - bridge CSR dump
+  - sensor stream-on register
+  strong_indicators:
+  - test pattern works but normal stream does not
+  - DSI/CSI stream starts only after a specific init command sequence
+  actions:
+  - prove register writes took effect and separate init, PLL enable, soft reset, and stream-on phases
+- stage: lane count / lane order / polarity / unused lane handling
+  measurement_points:
+  - schematic lane mapping
+  - host lane configuration
+  - lane polarity settings
+  - unused lane pins
+  strong_indicators:
+  - one-lane or two-lane mode works but four-lane mode fails
+  - lane configuration or polarity error appears in receiver status
+  actions:
+  - align source and sink lane order/count/polarity; follow vendor requirements for unused lanes
+- stage: LP state / LP11 / stopstate / T_INIT / ULPS exit
+  measurement_points:
+  - D-PHY stopstate bits
+  - LP line levels
+  - T_INIT timing
+  - ULPS exit status
+  strong_indicators:
+  - receiver never initializes or stopstate never asserts
+  - data lanes do not reach LP11 before HS traffic
+  actions:
+  - verify LP11 is driven for the required initialization interval before expecting HS transfer
+- stage: HS clock lane / continuous or discontinuous clock mode
+  measurement_points:
+  - clock lane HS active status
+  - discontinuous_clk setting
+  - DSI clock frequency
+  - CIL or PHY clock status
+  strong_indicators:
+  - bridge requires continuous HS clock but host gates the clock
+  - CSI reports clock or LP timeout errors
+  actions:
+  - match clock mode to sink expectations and prove HS clock state before data-lane tuning
+- stage: HS data lanes / SoT / EoT / HS_SETTLE / lane skew / deskew
+  measurement_points:
+  - SoT / SoT sync errors
+  - HS_SETTLE
+  - lane skew or deskew status
+  - per-lane packet counters
+  strong_indicators:
+  - frequent SoT sync errors
+  - packets counted at D-PHY but rejected by CSI/DSI controller
+  actions:
+  - tune HS_SETTLE only after lane mapping and signal integrity are bounded
+- stage: packet layer / virtual channel / data type / byte count / ECC / CRC
+  measurement_points:
+  - packet count
+  - virtual channel ID
+  - data type
+  - byte count
+  - ECC/CRC counters
+  strong_indicators:
+  - D-PHY sees packets but receiver reports no valid frames
+  - wrong VC or data type appears in image information registers
+  actions:
+  - decode packet-layer evidence before changing sensor timing or host buffers
+- stage: bridge or receiver timing / line time / active pixels / bandwidth
+  measurement_points:
+  - line time
+  - active pixels
+  - LVDS or display clock
+  - AXI/VI line-buffer status
+  strong_indicators:
+  - test pattern works but live video fails
+  - line buffer full or output bandwidth error
+  actions:
+  - compare source timing, bridge registers, sink timing, and output throughput as one budget
+- stage: host driver / device tree / IP parameters / graph binding
+  measurement_points:
+  - device-tree endpoint graph
+  - num_lanes
+  - interface/port selection
+  - mode flags
+  - dmesg or kernel trace
+  strong_indicators:
+  - no DSI host node or no camera subdevice binds
+  - waveform absent because host never enables the controller
+  actions:
+  - prove the software graph creates and enables the intended host before probing nonexistent traffic
+- stage: output pipeline / panel timing / capture memory / AXI or VI bandwidth
+  measurement_points:
+  - frame count
+  - output video interface valid/ready
+  - display timing
+  - memory write status
+  strong_indicators:
+  - packets and frames are valid but no image appears or buffers time out
+  actions:
+  - move downstream only after D-PHY and packet-layer evidence is clean
+- stage: signal integrity / routing / impedance / probing limits
+  measurement_points:
+  - differential routing
+  - length/skew
+  - D-PHY error counters
+  - known-good board comparison
+  strong_indicators:
+  - errors rise with lane rate, temperature, cable length, or board variation
+  actions:
+  - use counters, lower lane rate, and known-good comparison before intrusive probing of high-speed lanes
+debug_rules:
+- If I2C/control access is failing, do not start with D-PHY HS tuning.
+- If no DSI/CSI waveform exists, prove the host driver/IP actually enabled the MIPI block before suspecting routing.
+- If a test pattern works but live video fails, prioritize input MIPI stream, timing, lane config, and packet evidence.
+- If D-PHY packet count is zero, debug source-to-D-PHY path before CSI/VI/display pipeline.
+- If D-PHY sees packets but CSI/VI reports no frame, inspect VC, data type, byte count, ECC/CRC, frame-end, and bandwidth.
+- Tune HS_SETTLE after lane mapping, clock mode, reset sequence, and gross signal-integrity checks are bounded.
+references:
+- id: DP-MEASUREMENT-BEFORE-DESIGN-CHANGE
+  relation: supports
+- id: DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  relation: supports
+- id: DP-EXPECTED-VALUE-BEFORE-HABIT
+  relation: supports
+safety_level: S1
+destructive: false
+source:
+  type: authoritative_doc
+  citation: "Seeded from TI SN65DSI8x debug notes, NVIDIA Jetson/DRIVE CSI guidance, AMD/Xilinx MIPI D-PHY and CSI-2 RX guides, Intel/Altera MIPI CSI-2 IP guide, and public vendor forum closures."
+confidence: medium
+counterexamples:
+- description: The panel backlight or capture application is disabled while D-PHY and packet/frame evidence is healthy.
+  evidence_required: valid D-PHY state, packet counters, frame count, and downstream-only display/capture failure
+- description: A camera sensor is not detected by I2C, so CSI packet-layer debug is premature.
+  evidence_required: I2C NACKs or missing chip ID before stream-on
+- description: A bridge test pattern fails, pointing to bridge register/panel/output timing rather than incoming DSI traffic.
+  evidence_required: internal test pattern absent or malformed with no DSI input dependency
+status: candidate
+last_validated: '2026-05-02'
+review_due: ''

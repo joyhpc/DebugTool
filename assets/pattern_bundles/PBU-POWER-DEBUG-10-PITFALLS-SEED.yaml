@@ -1,0 +1,125 @@
+asset_type: pattern_bundle
+id: PBU-POWER-DEBUG-10-PITFALLS-SEED
+title: Seed Pattern Bundle - Ten Common Power Debug Pitfalls
+version: 0.97.0
+domain: power
+applicability: general
+use_when:
+- condition: power supply debug problem with ripple, startup failure, oscillation, heat, efficiency loss, or production reliability symptom
+  weight: high
+- condition: DCDC or regulator board bring-up shows unexpected noise, collapse under load, hiccup, ringing, or thermal issue
+  weight: high
+- condition: engineer is tempted to replace the power IC before validating measurement method, layout, EN, feedback, magnetics, or load conditions
+  weight: medium
+do_not_use_when:
+- validated failure is outside the power path and all rails are measured stable with correct probing
+- issue is purely firmware/application level with independent power-good evidence
+required_evidence:
+- kind: user_input
+  must_be: present
+  description: symptom category and at least one observation about ripple, startup, thermal, load, layout, or production failure
+patterns:
+- symptom: output ripple appears too high
+  likely_root_cause: probing loop or measurement setup injects noise
+  first_checks:
+  - use ground spring instead of long probe ground lead
+  - enable 20 MHz bandwidth limit when appropriate
+  - remove nearby noise sources and compare measurement setup
+  misleading_path: replace regulator before validating probe method
+- symptom: output oscillates or regulator enters hiccup after compensation change
+  likely_root_cause: feedback/compensation network copied outside its valid load condition
+  first_checks:
+  - restore reference design compensation
+  - check load range, phase margin, and output capacitor ESR/capacitance
+  - verify FB/COMP waveform before changing IC
+  misleading_path: copy another design's compensation network blindly
+- symptom: IC damage or severe input spike at switching edge
+  likely_root_cause: high-frequency input capacitor too far from VIN/PGND loop
+  first_checks:
+  - inspect input capacitor distance and current loop
+  - measure VIN at IC pin with short probe loop
+  - review copper width and hot loop layout
+  misleading_path: assume connector/input bulk capacitor protects the IC
+- symptom: chip temperature seems acceptable but system efficiency is poor
+  likely_root_cause: thermal check ignores input/output power and loss budget
+  first_checks:
+  - measure input and output power
+  - calculate efficiency over load range
+  - use thermal camera to find loss concentration
+  misleading_path: judge pass/fail by touch or package temperature only
+- symptom: buck converter runs hot or efficiency drops after diode substitution
+  likely_root_cause: freewheel diode reverse recovery or VF mismatch creates extra loss
+  first_checks:
+  - compare diode VF, trr, current rating, and thermal package
+  - estimate conduction and switching loss
+  - restore known-good diode if waveform/loss changes
+  misleading_path: select diode only by static current and voltage rating
+- symptom: rail collapses or oscillates only at higher load
+  likely_root_cause: inductor saturation current margin is insufficient
+  first_checks:
+  - calculate peak inductor current
+  - compare against guaranteed saturation current, not only typical value
+  - observe inductor current or SW waveform under load
+  misleading_path: trust nominal inductance/current without derating
+- symptom: regulator does not start or starts unpredictably
+  likely_root_cause: EN pin floating or enable threshold not controlled
+  first_checks:
+  - measure EN directly at pin
+  - add defined pull-up/pull-down according to required behavior
+  - check UVLO and sequencing ownership
+  misleading_path: replace regulator before checking EN state
+- symptom: noise is high despite large ground copper
+  likely_root_cause: ground copper is poorly connected or AGND/PGND return is wrong
+  first_checks:
+  - inspect AGND/PGND connection and return path
+  - verify main filter capacitor ground is close to IC power ground
+  - check plane splits, slots, and missing thermal relief/via connections
+  misleading_path: assume large copper area equals low impedance ground
+- symptom: EMI or possible overvoltage at switch node
+  likely_root_cause: SW node ringing is excessive or under-measured
+  first_checks:
+  - measure SW with 10X probe and short ground
+  - use adequate oscilloscope bandwidth for ringing check
+  - compare ringing peak against IC absolute maximum rating
+  misleading_path: use bandwidth-limited view and miss the true peak
+- symptom: prototype passes but production units fail after time or temperature cycling
+  likely_root_cause: solder joint or mechanical reliability issue on power components
+  first_checks:
+  - run thermal cycling and cold-start tests
+  - inspect inductor and power component solder joints
+  - compare failed unit against fresh and known-good units
+  misleading_path: treat prototype room-temperature pass as production reliability proof
+strong_indicators:
+- symptom changes significantly when probe grounding or bandwidth changes
+- failure appears only after compensation/layout/component substitution
+- rail collapses only under load despite normal no-load output
+- SW ringing peak approaches device voltage rating
+- production failure appears after thermal cycling or field aging
+misleading_paths:
+- replacing the regulator before validating measurement setup
+- copying feedback compensation without stability analysis
+- trusting typical inductor saturation current without margin
+- judging thermal health without efficiency measurement
+- assuming ground pour is valid without checking return path
+- treating sample bring-up pass as production reliability proof
+references:
+- id: LM-POWER-CHAIN
+  relation: supports
+- id: SIG-POWER-VIN-OK-EN-LOW
+  relation: supports
+safety_level: S2
+destructive: false
+source:
+  type: user_provided_article
+  citation: User-provided Chinese article about ten recurring power-debug pitfalls; anecdotal seed, not independently validated.
+confidence: medium
+counterexamples:
+- description: Ripple is real even with ground spring and bandwidth-limited measurement.
+  evidence_required: repeat measurement with proper probe method and known-good comparison
+- description: High temperature is within datasheet limits and efficiency meets system budget.
+  evidence_required: measured input/output power, thermal image, and ambient/load conditions
+- description: Load-step collapse is caused by downstream short rather than inductor saturation.
+  evidence_required: load isolation, rail impedance, current-limit behavior, and current waveform
+status: candidate
+last_validated: ''
+review_due: ''

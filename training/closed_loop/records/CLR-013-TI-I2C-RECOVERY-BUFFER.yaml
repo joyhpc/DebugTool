@@ -1,0 +1,92 @@
+id: CLR-013
+source:
+  title: "TI SCPA069 I2C Stuck Bus - Recovery Clocks and Buffer Recovery"
+  url: "https://www.ti.com/lit/an/scpa069/scpa069.pdf"
+  type: vendor_app_note
+domain: digital_interface
+blindness_note: "The official source includes recovery methods; this record tests action ordering and safety gates."
+blind_input:
+  symptom: "SDA is stuck low and the controller cannot issue normal I2C transactions."
+  background: "The target may be waiting for missing clock edges, or a downstream segment may need isolation."
+  observations:
+  - "SCL may be high and controllable"
+  - "SDA remains low until recovery or reset"
+  - "one downstream segment can block the upstream controller"
+  constraints:
+  - "check voltage domains and backfeed before pulsing lines"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Can the controller safely drive SCL recovery pulses without fighting another driver?"
+  why: "recovery clocks are useful only if SCL is free and voltage domains are safe."
+  expected: "SCL can be toggled and no powered-off segment is back-fed."
+  p_hit: 0.35
+  p_exclude: 0.45
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 1
+  priority_score: 0.052
+- node: A1
+  type: action
+  check: "Send 8-16 controlled SCL pulses and then STOP, while observing SDA."
+  why: "a target waiting for a clock may return to idle."
+  expected: "SDA releases during or after recovery pulses."
+  p_hit: 0.55
+  p_exclude: 0.25
+  time_min: 5
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.042
+- node: D2
+  type: decision
+  check: "If recovery fails, isolate downstream segment or reset target."
+  why: "persistent stuck bus can require segment isolation or target reset."
+  expected: "upstream bus recovers when downstream segment is disconnected."
+  p_hit: 0.50
+  p_exclude: 0.35
+  time_min: 15
+  setup_min: 15
+  risk_penalty: 1
+  priority_score: 0.022
+- node: T1
+  type: terminal
+  check: "Use firmware timeout, target reset, or stuck-bus-recovery buffer for recurrence prevention."
+  why: "one-time recovery is not enough if the source recurs."
+  expected: "fault no longer hangs the upstream bus."
+  p_hit: 0.50
+  p_exclude: 0.15
+  time_min: 60
+  setup_min: 60
+  risk_penalty: 1
+  priority_score: 0.005
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "TI lists software recovery by toggling SCL 8-16 times and issuing STOP, target reset, SMBus timeout, and hardware buffers such as TCA4307 that isolate the downstream bus and generate recovery clocks."
+  evidence:
+  - "recovery clocks can move the target state machine back to idle."
+  - "a buffer can disconnect the downstream stuck bus to keep the upstream bus usable."
+  - "hardware recovery reports/disconnects before attempting clock pulses."
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Recovery actions need a safety/dependency precheck even when they are fast."
+  - "Bus segmentation can convert a system-wide hang into a local recoverable fault."
+  what_to_change_in_assets:
+  - "LM-I2C-BUS recovery stage should include firmware timeout, reset, and recovery-buffer options."
+  anti_pattern_observed:
+  - "pulsing lines without checking who owns SCL or whether a segment is powered"
+promotion:
+  proposed_assets:
+  - "LM-I2C-BUS"
+  regression_candidate: "REG-I2C-STUCK-FALSE-CLOCK-RECOVERY"
+status: reviewed

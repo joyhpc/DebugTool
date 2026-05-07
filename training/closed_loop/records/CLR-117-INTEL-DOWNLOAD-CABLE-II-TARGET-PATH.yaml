@@ -1,0 +1,92 @@
+id: CLR-117
+quality_tier: T0
+source:
+  title: "Intel FPGA Download Cable II User Guide"
+  url: "https://docs.altera.com/r/docs/683719/current/intel-fpga-download-cable-ii-user-guide"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The user-guide table of cable setup topics was revealed after drafting VREF/header/jtagserver branches."
+blind_input:
+  symptom: "Intel FPGA Download Cable II is used, but target device scanning or programming is unreliable."
+  background: "The cable bridges host USB to target JTAG/AS/PS pins and depends on target-side power sense, pinout, timing, and software setup."
+  observations:
+  - "host-side cable setup may pass while target-side VCC(TRGT) or header mapping is wrong"
+  - "JTAG speed and jtagserver configuration can affect scan reliability"
+  constraints:
+  - "do not assume the 10-pin header is wired correctly from net names alone"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Verify 10-pin header orientation, ground pins, VCC(TRGT), and JTAG-mode pin mapping against the cable guide."
+  why: "download cables depend on target voltage sense and correct pin assignment."
+  expected: "pinout and VREF match the cable's JTAG-mode requirements."
+  p_hit: 0.45
+  p_exclude: 0.60
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.038
+- node: D2
+  type: decision
+  check: "Run jtagconfig from the intended Quartus root and verify jtagserver setting/driver binding."
+  why: "wrong tool root or jtagserver setup can make a good cable look missing."
+  expected: "jtagconfig and Programmer agree about the same cable."
+  p_hit: 0.35
+  p_exclude: 0.55
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.042
+- node: D3
+  type: action
+  check: "If chain detection is unstable, reduce or auto-adjust TCK and compare scan repeatability."
+  why: "the cable guide treats TCK frequency and timing as part of operating setup."
+  expected: "lower TCK improves marginal chain detection or proves speed is not dominant."
+  p_hit: 0.30
+  p_exclude: 0.40
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.033
+- node: D4
+  type: terminal
+  check: "After cable setup passes, branch to board-side JTAG path, configuration pins, and device readiness."
+  why: "the cable guide can only prove host/cable preconditions, not all target-board states."
+  expected: "board-side TCK/TDI/TDO and status pins become the next evidence boundary."
+  p_hit: 0.45
+  p_exclude: 0.50
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.023
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The Download Cable II guide organizes setup around software support, drivers, target power, cable-to-board connection, plug/header pin names, JTAG timing, TCK frequency, and jtagserver troubleshooting; these become preconditions before board or bitstream debug."
+  evidence:
+  - "the guide contains sections for voltage requirements, cable-to-board connection, pin names, operating conditions, JTAG timing, and changing TCK"
+  - "the guide includes troubleshooting for jtagconfig root settings, jtagserver, and driver installation"
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - D2
+  - D3
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Download cable debug has both host-side and target-side halves."
+  - "VCC(TRGT) and pinout are diagnostic inputs, not passive connector details."
+  what_to_change_in_assets:
+  - "Add VREF/cable power sense as an early stage in FPGA JTAG/config debug."
+  anti_pattern_observed:
+  - "assuming cable enumeration proves the cable can drive the board header"
+promotion:
+  proposed_assets:
+  - "LM-FPGA-JTAG-CONFIG"
+  - "SIG-QUARTUS-CABLE-SEEN-SCAN-CHAIN-FAIL"
+  regression_candidate: "REG-INTEL-FPGA-DOWNLOAD-CABLE-VREF-FIRST"
+status: reviewed

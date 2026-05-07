@@ -1,0 +1,92 @@
+id: CLR-112
+quality_tier: T0
+source:
+  title: "ID:212017 Unable to scan device chain"
+  url: "https://www.intel.com/content/www/us/en/programmable/quartushelp/18.1/msgs/msgs/opgmwq_bad_jtag_chain.htm"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "Only the error title and context were used before drafting the first debug tree."
+blind_input:
+  symptom: "Quartus Programmer Auto Detect reports unable to scan device chain or no device detected."
+  background: "Intel/Altera FPGA programming setup using a selected hardware entry and a Chain Description File."
+  observations:
+  - "the failure appears at Auto Detect before user design behavior can be evaluated"
+  - "the same message can cover host, cable, port, and target-board causes"
+  constraints:
+  - "do not change programming file or FPGA device until the selected hardware and board power are proven"
+predicted_debug_tree:
+- node: H1
+  type: decision
+  check: "Confirm the selected programming hardware, cable, and port match the physical setup."
+  why: "wrong selected hardware is cheaper to exclude than target-board rework."
+  expected: "correct hardware appears in Programmer or jtagconfig and is mapped to the active cable."
+  p_hit: 0.35
+  p_exclude: 0.55
+  time_min: 5
+  setup_min: 2
+  risk_penalty: 0
+  priority_score: 0.089
+- node: H2
+  type: decision
+  check: "Check whether another tool or JTAG server instance is using the port."
+  why: "a busy port can produce the same chain-scan symptom as a bad board."
+  expected: "closing competing tools or restarting JTAG server changes the scan result."
+  p_hit: 0.25
+  p_exclude: 0.55
+  time_min: 10
+  setup_min: 2
+  risk_penalty: 0
+  priority_score: 0.044
+- node: T1
+  type: action
+  check: "Verify board power, target VREF, and TCK/TMS/TDI/TDO at the target connector during scan."
+  why: "if the host/cable path is valid, the scan must reach a powered target chain."
+  expected: "powered target and JTAG activity appear at the board end; otherwise branch to cable, VREF, or board path."
+  p_hit: 0.55
+  p_exclude: 0.60
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.043
+- node: T2
+  type: terminal
+  check: "Only after the chain is electrically visible, inspect device order, CDF, and programming-file association."
+  why: "file mismatch cannot explain a completely unscannable physical chain."
+  expected: "valid IDCODE scan exists before programming-file-specific errors are debugged."
+  p_hit: 0.25
+  p_exclude: 0.30
+  time_min: 20
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.016
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Intel's message help maps this error to a selected hardware setup that is not connected, a port that is already in use, or a JTAG chain that cannot be scanned; the recommended action is to verify selected hardware, port use, and target-board power."
+  evidence:
+  - "Quartus help identifies hardware connection, port use, and JTAG scan failure as the cause classes"
+  - "the official action includes checking selected hardware/port and that the board is powered"
+coverage:
+  result: hit
+  matched_nodes:
+  - H1
+  - H2
+  - T1
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "FPGA no-device scan failures are a layered diagnostic, not a bitstream problem."
+  - "Host/cable/port checks are high-value first because they are fast and non-invasive."
+  what_to_change_in_assets:
+  - "Add a Quartus cable-visible scan-chain signature and reuse the generic JTAG physical-path signature."
+  anti_pattern_observed:
+  - "debugging programming files before any IDCODE or physical chain evidence exists"
+promotion:
+  proposed_assets:
+  - "LM-FPGA-JTAG-CONFIG"
+  - "SIG-QUARTUS-CABLE-SEEN-SCAN-CHAIN-FAIL"
+  regression_candidate: "REG-INTEL-FPGA-QUARTUS-SCAN-CHAIN-PHYSICAL-FIRST"
+status: reviewed

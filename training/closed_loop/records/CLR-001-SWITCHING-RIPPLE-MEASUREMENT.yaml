@@ -1,0 +1,92 @@
+id: CLR-001
+source:
+  title: Measuring ripple current and noise in a switching power supply
+  url: https://forum.digikey.com/t/measuring-ripple-current-and-noise-in-a-switching-power-supply/560
+  type: public_article
+domain: measurement
+blindness_note: Article title reveals the measurement domain, but not all checks.
+blind_input:
+  symptom: switching power supply noise/ripple measurement looks high or unreliable
+  background: oscilloscope is used to measure high-frequency switching supply output noise
+  observations:
+  - measurement depends on physical probe setup
+  - radiated noise can couple into long exposed probe leads
+  constraints:
+  - avoid changing regulator or output filter before validating measurement path
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: Is the probe ground lead long or physically looped?
+  why: high-frequency measurement loops can act as antennas
+  expected: long loop means measurement is suspect
+  p_hit: 0.50
+  p_exclude: 0.55
+  time_min: 3
+  setup_min: 2
+  risk_penalty: 0
+  priority_score: 0.155
+- node: A1
+  type: action
+  check: Re-measure at the output terminals with shortest possible ground and tip path
+  why: eliminates pickup and loop inductance
+  expected: true ripple estimate should fall or become repeatable
+  p_hit: 0.55
+  p_exclude: 0.55
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.083
+- node: A2
+  type: action
+  check: Compare bandwidth-limited and full-bandwidth captures
+  why: separates low-frequency ripple from switching spikes/noise
+  expected: measurement classification becomes clear
+  p_hit: 0.30
+  p_exclude: 0.45
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.052
+- node: T1
+  type: terminal
+  check: Only after validated probing, evaluate output capacitor/filter/regulator causes
+  why: avoids design churn from false measurement
+  expected: design changes are based on stable evidence
+  p_hit: 0.35
+  p_exclude: 0.15
+  time_min: 30
+  setup_min: 20
+  risk_penalty: 1
+  priority_score: 0.008
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: The source emphasizes measuring close to output terminals and minimizing unshielded probe/ground lead exposure to avoid radiated pickup and setup-induced noise.
+  evidence:
+  - incorrect setup uses long ground lead that receives radiated switching noise
+  - corrected setup uses ground ring/short return at the power supply output
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - A2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - measurement is a subsystem and must be validated before design changes
+  - high-frequency power symptoms require physical probe-loop reasoning
+  what_to_change_in_assets:
+  - strengthen DP-MEASUREMENT-BEFORE-DESIGN-CHANGE examples
+  - keep REG-POWER-RIPPLE-MEASUREMENT-FIRST
+  anti_pattern_observed:
+  - treating oscilloscope readout as ground truth without setup validation
+promotion:
+  proposed_assets:
+  - DP-MEASUREMENT-BEFORE-DESIGN-CHANGE
+  - DP-CURRENT-LOOP-BEFORE-NAMED-NET
+  regression_candidate: REG-POWER-RIPPLE-MEASUREMENT-FIRST
+status: reviewed

@@ -1,0 +1,91 @@
+id: CLR-116
+quality_tier: T0
+source:
+  title: "jtagconfig Usage Example"
+  url: "https://docs.altera.com/r/docs/683689/current/embedded-design-handbook/jtagconfig-usage-example?contentId=3GNEk_XcJsrNsp1AWzjmFw"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The jtagconfig node interpretation was revealed after drafting the external-chain versus internal-debug split."
+blind_input:
+  symptom: "The FPGA can be seen over JTAG, but Nios debug or JTAG UART access is missing or ambiguous."
+  background: "A Platform Designer/Nios system may or may not contain the debug module, JTAG UART, and SLD hub nodes in the loaded SOF."
+  observations:
+  - "external device ID detection can succeed while internal debug services are absent"
+  - "software tools may report target connection failures after SOF programming"
+  constraints:
+  - "do not conflate FPGA IDCODE detection with presence of Nios debug nodes"
+predicted_debug_tree:
+- node: N1
+  type: decision
+  check: "Run jtagconfig -n and record the cable, device, and internal node list."
+  why: "the node list directly tells whether internal debug structures are visible."
+  expected: "FPGA device appears and Nios/JTAG UART node classes are listed if present."
+  p_hit: 0.55
+  p_exclude: 0.65
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.088
+- node: N2
+  type: decision
+  check: "Verify the loaded SOF was generated from the Platform Designer system that contains the Nios debug module and JTAG UART."
+  why: "a stale or wrong SOF can make software tools fail while the FPGA itself scans normally."
+  expected: "SOF timestamp, sopcinfo/sysinfo, and Platform Designer system align."
+  p_hit: 0.50
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.039
+- node: N3
+  type: action
+  check: "Check Platform Designer debug-module enablement, reset vector, exception vector, and JTAG UART inclusion."
+  why: "internal debug access depends on generated hardware, not only software configuration."
+  expected: "debug module and JTAG UART are included and connected to valid clock/reset/memory."
+  p_hit: 0.50
+  p_exclude: 0.45
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.018
+- node: N4
+  type: terminal
+  check: "Only after nodes exist, debug Eclipse/SBT run configuration and software project state."
+  why: "software debugger configuration is downstream of internal debug-node visibility."
+  expected: "the debugger targets an existing device, instance, and CPU node."
+  p_hit: 0.35
+  p_exclude: 0.35
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.018
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The Intel/Altera jtagconfig example shows that jtagconfig -n lists the cable, FPGA device, and internal JTAG nodes; specific node ranges identify a Nios II debug module and JTAG UART component, separating external chain success from internal debug-resource presence."
+  evidence:
+  - "the example response includes the download cable, FPGA device, and internal node IDs"
+  - "the documentation maps node ranges to Nios II debug module and JTAG UART presence"
+coverage:
+  result: hit
+  matched_nodes:
+  - N1
+  - N2
+  - N3
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "An FPGA can be JTAG-visible while the intended soft-core debug infrastructure is absent."
+  - "Internal debug-node enumeration is a cheap high-confidence discriminator."
+  what_to_change_in_assets:
+  - "Add a Nios ELF/debug-node signature that triggers after SOF programming succeeds."
+  anti_pattern_observed:
+  - "treating Nios download failure as an IDE problem before checking loaded hardware nodes"
+promotion:
+  proposed_assets:
+  - "SIG-NIOS-ELF-AFTER-SOF-HARDWARE-MAP"
+  regression_candidate: "REG-INTEL-FPGA-NIOS-ELF-HARDWARE-MAP-FIRST"
+status: reviewed

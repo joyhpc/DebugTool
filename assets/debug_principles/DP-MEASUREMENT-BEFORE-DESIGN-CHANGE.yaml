@@ -1,0 +1,38 @@
+asset_type: debug_principle
+id: DP-MEASUREMENT-BEFORE-DESIGN-CHANGE
+title: Validate Measurement Before Changing the Design
+version: 0.98.0
+domain: measurement
+applicability: general
+use_when:
+- condition: observed voltage, ripple, timing, or waveform contradicts expectation
+  weight: high
+- condition: a design change is being considered based on one surprising measurement
+  weight: high
+do_not_use_when:
+- measurement setup has already been cross-checked with a known-good reference and a second method
+required_evidence:
+- kind: measurement
+  must_be: present
+  description: original surprising measurement and probe/setup details
+principle: Measurement setup can create or hide the fault signature; validate the measurement chain before changing the circuit.
+diagnostic_rule: First vary probe grounding, bandwidth, measurement location, range, and reference point; only then treat the measured symptom as design evidence.
+anti_patterns:
+- replacing ICs before validating oscilloscope probing and grounding
+- using long ground leads for high-frequency ripple or switch-node observations
+- trusting one measurement position without checking the current return path
+references:
+- id: PBU-POWER-DEBUG-10-PITFALLS-SEED
+  relation: derived_from
+safety_level: S1
+destructive: false
+source:
+  type: seed
+  citation: Generalized from user-provided power-debug pitfall article and public measurement guidance.
+confidence: medium
+counterexamples:
+- description: Multiple independent measurement methods show the same symptom.
+  evidence_required: cross-probe, known-good comparison, and controlled setup record
+status: candidate
+last_validated: ''
+review_due: ''

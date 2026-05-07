@@ -1,0 +1,93 @@
+id: CLR-121
+quality_tier: T0
+source:
+  title: "SN65DSI83/84/85 Debugging and Troubleshooting Tips"
+  url: "https://www.ti.com/content/dam/videos/external-videos/en-us/3/3816841626001/5843894806001.mp4/subassets/debugging.pdf"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "Only the bridge/no-video context was used before revealing the TI initialization sequence."
+blind_input:
+  symptom: "A SN65DSI83/84/85 DSI-to-LVDS bridge powers up but the panel has no video."
+  background: "The host sends MIPI DSI video to a TI bridge, which then drives LVDS. The bridge has CSR registers, PLL enable, soft reset, and optional test pattern support."
+  observations:
+  - "the bridge must be initialized over registers before normal function"
+  - "DSI clock and data lanes have different required states during initialization"
+  constraints:
+  - "do not keep changing LVDS timing before the DSI bridge enters its required initialization state"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Verify power is stable, EN/reset timing is correct, and the bridge can be read/written over I2C."
+  why: "register and enable preconditions are upstream of all DSI/LVDS evidence."
+  expected: "bridge responds to register access after proper enable timing."
+  p_hit: 0.45
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.036
+- node: D2
+  type: decision
+  check: "Before enabling the bridge video path, confirm DSI clock lane is in HS state and data lanes are in LP11."
+  why: "bridge startup can fail if the D-PHY lanes are in the wrong state."
+  expected: "clock lane stays HS and data lanes hold LP11 during the required startup window."
+  p_hit: 0.60
+  p_exclude: 0.60
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.026
+- node: D3
+  type: action
+  check: "Apply CSR configuration, set PLL_EN, wait, set SOFT_RESET, wait, then start DSI video stream."
+  why: "the bridge sequence has stateful dependencies."
+  expected: "after the ordered sequence, video or test-pattern behavior changes."
+  p_hit: 0.65
+  p_exclude: 0.45
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.025
+- node: D4
+  type: terminal
+  check: "If the ordered sequence passes but no video appears, split with bridge test pattern."
+  why: "test pattern separates outgoing LVDS/panel from incoming DSI stream."
+  expected: "test pattern display points to DSI input; failed test pattern points to bridge/output/panel setup."
+  p_hit: 0.50
+  p_exclude: 0.65
+  time_min: 20
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.024
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "TI's debug material gives a strict initialization sequence: power on; after power is stable, DSI clock lanes must be HS and data lanes LP11; set EN low, wait, EN high, wait; initialize CSR registers; set PLL_EN; wait; set SOFT_RESET; wait; then change DSI data lanes to HS and start video."
+  evidence:
+  - "the TI sequence explicitly requires DSI CLK HS and DSI data LP11 before CSR/PLL/soft-reset completion"
+  - "the bridge is not functional until CSR registers are initialized"
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - D2
+  - D3
+  - D4
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "DSI bridge debug is state-machine debug; lane state and register order both matter."
+  - "LP11/HS clock evidence belongs before random display timing changes."
+  what_to_change_in_assets:
+  - "Add DSI bridge no-video signature with LP11/HSCLK and init-sequence checks."
+  anti_pattern_observed:
+  - "tuning LVDS timing before the bridge has completed its required DSI/CSR/PLL/soft-reset sequence"
+promotion:
+  proposed_assets:
+  - "SIG-MIPI-DSI-BRIDGE-NO-VIDEO-LP11-HSCLK"
+  - "LM-MIPI-DSI-CSI-DPHY"
+  regression_candidate: "REG-MIPI-DSI-BRIDGE-LP11-HSCLK-FIRST"
+status: reviewed

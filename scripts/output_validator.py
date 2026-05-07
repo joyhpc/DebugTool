@@ -1,0 +1,476 @@
+#!/usr/bin/env python3
+"""
+Offline markdown output validator for Debug Decision Tree Skill.
+
+Scope for V0.96:
+- validate required mode headings
+- validate Node Explanation Table schema and row-level fields
+- validate action node safety/cost/reversibility metadata
+- validate S2/S3 node rows contain explicit safety language
+- validate Mermaid decision-tree node IDs match the node table IDs
+
+Usage:
+  python scripts/output_validator.py --mode standard --file output.md
+  python scripts/output_validator.py --mode knowledge_linked --file output.md
+  python scripts/output_validator.py --mode fast_path --file output.md
+  python scripts/output_validator.py --mode architecture_first --file output.md
+  python scripts/output_validator.py --mode assumption_driven --file output.md
+  python scripts/output_validator.py --mode retrospective --file output.md
+
+This is a structural validator, not an LLM quality judge. It cannot determine
+whether the debug reasoning is correct; it catches contract drift, common unsafe wording, and unsafe or
+incomplete output structure before a generated answer is reused as an asset.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+import argparse
+import re
+import sys
+from typing import Iterable
+
+MODE_HEADINGS = {
+    "standard": [
+        "Problem Summary", "Context Mode", "Safety Gate", "Candidate Matching Report",
+        "Adopted / Deferred / Not Applied", "Optimal Troubleshooting Path",
+        "Decision Tree", "Node Explanation Table", "Missing Information",
+        "Next 3-5 Actions", "Stop / Escalation Conditions", "Retrospective Trigger",
+    ],
+    "knowledge_linked": [
+        "Retrieval Summary", "Fact Table", "Project Context Model",
+        "Fault-Domain Localization", "Candidate Matching Report",
+        "Adopted / Deferred / Not Applied", "Optimal Troubleshooting Path",
+        "Decision Tree", "Node Explanation Table", "Missing / Contradictory Context",
+        "Next 3-5 Actions", "Stop / Escalation Conditions", "Retrospective Trigger",
+    ],
+    "fast_path": [
+        "Mode / Signature / Confidence", "Safety Gate", "Quick Diagnosis",
+        "Minimal Context Still Needed", "Top 3-5 Actions",
+        "Stop / Escalate Conditions", "Mini Decision Tree",
+        "Why Full Architecture Is Not Needed Yet", "When To Switch Modes",
+    ],
+    "architecture_first": [
+        "Project Context Summary", "Architecture / Link Understanding",
+        "Fact / Assumption Table", "Fault-Domain Localization", "Candidate Matching Report",
+        "Adopted / Deferred / Not Applied", "Optimal Troubleshooting Path",
+        "Decision Tree", "Node Explanation Table", "Missing Architecture Information",
+        "Next 3-5 Actions", "Stop / Escalation Conditions", "Retrospective Trigger",
+    ],
+    "assumption_driven": [
+        "Context Mode", "Proposed Link Model / Classic Architecture",
+        "Assumptions To Confirm", "Fault Domains If Assumptions Hold",
+        "Provisional Optimal Path", "Provisional Decision Tree",
+        "What Would Change The Tree", "Next User Confirmation",
+    ],
+    "retrospective": [
+        "Root Cause Summary", "Effective Fix", "Strong Indicators",
+        "Misleading / Low-Value Paths", "Case Record Draft",
+        "Asset Update Proposal", "Regression Test Proposal", "Promotion Recommendation",
+    ],
+}
+
+MODES_REQUIRING_NODE_TABLE = {"standard", "knowledge_linked", "architecture_first"}
+MODES_WITH_DECISION_TREE = {
+    "standard", "knowledge_linked", "architecture_first",
+    "fast_path", "assumption_driven",
+}
+
+REQUIRED_NODE_COLUMNS = [
+    "id", "type", "action_type", "check_or_action", "tool_required",
+    "expected_observation", "interpretation", "safety_level", "cost",
+    "reversibility", "next_branch", "evidence_refs",
+]
+
+VALID_TYPE = {"decision", "action", "gate", "terminal"}
+VALID_ACTION_TYPE = {
+    "observe", "isolate", "perturb", "replace", "reconfigure",
+    "reproduce", "rollback", "none", "n/a", "na", "-", "",
+}
+VALID_ACTION_ONLY_ACTION_TYPE = {
+    "observe", "isolate", "perturb", "replace", "reconfigure", "reproduce", "rollback",
+}
+VALID_SAFETY_LEVEL = {"S0", "S1", "S2", "S3"}
+VALID_COST = {"low", "medium", "high"}
+VALID_REVERSIBILITY = {"reversible", "partial", "irreversible", "n/a", "na", "-", ""}
+VALID_ACTION_ONLY_REVERSIBILITY = {"reversible", "partial", "irreversible"}
+
+SAFETY_WORDS = {
+    # Explicit warning / mitigation terms. Do not include bare hazard names like
+    # "high voltage" because merely naming a hazard is not enough for an S2/S3 node.
+    "warning", "caution", "hazard", "risk", "safe", "safety", "limit", "isolate",
+    "disable", "de-energize", "deenergize", "current-limit", "current limit", "ppe",
+    "e-stop", "fuse", "thermal limit", "destructive", "do not", "stop",
+    "安全", "风险", "危险", "警告", "注意", "限流", "隔离", "断电", "防护", "禁止", "停止",
+}
+
+NODE_ID_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
+
+FORBIDDEN_UNSAFE_PATTERNS = [
+    (re.compile(r"(?:repeat\s+)?full[-\s]?power\s+hot[-\s]?plug(?:\s+reproduction)?", re.I), "unbounded full-power hot-plug reproduction"),
+    (re.compile(r"bypass\s+(?:the\s+)?(?:fuse|efuse|current\s*limit|protection)", re.I), "bypassing protection/current limit"),
+    (re.compile(r"short\s+(?:pg|fault|enable|en)\s+(?:to|high|low)", re.I), "forcing control/status pins without constraints"),
+    (re.compile(r"remove\s+(?:the\s+)?current\s*limit", re.I), "removing current limit on an unsafe power fault"),
+    (re.compile(r"无限流|取消限流|旁路(?:保险|保护|限流)|直接短接", re.I), "unsafe Chinese power-debug phrase"),
+]
+
+UNSAFE_MITIGATION_TERMS = [
+    "do not", "must not", "never", "avoid", "stop", "not applied",
+    "forbidden", "prohibited", "blocked", "instead",
+    "current-limited", "current limited", "safe envelope", "precharge",
+    "fuse-protected", "fused", "efuse", "e-fuse",
+    "不要", "禁止", "停止", "避免", "限流", "安全边界", "安全包络",
+]
+
+HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
+
+
+@dataclass
+class MarkdownTable:
+    start_line: int
+    lines: list[str]
+    columns: list[str]
+    rows: list[dict[str, str]]
+
+
+@dataclass
+class ValidationResult:
+    errors: list[str]
+    warnings: list[str]
+
+
+def normalize_text(value: str) -> str:
+    value = value.strip().strip("`").strip()
+    value = value.replace("\u2013", "-").replace("\u2014", "-").replace("\u2212", "-")
+    return value
+
+
+def normalize_col(value: str) -> str:
+    value = normalize_text(value).lower()
+    value = re.sub(r"[^a-z0-9]+", "_", value)
+    return value.strip("_")
+
+
+def split_md_row(line: str) -> list[str]:
+    # Good enough for schema-level validation; escaped pipes are not expected
+    # in contract tables.
+    cells = line.strip().strip("|").split("|")
+    return [c.strip() for c in cells]
+
+
+def is_separator_row(line: str) -> bool:
+    stripped = line.strip()
+    return stripped.startswith("|") and bool(re.fullmatch(r"[|:\-\s]+", stripped))
+
+
+def heading_matches(raw_heading: str, expected: str) -> bool:
+    # Allows headings like "## 8. Node Explanation Table" and exact headings.
+    # Do not use suffix matching: "# Debug Decision Tree" must not satisfy
+    # the required section heading "Decision Tree".
+    heading = re.sub(r"^\d+[.)]?\s*", "", raw_heading.strip())
+    return heading == expected
+
+
+def find_heading_positions(text: str) -> list[tuple[int, int, str]]:
+    positions: list[tuple[int, int, str]] = []
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        m = HEADING_RE.match(line)
+        if m:
+            positions.append((line_no, len(m.group(1)), m.group(2).strip()))
+    return positions
+
+
+def find_heading(text: str, expected: str) -> tuple[int, str] | None:
+    for line_no, _level, raw in find_heading_positions(text):
+        if heading_matches(raw, expected):
+            return line_no, raw
+    return None
+
+
+def validate_required_headings(text: str, mode: str, errors: list[str]) -> None:
+    positions: list[int] = []
+    for heading in MODE_HEADINGS[mode]:
+        found = find_heading(text, heading)
+        if not found:
+            errors.append(f"missing heading: {heading}")
+        else:
+            positions.append(found[0])
+
+    if len(positions) == len(MODE_HEADINGS[mode]) and positions != sorted(positions):
+        errors.append("required headings are present but out of contract order")
+
+
+def find_tables(text: str) -> list[MarkdownTable]:
+    tables: list[MarkdownTable] = []
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines) - 1:
+        if lines[i].strip().startswith("|") and is_separator_row(lines[i + 1]):
+            start = i
+            j = i + 2
+            while j < len(lines) and lines[j].strip().startswith("|"):
+                j += 1
+            raw_table = lines[start:j]
+            columns = [normalize_col(c) for c in split_md_row(raw_table[0])]
+            rows: list[dict[str, str]] = []
+            for raw in raw_table[2:]:
+                cells = split_md_row(raw)
+                if len(cells) < len(columns):
+                    cells += [""] * (len(columns) - len(cells))
+                if len(cells) > len(columns):
+                    cells = cells[: len(columns) - 1] + [" | ".join(cells[len(columns) - 1 :])]
+                rows.append(dict(zip(columns, cells)))
+            tables.append(MarkdownTable(start_line=start + 1, lines=raw_table, columns=columns, rows=rows))
+            i = j
+        else:
+            i += 1
+    return tables
+
+
+def find_node_table(text: str) -> MarkdownTable | None:
+    tables = find_tables(text)
+    best: MarkdownTable | None = None
+    best_score = 0
+    for table in tables:
+        cols = set(table.columns)
+        score = len(cols.intersection(REQUIRED_NODE_COLUMNS))
+        if {"id", "safety_level"}.issubset(cols) and score > best_score:
+            best = table
+            best_score = score
+    return best
+
+
+def is_blank_like(value: str) -> bool:
+    return normalize_text(value).lower() in {"", "-", "n/a", "na", "none", "null"}
+
+
+def validate_enum(value: str, allowed: set[str], field: str, row_id: str, errors: list[str], *, case_sensitive: bool = False) -> None:
+    cleaned = normalize_text(value)
+    candidate = cleaned if case_sensitive else cleaned.lower()
+    allowed_cmp = allowed if case_sensitive else {x.lower() for x in allowed}
+    if candidate not in allowed_cmp:
+        errors.append(f"node {row_id}: invalid {field} '{value}', allowed={sorted(allowed)}")
+
+
+def validate_node_table(text: str, mode: str, errors: list[str], warnings: list[str]) -> tuple[set[str], MarkdownTable | None]:
+    node_table = find_node_table(text)
+
+    if not node_table:
+        if mode in MODES_REQUIRING_NODE_TABLE:
+            errors.append("Node Explanation Table required but no matching node table found")
+        elif "Node Explanation Table" in text:
+            errors.append("Node Explanation Table heading present but no matching node table found")
+        return set(), None
+
+    missing_cols = [c for c in REQUIRED_NODE_COLUMNS if c not in node_table.columns]
+    if missing_cols:
+        errors.append(f"node table missing columns: {missing_cols}")
+        # Row-level checks need the required columns. Continue only for columns that exist.
+
+    node_ids: set[str] = set()
+    duplicate_ids: set[str] = set()
+
+    for idx, row in enumerate(node_table.rows, start=1):
+        row_id = normalize_text(row.get("id", "")) or f"row#{idx}"
+        if row_id in node_ids:
+            duplicate_ids.add(row_id)
+        if row_id != f"row#{idx}":
+            node_ids.add(row_id)
+
+        if is_blank_like(row.get("id", "")):
+            errors.append(f"node row {idx}: id is required")
+            continue
+        if not NODE_ID_RE.fullmatch(row_id):
+            errors.append(f"node {row_id}: id must match [A-Za-z][A-Za-z0-9_-]*")
+
+        node_type = normalize_text(row.get("type", "")).lower()
+        if is_blank_like(node_type):
+            errors.append(f"node {row_id}: type is required")
+        else:
+            validate_enum(node_type, VALID_TYPE, "type", row_id, errors)
+
+        for required in ["check_or_action", "expected_observation", "interpretation", "safety_level", "cost", "next_branch"]:
+            if required in node_table.columns and is_blank_like(row.get(required, "")):
+                errors.append(f"node {row_id}: {required} is required")
+
+        if "safety_level" in node_table.columns:
+            safety_level = normalize_text(row.get("safety_level", "")).upper()
+            if safety_level:
+                validate_enum(safety_level, VALID_SAFETY_LEVEL, "safety_level", row_id, errors, case_sensitive=True)
+
+        if "cost" in node_table.columns:
+            validate_enum(row.get("cost", ""), VALID_COST, "cost", row_id, errors)
+
+        if "action_type" in node_table.columns:
+            action_type = normalize_text(row.get("action_type", "")).lower()
+            validate_enum(action_type, VALID_ACTION_TYPE, "action_type", row_id, errors)
+            if node_type == "action" and action_type not in VALID_ACTION_ONLY_ACTION_TYPE:
+                errors.append(f"node {row_id}: action node requires action_type in {sorted(VALID_ACTION_ONLY_ACTION_TYPE)}")
+
+        if "reversibility" in node_table.columns:
+            reversibility = normalize_text(row.get("reversibility", "")).lower()
+            validate_enum(reversibility, VALID_REVERSIBILITY, "reversibility", row_id, errors)
+            if node_type == "action" and reversibility not in VALID_ACTION_ONLY_REVERSIBILITY:
+                errors.append(f"node {row_id}: action node requires reversibility in {sorted(VALID_ACTION_ONLY_REVERSIBILITY)}")
+
+        if node_type in {"action", "gate"} and "tool_required" in node_table.columns:
+            if is_blank_like(row.get("tool_required", "")):
+                errors.append(f"node {row_id}: {node_type} node requires tool_required")
+
+        safety_level = normalize_text(row.get("safety_level", "")).upper()
+        if safety_level in {"S2", "S3"}:
+            combined = " ".join(row.values()).lower()
+            if not any(word.lower() in combined for word in SAFETY_WORDS):
+                errors.append(f"node {row_id}: {safety_level} node must contain explicit safety warning/mitigation language")
+
+    if duplicate_ids:
+        errors.append(f"duplicate node ids: {sorted(duplicate_ids)}")
+
+    if not node_ids:
+        warnings.append("node table found but contains no node rows")
+
+    return node_ids, node_table
+
+
+def fenced_code_blocks(text: str, language: str | None = None) -> list[str]:
+    pattern = re.compile(r"```([^\n`]*)\n(.*?)```", re.S)
+    blocks: list[str] = []
+    for m in pattern.finditer(text):
+        lang = m.group(1).strip().lower()
+        if language is None or lang == language.lower():
+            blocks.append(m.group(2))
+    return blocks
+
+
+def mermaid_node_ids(block: str) -> set[str]:
+    ids: set[str] = set()
+    for raw_line in block.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("%%"):
+            continue
+        if re.match(r"^(flowchart|graph|sequenceDiagram|stateDiagram|classDiagram|subgraph|end)\b", line, re.I):
+            continue
+
+        # Node declarations: A1[...], D1{...}, T1((...)), G1>...]
+        decl = re.match(r"^([A-Za-z][A-Za-z0-9_-]*)\s*(?:\[|\{|\(|>)", line)
+        if decl:
+            ids.add(decl.group(1))
+
+        # Edge left side: A1 --> B1, A1 -- pass --> B1, A1 -->|pass| B1
+        edge_left = re.match(r"^([A-Za-z][A-Za-z0-9_-]*)\s*(?:-->|---|==>|-.->|--)", line)
+        if edge_left:
+            ids.add(edge_left.group(1))
+
+        # Edge right side. Strip labels and grab the first node-like token after the arrow.
+        if any(arrow in line for arrow in ["-->", "---", "==>", "-.->", "--"]):
+            rhs = re.split(r"-->|---|==>|-\.->|--", line, maxsplit=1)[-1].strip()
+            rhs = re.sub(r"^\|.*?\|", "", rhs).strip()
+            rhs_node = re.match(r"^([A-Za-z][A-Za-z0-9_-]*)", rhs)
+            if rhs_node:
+                ids.add(rhs_node.group(1))
+    return ids
+
+
+def validate_mermaid_consistency(text: str, mode: str, node_ids: set[str], errors: list[str], warnings: list[str]) -> None:
+    if mode not in MODES_WITH_DECISION_TREE:
+        return
+
+    blocks = fenced_code_blocks(text, "mermaid")
+    if not blocks:
+        errors.append("decision tree section requires a fenced ```mermaid block")
+        return
+
+    tree_ids: set[str] = set()
+    for block in blocks:
+        tree_ids.update(mermaid_node_ids(block))
+
+    if not tree_ids:
+        errors.append("mermaid decision tree contains no parseable node ids")
+        return
+
+    if node_ids:
+        missing_in_table = sorted(tree_ids - node_ids)
+        missing_in_tree = sorted(node_ids - tree_ids)
+        if missing_in_table:
+            errors.append(f"mermaid node ids missing from node table: {missing_in_table}")
+        if missing_in_tree:
+            errors.append(f"node table ids missing from mermaid decision tree: {missing_in_tree}")
+    else:
+        warnings.append("mermaid decision tree found but no node table is available for id consistency check")
+
+
+def validate_case_record_draft(text: str, mode: str, errors: list[str]) -> None:
+    if mode != "retrospective":
+        return
+    blocks = fenced_code_blocks(text, "yaml") + fenced_code_blocks(text, "yml")
+    if not blocks:
+        errors.append("retrospective output requires a fenced YAML Case Record Draft")
+        return
+    joined = "\n".join(blocks)
+    for token in ["asset_type:", "case_record"]:
+        if token not in joined:
+            errors.append(f"case record draft missing token: {token}")
+
+
+def validate_forbidden_unsafe_patterns(text: str, errors: list[str]) -> None:
+    for pattern, description in FORBIDDEN_UNSAFE_PATTERNS:
+        for match in pattern.finditer(text):
+            line_start = text.rfind("\n", 0, match.start()) + 1
+            line_end = text.find("\n", match.end())
+            if line_end == -1:
+                line_end = len(text)
+            context = text[line_start:line_end].lower()
+            mitigated = any(token.lower() in context for token in UNSAFE_MITIGATION_TERMS)
+            if not mitigated:
+                errors.append(f"unsafe instruction appears without local mitigation: {description}")
+
+
+def validate_text(text: str, mode: str) -> ValidationResult:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    validate_required_headings(text, mode, errors)
+    node_ids, _node_table = validate_node_table(text, mode, errors, warnings)
+    validate_mermaid_consistency(text, mode, node_ids, errors, warnings)
+    validate_case_record_draft(text, mode, errors)
+    validate_forbidden_unsafe_patterns(text, errors)
+
+    return ValidationResult(errors=errors, warnings=warnings)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Validate generated debug markdown against output contracts.")
+    ap.add_argument("--mode", required=True, choices=sorted(MODE_HEADINGS))
+    ap.add_argument("--file", required=True, help="Markdown file to validate")
+    ap.add_argument("--quiet", action="store_true", help="Only print failures")
+    args = ap.parse_args()
+
+    path = Path(args.file)
+    if not path.exists():
+        print(f"OUTPUT VALIDATION FAILED\n- file not found: {path}", file=sys.stderr)
+        return 2
+
+    text = path.read_text(encoding="utf-8")
+    result = validate_text(text, args.mode)
+
+    if result.errors:
+        print("OUTPUT VALIDATION FAILED")
+        for e in result.errors:
+            print(f"- {e}")
+        if result.warnings and not args.quiet:
+            print("WARNINGS")
+            for w in result.warnings:
+                print(f"- {w}")
+        return 1
+
+    if not args.quiet:
+        print("OUTPUT VALIDATION PASSED")
+        if result.warnings:
+            print("WARNINGS")
+            for w in result.warnings:
+                print(f"- {w}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

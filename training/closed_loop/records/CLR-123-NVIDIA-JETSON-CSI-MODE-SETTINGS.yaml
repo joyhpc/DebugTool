@@ -1,0 +1,92 @@
+id: CLR-123
+quality_tier: T0
+source:
+  title: "Jetson Sensor Software Driver Programming - Debugging Tips"
+  url: "https://docs.nvidia.com/jetson/archives/r36.3/DeveloperGuide/SD/CameraDevelopment/SensorSoftwareDriverProgramming.html"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The NVIDIA debug list was revealed after drafting device-tree, lane, and power-on branches."
+blind_input:
+  symptom: "Jetson CSI camera sensor times out or produces no frames during bring-up."
+  background: "The driver has device-tree mode settings, sensor power_on sequencing, I2C access, and MIPI CSI configuration fields."
+  observations:
+  - "sensor timeout can occur even when the driver loads"
+  - "I2C errors and wrong mode-specific settings have different first checks"
+  constraints:
+  - "do not rewrite image processing or userspace capture before kernel mode settings and I2C/power evidence are checked"
+predicted_debug_tree:
+- node: J1
+  type: decision
+  check: "Inspect dmesg for sensor I2C errors, chip ID read failure, and power_on sequence errors."
+  why: "CSI packet debug is invalid if the sensor was never powered and configured."
+  expected: "sensor register access succeeds after correct power, clock, GPIO, and timing order."
+  p_hit: 0.55
+  p_exclude: 0.60
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.043
+- node: J2
+  type: decision
+  check: "Verify num_lanes, tegra_sinterface, discontinuous_clk, mclk_multiplier, pix_clk_hz, and lane_polarity."
+  why: "these mode-specific fields are common causes of sensor timeout."
+  expected: "device-tree values match sensor wiring and clocking."
+  p_hit: 0.65
+  p_exclude: 0.55
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.026
+- node: J3
+  type: action
+  check: "Use tracing or receiver status to see whether frames, packets, or CSI errors are present."
+  why: "after configuration is plausible, dynamic counters decide PHY/packet/downstream branch."
+  expected: "trace shows no packets, bad packets, or frames reaching VI."
+  p_hit: 0.50
+  p_exclude: 0.60
+  time_min: 25
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.020
+- node: J4
+  type: terminal
+  check: "If device-tree and I2C are clean but no frames arrive, branch to D-PHY lane/clock/settle timing and sensor stream-on table."
+  why: "sensor stream state and D-PHY state are next after static host config."
+  expected: "lane/clock/settle or stream-on register sequence explains the timeout."
+  p_hit: 0.45
+  p_exclude: 0.40
+  time_min: 45
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.011
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "NVIDIA's Jetson guide says common sensor timeout causes include incorrect num_lanes, tegra_sinterface, discontinuous_clk, mclk_multiplier, pix_clk_hz, and lane_polarity; it also says I2C errors should lead to checking power_on order for power, clock, GPIO, and timing."
+  evidence:
+  - "the official guide lists mode-specific device-tree fields that commonly cause timeouts"
+  - "the guide directs I2C failures to sensor power-on sequence validation"
+coverage:
+  result: hit
+  matched_nodes:
+  - J1
+  - J2
+  - J3
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "CSI no-frame debug has a static configuration layer before physical packet-layer tuning."
+  - "I2C and power_on failures must short-circuit CSI packet analysis."
+  what_to_change_in_assets:
+  - "Add Jetson-style lane/polarity/discontinuous-clock fields to the MIPI CSI no-frame signature."
+  anti_pattern_observed:
+  - "debugging userspace capture while num_lanes or lane_polarity is wrong"
+promotion:
+  proposed_assets:
+  - "SIG-MIPI-CSI-NO-FRAME-PACKET-COUNTERS-FIRST"
+  - "LM-MIPI-DSI-CSI-DPHY"
+  regression_candidate: "REG-MIPI-CSI-JETSON-MODE-CONFIG-FIRST"
+status: reviewed

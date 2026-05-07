@@ -1,0 +1,52 @@
+V0.99 Validation Report
+Date: 2026-05-01
+
+Scope
+-----
+Cost-aware decision ordering, authoritative training queue, closed-loop training records,
+regression structure, and validator scripts.
+
+Commands
+--------
+python -m py_compile scripts\output_validator.py scripts\run_output_validator_smoke.py scripts\lint_assets.py scripts\regression_suite_linter.py scripts\regression_runner.py scripts\lint_closed_loop.py
+python scripts\lint_assets.py
+python scripts\regression_suite_linter.py
+python scripts\run_output_validator_smoke.py
+python scripts\lint_closed_loop.py
+
+Results
+-------
+Python compile: PASS
+
+Asset lint:
+PASS: 24 assets
+Warnings:
+- CASE-LA1010-USB-CABLE has no misleading_paths.
+- Legacy link_models still need counterexamples.
+
+Regression suite structure:
+PASS: 17 tests
+
+Output validator smoke:
+PASS: 5 cases
+
+Closed-loop training lint:
+PASS: 10 records
+
+Training State
+--------------
+Authoritative queue:
+- target_count: 100
+- current_units: 100
+- processed official-source units in this round: 5
+
+Closed-loop records:
+- total reviewed records: 10
+- all reviewed records include probability/time-cost fields
+
+Known Limits
+------------
+- The 100 authoritative units are a queue, not 100 validated real cases.
+- Forum-derived records remain useful but are not treated as validated real cases.
+- Legacy link models still need counterexamples and deeper measurement/action detail.
+- Real founder-pilot runs are still needed before team-wide pilot claims.

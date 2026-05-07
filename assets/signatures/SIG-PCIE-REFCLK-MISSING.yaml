@@ -1,0 +1,34 @@
+asset_type: signature
+id: SIG-PCIE-REFCLK-MISSING
+title: PCIe no enumeration with REFCLK missing
+version: 0.9.1
+domain: high_speed
+applicability: general
+use_when:
+- condition: PCIe not enumerating
+  weight: high
+- condition: REFCLK missing
+  weight: high
+min_match_count: 2
+top_actions:
+- Check endpoint rails
+- Trace REFCLK source/path
+- Measure REFCLK at endpoint
+- Then check PERST#
+do_not_use_when: []
+required_evidence:
+- kind: user_input
+  must_be: matches_pattern
+references:
+- id: LM-PCIE-LINK
+  relation: derived_from
+safety_level: S0
+destructive: false
+source:
+  type: seed
+  citation: ''
+confidence: medium
+counterexamples: []
+status: candidate
+last_validated: ''
+review_due: ''

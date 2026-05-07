@@ -1,0 +1,42 @@
+asset_type: debug_principle
+id: DP-EXPECTED-VALUE-BEFORE-HABIT
+title: Rank Debug Actions by Expected Information Value
+version: 0.99.0
+domain: hardware
+applicability: general
+use_when:
+- condition: multiple plausible fault branches exist and the fastest path is unclear
+  weight: high
+- condition: a familiar action is tempting but a cheaper measurement could exclude a larger fault domain
+  weight: high
+do_not_use_when:
+- a safety gate or prerequisite measurement must occur before any ranking can be used
+required_evidence:
+- kind: debug_tree
+  must_be: present
+  description: candidate actions with probability, exclusion value, time, setup, and risk estimates
+principle: The next debug action should maximize expected information per unit cost after safety and dependency constraints are applied.
+diagnostic_rule: Estimate p_hit, p_exclude, time_min, setup_min, and risk_penalty for candidate actions; rank by priority score, then override the ranking only for safety gates or required prerequisites.
+anti_patterns:
+- following the most familiar branch before checking a cheap high-exclusion measurement
+- replacing parts when a low-risk measurement could separate measurement error, layout, configuration, and component fault
+- using probability alone without time cost or risk cost
+references:
+- id: DP-MEASUREMENT-BEFORE-DESIGN-CHANGE
+  relation: supports
+- id: DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  relation: supports
+safety_level: S1
+destructive: false
+source:
+  type: seed
+  citation: Generalized from V0.99 closed-loop training and cost-aware debug ordering.
+confidence: medium
+counterexamples:
+- description: A later high-score action depends on a prerequisite measurement that has not been performed.
+  evidence_required: dependency map showing missing prerequisite
+- description: The highest-score action is destructive or unsafe without a defined envelope.
+  evidence_required: safety analysis showing uncontrolled current, voltage, heat, mechanical, or data-loss risk
+status: candidate
+last_validated: ''
+review_due: ''

@@ -1,0 +1,103 @@
+id: CLR-005
+source:
+  title: STM32H573 LDO has no output
+  url: https://electronics.stackexchange.com/a/754367
+  type: public_forum
+domain: power
+blindness_note: "Answer URL was used directly, so this is not a strict blind case; retained because it illustrates a high-value branch: package power architecture."
+blind_input:
+  symptom: STM32H573 board has no internal core LDO output; external Vcore supply allows programming/debugging and firmware runs
+  background: custom board using a WLCSP package; designer expects internal LDO behavior
+  observations:
+  - external Vcore injection makes MCU usable
+  - board otherwise appears designed and soldered correctly
+  constraints:
+  - do not assume the regulator is damaged before checking package-specific power configuration
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: Does external Vcore injection make the MCU functional?
+  why: separates core-supply absence from general MCU death
+  expected: if yes, focus on internal supply configuration
+  p_hit: 0.45
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 15
+  risk_penalty: 2
+  priority_score: 0.023
+- node: A1
+  type: action
+  check: Verify selected package power architecture against datasheet/reference manual
+  why: packages may support LDO, SMPS, or external core supply differently
+  expected: package option reveals required SMPS inductor or LDO availability
+  p_hit: 0.60
+  p_exclude: 0.40
+  time_min: 20
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.032
+- node: D2
+  type: decision
+  check: Are SMPS pins, inductor, VDDSMPS, and VCAP connections populated/configured as required?
+  why: missing SMPS components can leave core unpowered
+  expected: mismatch explains no Vcore
+  p_hit: 0.65
+  p_exclude: 0.35
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.028
+- node: A2
+  type: action
+  check: Compare schematic against vendor power-mode examples for exact package
+  why: family-level assumptions can be wrong for package variants
+  expected: redesign or external Vcore path selected
+  p_hit: 0.55
+  p_exclude: 0.30
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.020
+- node: T1
+  type: terminal
+  check: If package requires SMPS, add inductor/configuration or choose non-SMPS package
+  why: board-level fix follows architecture, not random component replacement
+  expected: internal core supply appears in corrected design
+  p_hit: 0.50
+  p_exclude: 0.10
+  time_min: 60
+  setup_min: 60
+  risk_penalty: 1
+  priority_score: 0.005
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: The selected package/power option did not provide the expected LDO path as used; the design needed the SMPS path/components or a different package/external core supply approach.
+  evidence:
+  - external core supply allowed normal debug
+  - corrected design with required SMPS inductor worked as expected
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - D2
+  - A2
+  - T1
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - package-specific power architecture can override family-level assumptions
+  - external injection is a powerful isolation step for missing internal rail
+  what_to_change_in_assets:
+  - add package/power-mode variant check to LM-POWER-CHAIN or a future MCU power bring-up model
+  anti_pattern_observed:
+  - assuming same internal regulator behavior across package variants
+promotion:
+  proposed_assets:
+  - LM-POWER-CHAIN
+  regression_candidate: REG-MCU-CORE-SUPPLY-PACKAGE-MODE-FIRST
+status: reviewed

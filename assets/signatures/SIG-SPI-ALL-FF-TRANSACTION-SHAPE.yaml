@@ -1,0 +1,50 @@
+asset_type: signature
+id: SIG-SPI-ALL-FF-TRANSACTION-SHAPE
+title: SPI All-0xFF Transaction Shape / API Framing Signature
+version: 0.99.1
+domain: embedded
+applicability: general
+use_when:
+- condition: SPI read returns all 0xFF
+  weight: high
+- condition: software API reports success while the expected chip ID is not read
+  weight: high
+- condition: wiring and power appear plausible but waveform has not been decoded against the datasheet
+  weight: medium
+- condition: MCU SPI driver has separate command/address/dummy/data phases
+  weight: medium
+do_not_use_when:
+- target chip ID and reset-default registers are already read correctly
+required_evidence:
+- kind: waveform
+  must_be: preferred
+  description: CS, SCLK, MOSI, and MISO for one chip-ID or reset-default register read
+- kind: source_code
+  must_be: preferred
+  description: driver transaction fields, command/address phase, dummy clocks, and buffer length
+min_match_count: 2
+top_actions:
+- Capture CS, SCLK, MOSI, and MISO at the target pin for a known register read.
+- Check whether MISO is open/high, target is unselected, or another device is contending.
+- Compare the MOSI command/address/read bit and total clock count against the datasheet timing diagram.
+- Review MCU driver transaction shape: command phase, address phase, dummy bits, tx/rx buffers, DMA length, and chip-select handling.
+- Gate all higher-level sensor configuration on a stable chip-ID or reset-default register read.
+references:
+- id: LM-SPI-TRANSACTION
+  relation: supports
+- id: DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  relation: supports
+safety_level: S0
+destructive: false
+source:
+  type: seed
+  citation: "Promoted from closed-loop near-hit CLR-004 and Microchip serial-interface debugging guidance."
+confidence: medium
+counterexamples:
+- description: MISO is physically open or the target is never selected.
+  evidence_required: MISO voltage and CS-at-target capture
+- description: Driver transaction shape is correct but CPOL/CPHA or bit order is wrong.
+  evidence_required: decoded waveform compared against target timing diagram
+status: candidate
+last_validated: ''
+review_due: ''

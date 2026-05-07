@@ -1,0 +1,97 @@
+id: CLR-062
+queue_unit: AUTH-055
+source:
+  title: TI SLVA630 component sensitivity
+  url: https://www.ti.com/lit/an/slva630a/slva630a.pdf
+  type: vendor_app_note
+domain: production
+blindness_note: Section-level authoritative queue focus can leak the target lesson; retained as official-source closure, not
+  a lab-perfect blind test.
+blind_input:
+  symptom: The design passes in a narrow condition but fails across production, temperature, or operating spread.
+  background: Nominal values may hide tolerance, derating, aging, or corner-case margin loss.
+  observations:
+  - failure rate depends on unit, temperature, voltage, load, or time
+  - typical datasheet values are not enough to prove production margin
+  - screening must reproduce the real stress mechanism
+  constraints:
+  - do not promote a room-temperature pass into production confidence
+  - avoid destructive stress without a safe envelope
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: Identify the parameter spread and environmental corner that changes failure probability.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.45
+  p_exclude: 0.5
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.023
+- node: A1
+  type: action
+  check: Run a bounded A/B or corner test that exercises the suspected margin.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.5
+  p_exclude: 0.35
+  time_min: 45
+  setup_min: 45
+  risk_penalty: 1
+  priority_score: 0.007
+- node: D2
+  type: decision
+  check: 'Evaluate the official lesson: capacitor tolerance and ESR spread affect production ripple.'
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.55
+  p_exclude: 0.3
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.018
+- node: T1
+  type: terminal
+  check: Add design margin, derating, screening, or regression coverage for the discovered spread.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.5
+  p_exclude: 0.1
+  time_min: 60
+  setup_min: 60
+  risk_penalty: 1
+  priority_score: 0.005
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: (p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: 'The official source highlights this durable debug lesson: capacitor tolerance and ESR spread affect production
+    ripple. The predicted tree included a dedicated branch for that mechanism and ranked prerequisite measurements before
+    irreversible or high-effort changes.'
+  evidence:
+  - Authoritative unit AUTH-055 from TI SLVA630 component sensitivity
+  - 'Focus: capacitor tolerance and ESR spread affect production ripple'
+  - Coverage judged at section-level against official troubleshooting guidance.
+coverage:
+  result: hit
+  matched_nodes:
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - Official section-level lessons are best stored as cost-aware branch priors, not as validated real cases.
+  - The first useful action is the fastest safe measurement that can either support the mechanism or exclude it.
+  - Repeated support should update DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING rather than create isolated one-off advice.
+  what_to_change_in_assets:
+  - Use this unit as supporting evidence for DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING.
+  - Promote to stronger asset status only after real or fully solved public cases repeat the same mechanism.
+  anti_pattern_observed:
+  - jumping to familiar component replacement or firmware changes before proving the official fault mechanism
+promotion:
+  proposed_assets:
+  - DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  regression_candidate: REG-COST-AWARE-DEBUG-ORDERING
+status: reviewed

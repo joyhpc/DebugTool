@@ -1,0 +1,34 @@
+asset_type: signature
+id: SIG-I2C-SDA-STUCK-LOW
+title: I2C SDA stuck low
+version: 0.9.1
+domain: embedded
+applicability: general
+use_when:
+- condition: SDA stuck low or idle low
+  weight: high
+- condition: I2C no ACK
+  weight: high
+min_match_count: 1
+top_actions:
+- Check pull-up voltage/value
+- Identify line held low
+- Isolate slaves
+- Check MCU pinmux
+do_not_use_when: []
+required_evidence:
+- kind: user_input
+  must_be: matches_pattern
+references:
+- id: LM-I2C-BUS
+  relation: derived_from
+safety_level: S0
+destructive: false
+source:
+  type: seed
+  citation: ''
+confidence: medium
+counterexamples: []
+status: candidate
+last_validated: ''
+review_due: ''

@@ -1,0 +1,43 @@
+V0.96 Validation Report
+=======================
+
+Commands run with /usr/bin/python3 -S because normal python startup was unreliable in the runtime environment.
+
+1) Output validator compile
+PASS
+Command:
+  /usr/bin/python3 -S -m py_compile scripts/output_validator.py
+
+2) Hot-swap architecture-first example
+PASS
+Command:
+  /usr/bin/python3 -S scripts/output_validator.py --mode architecture_first --file examples/founder_pilot_hotswap_architecture_first.md
+
+3) LA1010 fast-path example
+PASS with expected warning
+Command:
+  /usr/bin/python3 -S scripts/output_validator.py --mode fast_path --file examples/founder_pilot_la1010_fast_path.md
+Warning:
+  mermaid decision tree found but no node table is available for id consistency check
+Reason:
+  fast_path_output.md currently does not require a Node Explanation Table.
+
+4) Asset lint
+PASS: 17 assets
+Command:
+  PYTHONPATH=/opt/pyvenv/lib/python3.13/site-packages /usr/bin/python3 -S scripts/lint_assets.py
+Warnings:
+  Several legacy link_models still have no counterexamples.
+  CASE-LA1010-USB-CABLE has no misleading_paths.
+Interpretation:
+  These warnings identify next asset-deepening opportunities but do not block V0.96.
+
+5) Regression suite structure
+PASS: 8 tests
+Command:
+  PYTHONPATH=/opt/pyvenv/lib/python3.13/site-packages /usr/bin/python3 -S scripts/regression_suite_linter.py
+
+Current status:
+  V0.96 founder-pilot candidate.
+  Not team-wide pilot ready.
+  Not V1.0.

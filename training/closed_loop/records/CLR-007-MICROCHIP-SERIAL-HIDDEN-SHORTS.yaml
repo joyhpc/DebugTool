@@ -1,0 +1,106 @@
+id: CLR-007
+source:
+  title: "Microchip TB3331 Debugging Serial Interfaces in Embedded Systems"
+  url: "https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ApplicationNotes/ApplicationNotes/TB3331-Debug-SerialInterf-EmbeddedSystems-DS90003331.pdf"
+  type: vendor_app_note
+domain: digital_interface
+blindness_note: "The source is a structured debugging brief; the blind exercise uses only the symptom class before reading the hidden-short section."
+blind_input:
+  symptom: "A shared digital communication line is stuck, overheats, or shows invalid levels during I2C/SPI/UART debug."
+  background: "Multiple devices or board options can connect to the same net. Some pins may be push-pull outputs rather than open-drain or tri-state."
+  observations:
+  - "logic level does not match the master transaction"
+  - "one device may work alone but not when another option is populated"
+  - "software transaction success does not prove the net is electrically legal"
+  constraints:
+  - "avoid repeated full-current contention while probing"
+  - "treat pin direction and output type as electrical facts, not firmware labels"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Map every device pin connected to the suspect line and classify output type."
+  why: "a push-pull contention fault is invisible if the net is treated only as a protocol signal."
+  expected: "at most one push-pull driver is active, or all inactive devices truly tri-state."
+  p_hit: 0.45
+  p_exclude: 0.55
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.048
+- node: A1
+  type: action
+  check: "Measure static resistance or current while forcing no firmware traffic."
+  why: "contention or a hard short can be detected before active bus testing."
+  expected: "abnormal current or low resistance points to electrical contention."
+  p_hit: 0.35
+  p_exclude: 0.50
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.060
+- node: A2
+  type: action
+  check: "Enable one device at a time and capture the line state."
+  why: "population options and firmware pin modes can create two active drivers."
+  expected: "the line becomes valid when the contending device is disabled or reconfigured."
+  p_hit: 0.50
+  p_exclude: 0.45
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.028
+- node: D2
+  type: decision
+  check: "Does the bus topology require open-drain, pull-up, or tri-state behavior instead of push-pull?"
+  why: "electrical drive mode must match the bus sharing rule."
+  expected: "incorrect push-pull mode or missing tri-state explains stuck or overheated line."
+  p_hit: 0.55
+  p_exclude: 0.25
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.034
+- node: T1
+  type: terminal
+  check: "Fix pin mode, add gating/series resistance, or change topology so inactive devices release the line."
+  why: "the electrical conflict must be removed, not hidden by firmware retries."
+  expected: "line levels and current are normal with all devices populated."
+  p_hit: 0.45
+  p_exclude: 0.10
+  time_min: 30
+  setup_min: 20
+  risk_penalty: 2
+  priority_score: 0.010
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Microchip's brief calls out hidden short-circuits when two digital push-pull outputs are active on the same I/O line and drive opposite states. The correct debug path is to prove electrical drive ownership and tri-state/open-drain assumptions before spending time on higher protocol layers."
+  evidence:
+  - "shared digital lines require inactive push-pull devices to tri-state."
+  - "two active push-pull outputs can short through their output stages."
+  - "static electrical checks can reveal contention faster than protocol decoding."
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - A2
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Bus debug must classify electrical drive capability before interpreting protocol bytes."
+  - "Static current and resistance checks often have higher expected value than another logic trace when contention is possible."
+  - "Software success codes should have low confidence until physical drive ownership is proven."
+  what_to_change_in_assets:
+  - "LM-SPI-TRANSACTION and LM-I2C-BUS need explicit drive-mode and tri-state/open-drain checks."
+  anti_pattern_observed:
+  - "treating every shared net as a logical bus instead of a possible power fight"
+promotion:
+  proposed_assets:
+  - "DP-CURRENT-LOOP-BEFORE-NAMED-NET"
+  regression_candidate: "REG-SERIAL-HIDDEN-PUSHPULL-CONTENTION"
+status: reviewed

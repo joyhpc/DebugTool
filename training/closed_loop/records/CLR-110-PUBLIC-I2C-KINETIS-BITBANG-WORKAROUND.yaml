@@ -1,0 +1,94 @@
+id: CLR-110
+quality_tier: T1
+public_case_id: PUB-015
+source:
+  title: "I2C bus getting locked up on single master single slave system"
+  url: "https://electronics.stackexchange.com/questions/469547/i2c-bus-getting-locked-up-on-single-master-single-slave-system"
+  type: public_solved_case
+domain: digital_interface
+blindness_note: "Final answer was read after the blind tree included device, recovery, and controller-peripheral branches."
+blind_input:
+  symptom: "I2C slave holds SDA low during repeated reads; MCU arbitration flag blocks communication."
+  background: "NXP MKE04Z64 master talks to one slave. Recovery clock loop did not release SDA."
+  observations:
+  - "bus locks during continuous reads"
+  - "manual clock recovery attempt gets stuck"
+  - "same slave may be testable with another controller"
+  constraints:
+  - "do not assume the slave is defective until controller peripheral behavior is isolated"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Prove whether the fault follows the slave, the MCU peripheral, or the transaction sequence."
+  why: "single-master/single-slave lockup can be caused by either side's state machine."
+  expected: "another controller or bit-bang path changes failure behavior."
+  p_hit: 0.50
+  p_exclude: 0.55
+  time_min: 25
+  setup_min: 20
+  risk_penalty: 0
+  priority_score: 0.017
+- node: A1
+  type: action
+  check: "Try GPIO bit-bang I2C or another MCU against the same slave."
+  why: "this isolates hardware slave behavior from the MCU I2C peripheral."
+  expected: "bit-bang or alternate MCU works if the controller peripheral is the issue."
+  p_hit: 0.55
+  p_exclude: 0.45
+  time_min: 45
+  setup_min: 30
+  risk_penalty: 0
+  priority_score: 0.010
+- node: D2
+  type: decision
+  check: "If recovery clocks fail, branch beyond normal stuck-bus recovery."
+  why: "not every SDA-low lockup is a standard missing-clock case."
+  expected: "persistent failure implies controller peripheral erratum/behavior or device damage."
+  p_hit: 0.45
+  p_exclude: 0.40
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.022
+- node: T1
+  type: terminal
+  check: "Use bit-bang/alternate controller/workaround or avoid the faulty peripheral path."
+  why: "workaround follows the isolated failing component of the chain."
+  expected: "communication works using bit-bang or another MCU."
+  p_hit: 0.55
+  p_exclude: 0.10
+  time_min: 60
+  setup_min: 30
+  risk_penalty: 0
+  priority_score: 0.007
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The solved case found the issue tied to the NXP Kinetis E MCU I2C peripheral behavior; GPIO bit-banging the same slave solved it, and another MCU worked with the slave."
+  evidence:
+  - "recovery clock loop did not release the bus"
+  - "bit-banging the same slave solved the issue"
+  - "another MCU worked with the same slave"
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Failed I2C recovery clocks should open a controller-peripheral/erratum branch, not only a damaged-target branch."
+  - "Alternate controller or bit-bang tests are expensive but high-exclusion when normal recovery fails."
+  what_to_change_in_assets:
+  - "LM-I2C-BUS should include controller-peripheral erratum/workaround branch."
+  anti_pattern_observed:
+  - "assuming the slave is defective after recovery clocks fail"
+promotion:
+  proposed_assets:
+  - "LM-I2C-BUS"
+  regression_candidate: "REG-I2C-RECOVERY-FAILS-CONTROLLER-PERIPHERAL-BRANCH"
+status: reviewed

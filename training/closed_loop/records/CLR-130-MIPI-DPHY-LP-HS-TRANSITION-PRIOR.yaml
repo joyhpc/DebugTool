@@ -1,0 +1,91 @@
+id: CLR-130
+quality_tier: T0
+source:
+  title: "MIPI D-PHY Overview"
+  url: "https://www.mipi.org/specifications/d-phy"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The MIPI overview was revealed after drafting LP/HS transition and clock-mode branches."
+blind_input:
+  symptom: "A MIPI DSI or CSI link behaves differently during initialization and video/frame transfer."
+  background: "D-PHY uses low-power and high-speed signaling modes and can use forwarded or embedded clock modes depending on version and implementation."
+  observations:
+  - "low-power command traffic and high-speed payload traffic have different voltage levels and states"
+  - "clock behavior may be continuous, discontinuous, forwarded, or embedded depending on link type"
+  constraints:
+  - "do not evaluate MIPI with a single static digital-interface mental model"
+predicted_debug_tree:
+- node: M1
+  type: decision
+  check: "Classify the observed interval as LP command/control, LP11 stop/idle, ULPS, HS clock, or HS data."
+  why: "MIPI failures are state-transition failures as much as signal-integrity failures."
+  expected: "each observation is mapped to a D-PHY state before conclusions are drawn."
+  p_hit: 0.55
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.041
+- node: M2
+  type: decision
+  check: "Identify whether the implementation expects forwarded clock, embedded clock, continuous clock, or discontinuous clock behavior."
+  why: "wrong clock-mode assumptions can create false no-signal and timeout diagnoses."
+  expected: "source and sink agree on clock mode and lane behavior."
+  p_hit: 0.45
+  p_exclude: 0.50
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.023
+- node: M3
+  type: action
+  check: "Use receiver status counters and lane-state bits instead of intrusive probing whenever possible."
+  why: "D-PHY high-speed signaling is hard to probe casually and status counters are often safer."
+  expected: "LP/HS state and packet counters provide a stable debug boundary."
+  p_hit: 0.50
+  p_exclude: 0.45
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.024
+- node: M4
+  type: terminal
+  check: "After state and clock mode are known, branch to lane mapping, packet layer, or downstream pipeline."
+  why: "later branches depend on the PHY state machine being understood."
+  expected: "wrong branch selection is avoided by state classification."
+  p_hit: 0.35
+  p_exclude: 0.40
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.014
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The MIPI D-PHY overview frames D-PHY as a PHY for camera and display links with low-power and high-speed transitions, and notes forwarded-clock and embedded-clock modes in newer versions; this supports modeling MIPI debug around state transitions and clock mode."
+  evidence:
+  - "the overview describes D-PHY as using low-latency transitions between high-speed and low-power modes"
+  - "the overview identifies forwarded and embedded clock modes"
+coverage:
+  result: hit
+  matched_nodes:
+  - M1
+  - M2
+  - M3
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "MIPI is not just differential high-speed data; low-power states and transitions are first-order debug evidence."
+  - "Clock mode must be an explicit branch, especially when comparing DSI/CSI hosts and sinks."
+  what_to_change_in_assets:
+  - "Make LP/HS state classification a front-door rule in LM-MIPI-DSI-CSI-DPHY."
+  anti_pattern_observed:
+  - "probing a MIPI lane and interpreting every interval as if it were ordinary continuous differential data"
+promotion:
+  proposed_assets:
+  - "LM-MIPI-DSI-CSI-DPHY"
+  regression_candidate: "REG-MIPI-DPHY-LP-HS-STATE-CLASSIFICATION"
+status: reviewed

@@ -1,0 +1,92 @@
+id: CLR-114
+quality_tier: T0
+source:
+  title: "FPGA Configuration Troubleshooter - CONF_DONE does not go high"
+  url: "https://www.altera.com/design/guidance/configuration/debug"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The failure symptom was used to generate the tree before reading the detailed Active Serial/JTAG guidance."
+blind_input:
+  symptom: "nCONFIG and nSTATUS are released high, but CONF_DONE does not go high at the end of configuration."
+  background: "Intel/Altera FPGA configuration may be JTAG, Active Serial, Passive Serial, or parallel flash based."
+  observations:
+  - "status pins suggest configuration starts but completion is not reached"
+  - "DCLK/DATA or flash-control signal quality may be unknown"
+  constraints:
+  - "do not keep regenerating bitstreams without waveform evidence on status and configuration bus pins"
+predicted_debug_tree:
+- node: C1
+  type: decision
+  check: "Capture nCONFIG, nSTATUS, CONF_DONE, DCLK, and DATA at the FPGA end during configuration."
+  why: "the sequence identifies whether the device starts, aborts, or never receives valid data."
+  expected: "status transition points align with configuration bus activity or failure."
+  p_hit: 0.60
+  p_exclude: 0.70
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.027
+- node: C2
+  type: decision
+  check: "Check DCLK/DATA/nCS signal integrity and activity between FPGA and configuration device."
+  why: "noise or missing activity can corrupt configuration data before CONF_DONE rises."
+  expected: "configuration bus toggles cleanly and reaches valid logic thresholds."
+  p_hit: 0.55
+  p_exclude: 0.55
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.021
+- node: C3
+  type: action
+  check: "Inspect CONF_DONE loading, external drivers, pull-up value, and timing window."
+  why: "a delayed or loaded CONF_DONE pin can look like failed configuration even when data transfer is close."
+  expected: "CONF_DONE is not held or delayed by external capacitance or another device."
+  p_hit: 0.35
+  p_exclude: 0.45
+  time_min: 20
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.023
+- node: C4
+  type: terminal
+  check: "After bus/status evidence, verify configuration device support, file address, and regenerated programming file."
+  why: "file-generation issues are real but should be reached after electrical sequence evidence."
+  expected: "the file and flash setup match the target device and boot address requirements."
+  p_hit: 0.35
+  p_exclude: 0.40
+  time_min: 45
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.010
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The Altera troubleshooter recommends status-pin and configuration-bus captures at the FPGA end, checking DCLK/DATA/flash-control signal integrity, ensuring no external loading or delay on CONF_DONE, and then checking flash support and programming-file generation details."
+  evidence:
+  - "the official checklist asks for nCONFIG, nSTATUS, DCLK/DATA, and CONF_DONE captures"
+  - "the guidance calls out signal-integrity corruption and CONF_DONE loading/delay as causes"
+coverage:
+  result: hit
+  matched_nodes:
+  - C1
+  - C2
+  - C3
+  - C4
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "CONF_DONE low is a sequence problem first, not a random Quartus setting problem."
+  - "Configuration debug needs correlated status and data-bus timing."
+  what_to_change_in_assets:
+  - "Add configuration bus/status stages to the FPGA JTAG/config model."
+  anti_pattern_observed:
+  - "changing project settings without first seeing whether configuration traffic reaches the FPGA"
+promotion:
+  proposed_assets:
+  - "LM-FPGA-JTAG-CONFIG"
+  regression_candidate: "REG-INTEL-FPGA-CONFDONE-DCLK-DATA-FIRST"
+status: reviewed

@@ -1,0 +1,91 @@
+id: CLR-119
+quality_tier: T0
+source:
+  title: "Arria 10 FPGAs - behavior of the locked output of the IOPLL IP core"
+  url: "https://www.intel.com/content/www/us/en/support/programmable/articles/000074359.html"
+  type: official_source_prior
+domain: clock_reset
+blindness_note: "The KB lock-behavior details were revealed after drafting reset/reference/filter branches."
+blind_input:
+  symptom: "Arria 10 IOPLL locked output is low, delayed, or misunderstood during bring-up."
+  background: "The reference clock, reset, and PLL output may be probed while the design is being released from reset."
+  observations:
+  - "PLL lock is sometimes treated as immediate once reset is released"
+  - "reference-clock stability and digital filtering may not be accounted for"
+  constraints:
+  - "do not release downstream logic solely from a guessed PLL state"
+predicted_debug_tree:
+- node: P1
+  type: decision
+  check: "Confirm PLL reset polarity and whether reset is still asserted."
+  why: "lock must remain low while the PLL is in active reset."
+  expected: "reset is inactive before expecting lock."
+  p_hit: 0.45
+  p_exclude: 0.55
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.048
+- node: P2
+  type: decision
+  check: "Measure the reference clock at the PLL input and verify it is stable before lock is expected."
+  why: "a released PLL with unstable reference clock should not assert lock."
+  expected: "reference clock is present, within expected frequency/jitter, and stable."
+  p_hit: 0.55
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.033
+- node: P3
+  type: action
+  check: "Account for lock-filter latency and loss-of-lock filtering before declaring failure."
+  why: "the external locked signal is digitally filtered and is not an instantaneous analog indicator."
+  expected: "lock asserts only after the documented stable-clock filter window."
+  p_hit: 0.45
+  p_exclude: 0.45
+  time_min: 10
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.034
+- node: P4
+  type: terminal
+  check: "Gate downstream reset release from a synchronized and validated lock condition."
+  why: "logic released before stable PLL lock can create misleading downstream failures."
+  expected: "downstream logic exits reset only after lock is valid in the target clock domain."
+  p_hit: 0.40
+  p_exclude: 0.30
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.014
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Intel's KB describes three lock-output stages: low during active reset, low while the released PLL lacks a stable input clock, and assertion only after a digital filter sees the internal lock condition for the required consecutive cycles; loss-of-lock is also filtered."
+  evidence:
+  - "the KB explicitly ties lock low to active reset and unstable reference clock"
+  - "the KB explains that the external locked signal is digitally filtered"
+coverage:
+  result: hit
+  matched_nodes:
+  - P1
+  - P2
+  - P3
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "PLL lock should be modeled as a staged state machine, not a binary wire with zero latency."
+  - "Downstream reset analysis depends on proven reference clock and lock-filter behavior."
+  what_to_change_in_assets:
+  - "Clock/reset models should include PLL reset, reference stability, and lock filtering."
+  anti_pattern_observed:
+  - "treating a delayed lock signal as proof of bad silicon or bad PLL settings"
+promotion:
+  proposed_assets:
+  - "LM-CLOCK-RESET-TREE"
+  regression_candidate: "REG-INTEL-FPGA-IOPLL-LOCK-RESET-CLOCK-FIRST"
+status: reviewed

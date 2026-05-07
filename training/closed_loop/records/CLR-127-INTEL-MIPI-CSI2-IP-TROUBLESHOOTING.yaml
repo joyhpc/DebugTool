@@ -1,0 +1,93 @@
+id: CLR-127
+quality_tier: T0
+source:
+  title: "Intel/Altera MIPI CSI-2 IP User Guide - Troubleshooting"
+  url: "https://www.intel.com/content/www/us/en/docs/programmable/813926/25-1/troubleshooting.html"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The Intel/Altera MIPI CSI-2 IP troubleshooting summary was revealed after drafting IP-parameter and receiver-register branches."
+blind_input:
+  symptom: "Intel/Altera FPGA MIPI CSI-2 IP integration produces no valid video packets or wrong image characteristics."
+  background: "MIPI D-PHY and CSI-2 IP are integrated with external MIPI source/sink and expose receiver registers."
+  observations:
+  - "build-time IP configuration must match the external source"
+  - "registers may show video data type, virtual channel, width, height, and zero packet counters"
+  constraints:
+  - "do not change application image processing until IP configuration and receiver counters are checked"
+predicted_debug_tree:
+- node: I1
+  type: decision
+  check: "Compare D-PHY and CSI-2 IP build-time parameters with the external source or sink."
+  why: "wrong IP lane/count/clock/protocol settings can prevent valid packets before runtime software sees anything."
+  expected: "IP configuration matches source lane rate, lane count, VC, data type, and timing."
+  p_hit: 0.55
+  p_exclude: 0.55
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.024
+- node: I2
+  type: decision
+  check: "Read receiver registers for packet count, data type, VC, width, height, and color pattern."
+  why: "zero registers indicate no valid packets; nonzero wrong fields point to packet interpretation."
+  expected: "registers either show no valid packets or reveal wrong packet metadata."
+  p_hit: 0.60
+  p_exclude: 0.65
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.031
+- node: I3
+  type: action
+  check: "If no valid packets are present, branch down to D-PHY clocks, resets, PPI status, and lane state."
+  why: "CSI IP cannot decode packets the PHY never receives."
+  expected: "PPI/D-PHY status explains zero packet counters."
+  p_hit: 0.50
+  p_exclude: 0.55
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.019
+- node: I4
+  type: terminal
+  check: "If packet metadata is valid, branch upward to AXI/video interface width, height, and downstream consumer."
+  why: "valid packets shift the failure to output integration."
+  expected: "downstream video path owns the remaining failure."
+  p_hit: 0.40
+  p_exclude: 0.45
+  time_min: 35
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.014
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Intel/Altera's MIPI CSI-2 IP troubleshooting guidance emphasizes matching D-PHY/CSI-2 build-time configuration to the external source/sink, checking registers for expected data type and virtual channel, treating zero register values as no valid packets, and checking width/height/color-pattern registers for recent video characteristics."
+  evidence:
+  - "the guide highlights build-time configuration matching"
+  - "the guide distinguishes zero valid-packet registers from wrong packet metadata"
+coverage:
+  result: hit
+  matched_nodes:
+  - I1
+  - I2
+  - I3
+  - I4
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "FPGA MIPI IP debug is partly static parameter matching and partly runtime register evidence."
+  - "Zero packet counters are not equivalent to wrong image data."
+  what_to_change_in_assets:
+  - "Add FPGA/IP register evidence to the MIPI CSI no-frame signature."
+  anti_pattern_observed:
+  - "debugging downstream image format while the CSI IP has not received valid packets"
+promotion:
+  proposed_assets:
+  - "SIG-MIPI-CSI-NO-FRAME-PACKET-COUNTERS-FIRST"
+  - "LM-MIPI-DSI-CSI-DPHY"
+  regression_candidate: "REG-MIPI-FPGA-CSI-IP-REGISTER-EVIDENCE"
+status: reviewed

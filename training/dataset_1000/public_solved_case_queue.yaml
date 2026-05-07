@@ -1,0 +1,144 @@
+target_count: 300
+current_candidates: 20
+source_rule: "Use public records with enough symptom/investigation/resolution detail for blind-tree comparison. Queue entries are not reviewed until converted to closed-loop records."
+candidates:
+- id: PUB-001
+  title: "STM32H7 HSE not starting on some boards"
+  url: "https://community.st.com/t5/stm32-mcus-products/stm32h7-hse-not-starting-on-some-boards/td-p/886337"
+  domain: clock_reset
+  source_type: public_solved_case
+  expected_lesson: "oscillator symptoms can be misleading; verify non-clock causes and avoid probe loading"
+  status: queued_blind
+- id: PUB-002
+  title: "STM32 SPI always returns 0xFF"
+  url: "https://community.st.com/t5/stm32-mcus-boards-and-hardware/spi-always-returns-0xff/td-p/651283"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "all-0xFF SPI requires link-layer and transaction-shape proof before sensor configuration"
+  status: queued_blind
+- id: PUB-003
+  title: "STM32 DMA SPI RX not receiving data"
+  url: "https://community.st.com/t5/stm32-mcus-products/dma-spi-rx-not-receiving-data/td-p/675254"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "DMA SPI receive requires clocks, transaction length, and buffer ownership to align"
+  status: queued_blind
+- id: PUB-004
+  title: "SN65DSI83EVM I2C SDA line held low"
+  url: "https://e2e.ti.com/support/interface-group/interface/f/interface-forum/988490/sn65dsi83evm-i2c-sda-line-held-low"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "persistent SDA low after reset can point to device damage or device-side fault"
+  status: queued_blind
+- id: PUB-005
+  title: "MSP430G2553 I2C SDA held low on some power-ups"
+  url: "https://e2e.ti.com/support/microcontrollers/msp-low-power-microcontrollers-group/msp430/f/msp-low-power-microcontroller-forum/646168/msp430g2553-i2c-sda-held-low-on-2-of-power-ups"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "partial reset and startup sequencing can leave I2C targets holding SDA"
+  status: queued_blind
+- id: PUB-006
+  title: "STM32 built-in DFU unreliable due HSE crystal"
+  url: "https://community.st.com/t5/stm32-mcus/dfu-mode-with-system-bootloader-is-not-working-while-usb-does/ta-p/49473"
+  domain: clock_reset
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "USB bootloader behavior can depend on external clock quality and startup"
+  status: queued_blind
+- id: PUB-007
+  title: "STM32F373 HSE is not working"
+  url: "https://community.st.com/t5/stm32-mcus-products/hse-of-stm32f373rc-is-not-working/td-p/363461"
+  domain: clock_reset
+  source_type: public_solved_case
+  expected_lesson: "HSE does not start automatically; startup/configuration path must be proven"
+  status: queued_blind
+- id: PUB-008
+  title: "Why STM32 does not start"
+  url: "https://community.st.com/t5/stm32-mcus/why-my-stm32-doesn-t-start/ta-p/49367"
+  domain: power
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "boot failures can come from power mode, BOOT0, option bytes, clock, or external memory setup"
+  status: queued_blind
+- id: PUB-009
+  title: "Troubleshoot load capacitance crystal not starting"
+  url: "https://electronics.stackexchange.com/questions/196280/troubleshoot-load-capacitance-crystal-not-starting"
+  domain: clock_reset
+  source_type: public_solved_case
+  expected_lesson: "inject or substitute clock to separate oscillator loop from downstream IC behavior"
+  status: queued_blind
+- id: PUB-010
+  title: "STM32L433 LSE oscillator will not start reliably"
+  url: "https://electronics.stackexchange.com/questions/293524/lse-32-768-khz-oscillator-on-stm32l433-wont-start-reliably"
+  domain: clock_reset
+  source_type: public_solved_case
+  expected_lesson: "flux residue or leakage can create marginal 32 kHz oscillator startup"
+  status: reviewed
+- id: PUB-011
+  title: "ATtiny45 I2C master SDA stuck low"
+  url: "https://electronics.stackexchange.com/questions/58944/setting-up-an-attiny45-as-i2c-master-sda-stuck-low"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "MCU peripheral mode and pin direction can hold SDA low even with no slave attached"
+  status: queued_blind
+- id: PUB-012
+  title: "I2C communication will not start unless SDA pullup is reinserted"
+  url: "https://electronics.stackexchange.com/questions/228270/i2c-communication-wont-start-unless-sda-pullup-resistor-is-reinserted"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "bus startup state and timeout behavior can dominate apparent I2C initialization failures"
+  status: queued_blind
+- id: PUB-013
+  title: "I2C slave not ACKing quickly enough"
+  url: "https://electronics.stackexchange.com/questions/388929/i2c-slave-not-acking-quickly-enough"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "ACK timing, missing ninth clock, and stuck SDA must be evaluated from waveform timing"
+  status: queued_blind
+- id: PUB-014
+  title: "I2C issues SCL stuck high after reset during activity"
+  url: "https://electronics.stackexchange.com/questions/400269/i2c-issues-scl-is-stuck-high"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "reset during I2C activity can desynchronize master and slave; recovery clocks or target reset may be needed"
+  status: queued_blind
+- id: PUB-015
+  title: "I2C bus getting locked up on single master single slave system"
+  url: "https://electronics.stackexchange.com/questions/469547/i2c-bus-getting-locked-up-on-single-master-single-slave-system"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "if recovery clocks do not release SDA, branch to peripheral state or driver/peripheral alternative"
+  status: reviewed
+- id: PUB-016
+  title: "I2C freezing with SDA stuck low and moisture deposits"
+  url: "https://electronics.stackexchange.com/questions/381672/i2c-twi-freezing-with-sda-stuck-at-low"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "moisture/contamination and GPIO-powered modules can damage or clamp I2C lines"
+  status: reviewed
+- id: PUB-017
+  title: "SPI interface returns only ones 0xFF"
+  url: "https://electronics.stackexchange.com/questions/379268/spi-interface-returns-only-ones-0xff"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "constant 0xFF can be wrong device node, open MISO, or missing loopback proof"
+  status: reviewed
+- id: PUB-018
+  title: "ESP32-S3 DPS310 SPI communication returns only 0xFF"
+  url: "https://electronics.stackexchange.com/questions/749106/esp32-s3-dps310-breakout-spi-communication-returns-only-0xff"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "driver transaction construction can make SPI API success meaningless"
+  status: reviewed_existing
+- id: PUB-019
+  title: "I2C communication not working with Xilinx Zedboard"
+  url: "https://electronics.stackexchange.com/questions/565650/i2c-communication-not-working"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "receiver low-level threshold and pull-up domains can break ACK recognition"
+  status: reviewed
+- id: PUB-020
+  title: "I2C SDA and SCL lines pausing between GND and VDD"
+  url: "https://electronics.stackexchange.com/questions/719211/i2c-sda-and-scl-lines-pausing-between-gnd-and-vdd"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "level shifter bias behavior can create non-rail intermediate I2C levels"
+  status: queued_blind

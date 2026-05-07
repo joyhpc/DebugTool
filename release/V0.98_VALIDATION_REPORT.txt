@@ -1,0 +1,40 @@
+V0.98 Validation Report
+=======================
+
+Environment:
+  Windows Python 3.11.0
+  PyYAML available from requirements.txt
+
+1) Python compile
+PASS
+Command:
+  python -m py_compile scripts\output_validator.py scripts\run_output_validator_smoke.py scripts\lint_assets.py scripts\regression_suite_linter.py scripts\regression_runner.py scripts\lint_closed_loop.py
+
+2) Asset lint
+PASS: 23 assets
+Command:
+  python scripts\lint_assets.py
+Warnings:
+  CASE-LA1010-USB-CABLE has no misleading_paths.
+  Several legacy link_models still have no counterexamples.
+
+3) Regression suite structure
+PASS: 13 tests
+Command:
+  python scripts\regression_suite_linter.py
+
+4) Output validator smoke
+PASS: 5 cases
+Command:
+  python scripts\run_output_validator_smoke.py
+
+5) Closed-loop training lint
+PASS: 5 records
+Command:
+  python scripts\lint_closed_loop.py
+
+Current status:
+  V0.98 closed-loop debug training seed.
+  25 public debug candidates queued.
+  5 closed-loop records reviewed.
+  Target remains 100 reviewed records before claiming broad calibration.

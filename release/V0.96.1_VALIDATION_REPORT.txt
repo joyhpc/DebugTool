@@ -1,0 +1,56 @@
+V0.96.1 Validation Report
+=========================
+
+Environment:
+  Windows Python 3.11.0
+  PyYAML installed from requirements.txt for asset/regression linting
+
+1) Python compile
+PASS
+Command:
+  python -m py_compile scripts\output_validator.py scripts\run_output_validator_smoke.py scripts\lint_assets.py scripts\regression_suite_linter.py scripts\regression_runner.py
+
+2) Hot-swap architecture-first example
+PASS
+Command:
+  python scripts\output_validator.py --mode architecture_first --file examples\founder_pilot_hotswap_architecture_first.md
+
+3) LA1010 fast-path example
+PASS with expected warning
+Command:
+  python scripts\output_validator.py --mode fast_path --file examples\founder_pilot_la1010_fast_path.md
+Warning:
+  mermaid decision tree found but no node table is available for id consistency check
+Reason:
+  fast_path_output.md currently does not require a Node Explanation Table.
+
+4) Output validator smoke runner
+PASS: 5 cases
+Command:
+  python scripts\run_output_validator_smoke.py
+Cases:
+  standard_good.md: expected pass
+  architecture_hotswap_good.md: expected pass
+  unsafe_phrase_mitigated_good.md: expected pass
+  standard_bad_expected_fail.md: expected fail
+  unsafe_phrase_bad_expected_fail.md: expected fail
+
+5) Asset lint
+PASS: 17 assets
+Command:
+  python scripts\lint_assets.py
+Warnings:
+  CASE-LA1010-USB-CABLE has no misleading_paths.
+  Several legacy link_models still have no counterexamples.
+Interpretation:
+  These warnings remain non-blocking and identify next asset-deepening work after real pilot evidence.
+
+6) Regression suite structure
+PASS: 8 tests
+Command:
+  python scripts\regression_suite_linter.py
+
+Current status:
+  V0.96.1 founder-pilot run readiness.
+  Not team-wide pilot ready.
+  Not V1.0.

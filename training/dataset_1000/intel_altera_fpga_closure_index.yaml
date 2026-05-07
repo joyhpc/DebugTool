@@ -1,0 +1,34 @@
+focus_area: intel_altera_fpga
+target_count: 100
+reviewed_cases: 9
+case_to_records:
+- case_id: INTEL-FPGA-001
+  records:
+  - CLR-112
+- case_id: INTEL-FPGA-002
+  records:
+  - CLR-113
+- case_id: INTEL-FPGA-003
+  records:
+  - CLR-114
+- case_id: INTEL-FPGA-004
+  records:
+  - CLR-115
+- case_id: INTEL-FPGA-005
+  records:
+  - CLR-116
+- case_id: INTEL-FPGA-006
+  records:
+  - CLR-117
+- case_id: INTEL-FPGA-007
+  records:
+  - CLR-118
+- case_id: INTEL-FPGA-008
+  records:
+  - CLR-119
+- case_id: INTEL-FPGA-009
+  records:
+  - CLR-120
+limits:
+- "Official Intel/Altera documents are authoritative priors, not solved field cases."
+- "Intel forum entries are public/vendor-forum records unless the user's own board evidence later validates the same pattern."

@@ -1,0 +1,45 @@
+target_count: 1000
+version: 0.99.5
+tiers:
+- id: T0
+  name: official_source_prior
+  target: 300
+  description: "Vendor app notes, design guides, datasheets, official checklists, and training articles."
+  promotion_limit: "candidate or supporting evidence only unless repeated by solved cases."
+- id: T1
+  name: public_solved_case
+  target: 300
+  description: "Public solved debug records with symptom, investigation, and final resolution."
+  promotion_limit: "candidate case_record or signature; stronger if multiple independent solved records repeat."
+- id: T2
+  name: vendor_forum_fae_resolved
+  target: 150
+  description: "Vendor forum cases where FAE/vendor staff give a concrete resolution or bounded root-cause path."
+  promotion_limit: "case_record candidate unless evidence is complete."
+- id: T3
+  name: real_project_reviewed
+  target: 100
+  description: "Anonymized real project cases processed through the real project intake workflow."
+  promotion_limit: "validated_real_case when evidence-backed and reviewed."
+- id: T4
+  name: counterexample_near_hit_miss
+  target: 100
+  description: "Records where the predicted tree missed, nearly missed, or took a misleading route."
+  promotion_limit: "counterexamples, regression, and link-model refinements."
+- id: T5
+  name: safety_high_risk
+  target: 50
+  description: "Hot-swap, high current, destructive reproduction, backfeed, ESD, thermal, battery, and production-risk cases."
+  promotion_limit: "safety signatures and hard output-validator rules."
+minimum_requirements:
+  solved_or_real_cases: 400
+  near_hit_or_miss: 150
+  regression_backed: 100
+  real_project_cases: 100
+  safety_cases: 50
+quality_gates:
+- "Every reviewed record must include probability/time-cost fields."
+- "Every solved-case record must preserve the actual resolution and what evidence proved it."
+- "Every near_hit or miss must produce an asset change, counterexample, or regression candidate."
+- "Every destructive or high-risk scenario must include a safety gate before reproduction."
+- "No official-source section closure can be called a validated real case."

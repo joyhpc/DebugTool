@@ -1,0 +1,103 @@
+id: CLR-004
+source:
+  title: ESP32-S3 + DPS310 SPI Communication Returns Only 0xFF
+  url: https://electronics.stackexchange.com/questions/749106/esp32-s3-dps310-breakout-spi-communication-returns-only-0xff
+  type: public_forum
+domain: digital_interface
+blindness_note: Public answer points toward an ESP-IDF transaction construction issue; the blind tree intentionally starts with electrical/protocol isolation.
+blind_input:
+  symptom: SPI register reads from pressure sensor return 0xFF for all registers
+  background: ESP32-S3 master, DPS310 sensor breakout, multiple wiring attempts and SPI modes tried
+  observations:
+  - expected chip ID is not read
+  - all registers return 0xFF
+  - software API reports transaction success
+  constraints:
+  - avoid configuring sensor further until a known reset-default register or chip ID reads correctly
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: Is MISO physically high/open, or is the transaction buffer/API returning 0xFF?
+  why: all-ones can mean open MISO, unselected slave, wrong protocol, or software transaction misuse
+  expected: scope/logic analyzer distinguishes bus value from driver buffer issue
+  p_hit: 0.45
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.029
+- node: A1
+  type: action
+  check: Capture CS, SCK, MOSI, and MISO for one chip-ID read
+  why: validates that slave is selected and clocks are present
+  expected: MISO should change if command framing and power/reset are valid
+  p_hit: 0.50
+  p_exclude: 0.45
+  time_min: 15
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.024
+- node: D2
+  type: decision
+  check: Are power, ground, reset, CS polarity, SPI mode, and command length valid?
+  why: basic prerequisites must be proven before driver-level fixes
+  expected: any mismatch explains all-ones response
+  p_hit: 0.45
+  p_exclude: 0.50
+  time_min: 20
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.028
+- node: A2
+  type: action
+  check: "Review SPI API framing: command phase, dummy clocks, tx/rx buffer fields, and flags"
+  why: MCU driver can transmit a different transaction than intended
+  expected: corrected API use reads non-0xFF chip ID if wiring is valid
+  p_hit: 0.55
+  p_exclude: 0.30
+  time_min: 25
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.023
+- node: T1
+  type: terminal
+  check: Only after chip ID is stable, proceed to sensor configuration
+  why: prevents debugging higher-level sensor settings on a dead link
+  expected: link-layer proof gates all later work
+  p_hit: 0.20
+  p_exclude: 0.20
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.020
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: The public answer focused on ESP-IDF transaction construction, recommending use of the command/addressing phase rather than mixing one-byte command into tx_data with inappropriate flags.
+  evidence:
+  - all-0xFF was not enough to prove hardware failure
+  - transaction API framing affected whether the intended register read occurred
+coverage:
+  result: near_hit
+  matched_nodes:
+  - A2
+  - T1
+  missing_nodes:
+  - explicit ESP-IDF cmd/address phase check as a high-priority branch
+meta_reflection:
+  what_generalized:
+  - all-0xFF SPI reads should split electrical-open, chip-select/protocol, and driver-framing branches
+  - software transaction success is not proof that the intended bus transaction happened
+  what_to_change_in_assets:
+  - deepen LM-SPI-TRANSACTION with API transaction-shape validation
+  - add signature for SPI all-0xFF / open MISO / unselected slave / transaction misuse
+  anti_pattern_observed:
+  - changing SPI modes repeatedly without proving the actual bus transaction shape
+promotion:
+  proposed_assets:
+  - DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  regression_candidate: REG-SPI-ALL-FF-LINK-LAYER-FIRST
+status: reviewed

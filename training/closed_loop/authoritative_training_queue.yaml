@@ -1,0 +1,705 @@
+target_count: 100
+current_units: 100
+authority_rule: Use vendor application notes, official design guides, datasheets, official technical articles, and official
+  debug checklists as queue sources. A queued unit is not a validated case until converted into a reviewed closed-loop record.
+units:
+- id: AUTH-001
+  title: TI SCPA069 I2C stuck bus
+  url: https://www.ti.com/lit/an/scpa069/scpa069.pdf
+  source_type: vendor_app_note
+  domain: digital_interface
+  focus: SDA stuck low while SCL is high
+  status: processed
+- id: AUTH-002
+  title: TI SCPA069 false clock edge
+  url: https://www.ti.com/lit/an/scpa069/scpa069.pdf
+  source_type: vendor_app_note
+  domain: digital_interface
+  focus: controller and target desynchronize when only one side sees a false SCL edge
+  status: processed
+- id: AUTH-003
+  title: TI SCPA069 stuck bus root causes
+  url: https://www.ti.com/lit/an/scpa069/scpa069.pdf
+  source_type: vendor_app_note
+  domain: digital_interface
+  focus: crosstalk, EMI, hot insertion, and bad power-on-reset as stuck bus causes
+  status: processed
+- id: AUTH-004
+  title: TI SCPA069 clock-pulse recovery
+  url: https://www.ti.com/lit/an/scpa069/scpa069.pdf
+  source_type: vendor_app_note
+  domain: digital_interface
+  focus: recover stuck SDA by issuing clocks only after safety and ownership are clear
+  status: processed
+- id: AUTH-005
+  title: TI SCPA069 I2C buffer recovery
+  url: https://www.ti.com/lit/an/scpa069/scpa069.pdf
+  source_type: vendor_app_note
+  domain: digital_interface
+  focus: hot-swap I2C buffer with stuck bus recovery as mitigation
+  status: processed
+- id: AUTH-006
+  title: Microchip TB3331 serial debug overview
+  url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ApplicationNotes/ApplicationNotes/TB3331-Debug-SerialInterf-EmbeddedSystems-DS90003331.pdf
+  source_type: vendor_app_note
+  domain: digital_interface
+  focus: separate physical layer, protocol layer, and firmware transaction assumptions
+  status: processed
+- id: AUTH-007
+  title: Microchip TB3331 hidden shorts
+  url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ApplicationNotes/ApplicationNotes/TB3331-Debug-SerialInterf-EmbeddedSystems-DS90003331.pdf
+  source_type: vendor_app_note
+  domain: digital_interface
+  focus: two push-pull outputs driving one line create hidden short-circuit faults
+  status: processed
+- id: AUTH-008
+  title: Microchip TB3331 I2C distance limits
+  url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ApplicationNotes/ApplicationNotes/TB3331-Debug-SerialInterf-EmbeddedSystems-DS90003331.pdf
+  source_type: vendor_app_note
+  domain: digital_interface
+  focus: long wiring and bus capacitance can invalidate I2C assumptions
+  status: processed
+- id: AUTH-009
+  title: Microchip TB3331 SPI tri-state assumption
+  url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ApplicationNotes/ApplicationNotes/TB3331-Debug-SerialInterf-EmbeddedSystems-DS90003331.pdf
+  source_type: vendor_app_note
+  domain: digital_interface
+  focus: inactive SPI devices must release shared MISO
+  status: processed
+- id: AUTH-010
+  title: Microchip TB3331 logic analyzer use
+  url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ApplicationNotes/ApplicationNotes/TB3331-Debug-SerialInterf-EmbeddedSystems-DS90003331.pdf
+  source_type: vendor_app_note
+  domain: measurement
+  focus: prove actual bus waveforms instead of trusting API success
+  status: processed
+- id: AUTH-011
+  title: Microchip timing device I2C SPI debug checklist
+  url: https://ww1.microchip.com/downloads/aemDocuments/documents/TCG/ApplicationNotes/ApplicationNotes/2019_0905debuggingi2candspi4.pdf
+  source_type: official_checklist
+  domain: digital_interface
+  focus: read an ID register before higher-level configuration
+  status: processed
+- id: AUTH-012
+  title: Microchip timing device interface pins
+  url: https://ww1.microchip.com/downloads/aemDocuments/documents/TCG/ApplicationNotes/ApplicationNotes/2019_0905debuggingi2candspi4.pdf
+  source_type: official_checklist
+  domain: digital_interface
+  focus: interface-select pins can make the expected bus inactive
+  status: processed
+- id: AUTH-013
+  title: Microchip timing device power-up sequence
+  url: https://ww1.microchip.com/downloads/aemDocuments/documents/TCG/ApplicationNotes/ApplicationNotes/2019_0905debuggingi2candspi4.pdf
+  source_type: official_checklist
+  domain: clock_reset
+  focus: power-up and reset timing must be checked before bus protocol tuning
+  status: processed
+- id: AUTH-014
+  title: Microchip timing device all 0xFF
+  url: https://ww1.microchip.com/downloads/aemDocuments/documents/TCG/ApplicationNotes/ApplicationNotes/2019_0905debuggingi2candspi4.pdf
+  source_type: official_checklist
+  domain: digital_interface
+  focus: all 0xFF readback can indicate timing, open bus, or write-cycle wait issues
+  status: processed
+- id: AUTH-015
+  title: Microchip timing device schematic match
+  url: https://ww1.microchip.com/downloads/aemDocuments/documents/TCG/ApplicationNotes/ApplicationNotes/2019_0905debuggingi2candspi4.pdf
+  source_type: official_checklist
+  domain: digital_interface
+  focus: schematic and physical hardware must match before firmware diagnosis
+  status: processed
+- id: AUTH-016
+  title: ST AN2867 oscillator startup
+  url: https://www.st.com/resource/en/application_note/an2867-oscillator-design-guide-for-stm8afals-stm32-mcus-and-mpus-stmicroelectronics.pdf
+  source_type: vendor_app_note
+  domain: clock_reset
+  focus: external crystal startup margin and transconductance
+  status: processed
+- id: AUTH-017
+  title: ST AN2867 load capacitance
+  url: https://www.st.com/resource/en/application_note/an2867-oscillator-design-guide-for-stm8afals-stm32-mcus-and-mpus-stmicroelectronics.pdf
+  source_type: vendor_app_note
+  domain: clock_reset
+  focus: load capacitance mismatch shifts startup and frequency behavior
+  status: processed
+- id: AUTH-018
+  title: ST AN2867 crystal ESR
+  url: https://www.st.com/resource/en/application_note/an2867-oscillator-design-guide-for-stm8afals-stm32-mcus-and-mpus-stmicroelectronics.pdf
+  source_type: vendor_app_note
+  domain: clock_reset
+  focus: ESR limit affects oscillator gain margin
+  status: processed
+- id: AUTH-019
+  title: ST AN2867 oscillator layout
+  url: https://www.st.com/resource/en/application_note/an2867-oscillator-design-guide-for-stm8afals-stm32-mcus-and-mpus-stmicroelectronics.pdf
+  source_type: vendor_app_note
+  domain: layout_emi
+  focus: crystal and load capacitor loop area must be small and symmetric
+  status: processed
+- id: AUTH-020
+  title: ST AN2867 oscillator measurement loading
+  url: https://www.st.com/resource/en/application_note/an2867-oscillator-design-guide-for-stm8afals-stm32-mcus-and-mpus-stmicroelectronics.pdf
+  source_type: vendor_app_note
+  domain: measurement
+  focus: probing can disturb the oscillator being measured
+  status: processed
+- id: AUTH-021
+  title: Microchip AN849 oscillator no startup
+  url: https://www.microchip.com/en-us/application-notes/an849
+  source_type: vendor_app_note
+  domain: clock_reset
+  focus: temperature and low supply voltage reduce oscillator gain
+  status: processed
+- id: AUTH-022
+  title: Microchip AN849 harmonic oscillation
+  url: https://www.microchip.com/en-us/application-notes/an849
+  source_type: vendor_app_note
+  domain: clock_reset
+  focus: excess gain can force oscillation at unwanted harmonic
+  status: processed
+- id: AUTH-023
+  title: Microchip AN849 crystal overdrive
+  url: https://www.microchip.com/en-us/application-notes/an849
+  source_type: vendor_app_note
+  domain: clock_reset
+  focus: incorrect oscillator component selection can overdrive the crystal
+  status: processed
+- id: AUTH-024
+  title: Microchip AN849 clock mode selection
+  url: https://www.microchip.com/en-us/application-notes/an849
+  source_type: vendor_app_note
+  domain: clock_reset
+  focus: wrong MCU clock mode can waste power or prevent reliable startup
+  status: processed
+- id: AUTH-025
+  title: Microchip AN849 startup across corners
+  url: https://www.microchip.com/en-us/application-notes/an849
+  source_type: vendor_app_note
+  domain: production
+  focus: oscillator must be checked across voltage, temperature, and process variation
+  status: processed
+- id: AUTH-026
+  title: Microchip AN2648 32 kHz selection
+  url: https://www.microchip.com/en-us/application-notes/an2648-1
+  source_type: vendor_app_note
+  domain: clock_reset
+  focus: select crystal based on oscillator module compatibility
+  status: processed
+- id: AUTH-027
+  title: Microchip AN2648 32 kHz test
+  url: https://www.microchip.com/en-us/application-notes/an2648-1
+  source_type: vendor_app_note
+  domain: measurement
+  focus: test the crystal in the actual application instead of by nominal value only
+  status: processed
+- id: AUTH-028
+  title: Microchip AN2648 PCB layout
+  url: https://www.microchip.com/en-us/application-notes/an2648-1
+  source_type: vendor_app_note
+  domain: layout_emi
+  focus: 32 kHz crystal layout parasitics can dominate startup reliability
+  status: processed
+- id: AUTH-029
+  title: Microchip AN2648 load capacitors
+  url: https://www.microchip.com/en-us/application-notes/an2648-1
+  source_type: vendor_app_note
+  domain: clock_reset
+  focus: capacitor tolerance and stray capacitance change effective crystal load
+  status: processed
+- id: AUTH-030
+  title: Microchip AN2648 low-power oscillator
+  url: https://www.microchip.com/en-us/application-notes/an2648-1
+  source_type: vendor_app_note
+  domain: clock_reset
+  focus: low-power oscillator choices trade drive margin against current
+  status: processed
+- id: AUTH-031
+  title: Microchip design troubleshooting oscillator
+  url: https://ww1.microchip.com/downloads/en/DeviceDoc/8-bit-PICAVR-DesignTroubleshootingChklist-DS40002349.pdf
+  source_type: official_checklist
+  domain: clock_reset
+  focus: device fails to start when external oscillator is absent or misconfigured
+  status: processed
+- id: AUTH-032
+  title: Microchip design troubleshooting CLKOUT
+  url: https://ww1.microchip.com/downloads/en/DeviceDoc/8-bit-PICAVR-DesignTroubleshootingChklist-DS40002349.pdf
+  source_type: official_checklist
+  domain: measurement
+  focus: enable clock output as a low-cost clock proof
+  status: processed
+- id: AUTH-033
+  title: Microchip design troubleshooting fuses
+  url: https://ww1.microchip.com/downloads/en/DeviceDoc/8-bit-PICAVR-DesignTroubleshootingChklist-DS40002349.pdf
+  source_type: official_checklist
+  domain: clock_reset
+  focus: configuration bits can make timing symptoms look like hardware failure
+  status: processed
+- id: AUTH-034
+  title: Microchip design troubleshooting high-impedance probe
+  url: https://ww1.microchip.com/downloads/en/DeviceDoc/8-bit-PICAVR-DesignTroubleshootingChklist-DS40002349.pdf
+  source_type: official_checklist
+  domain: measurement
+  focus: oscillator pins require high-impedance probing to avoid loading
+  status: processed
+- id: AUTH-035
+  title: Microchip design troubleshooting fail-safe clock
+  url: https://ww1.microchip.com/downloads/en/DeviceDoc/8-bit-PICAVR-DesignTroubleshootingChklist-DS40002349.pdf
+  source_type: official_checklist
+  domain: clock_reset
+  focus: clock fail-safe can mask primary oscillator failure
+  status: processed
+- id: AUTH-036
+  title: ST AN4661 STM32 power pins
+  url: https://www.st.com/resource/en/application_note/dm00164549.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: all MCU supply and ground pins must be connected with low impedance
+  status: processed
+- id: AUTH-037
+  title: ST AN4661 decoupling placement
+  url: https://www.st.com/resource/en/application_note/dm00164549.pdf
+  source_type: vendor_app_note
+  domain: layout_emi
+  focus: decoupling capacitors close to supply pins reduce transient drops
+  status: processed
+- id: AUTH-038
+  title: ST AN4661 ground structure
+  url: https://www.st.com/resource/en/application_note/dm00164549.pdf
+  source_type: vendor_app_note
+  domain: layout_emi
+  focus: ground return loops and power loops affect EMI and stability
+  status: processed
+- id: AUTH-039
+  title: ST AN4661 noisy block separation
+  url: https://www.st.com/resource/en/application_note/dm00164549.pdf
+  source_type: vendor_app_note
+  domain: layout_emi
+  focus: separate noisy high-current blocks from low-level sensitive circuits
+  status: processed
+- id: AUTH-040
+  title: ST AN4661 multilayer ground plane
+  url: https://www.st.com/resource/en/application_note/dm00164549.pdf
+  source_type: vendor_app_note
+  domain: layout_emi
+  focus: ground and power planes improve decoupling and shielding
+  status: processed
+- id: AUTH-041
+  title: ST AN5711 STM32H5 decoupling
+  url: https://www.st.com/resource/en/application_note/an5711-getting-started-with-stm32h5-mcu-hardware-development-stmicroelectronics.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: adequate power decoupling prevents excessive power noise and ground bounce
+  status: processed
+- id: AUTH-042
+  title: ST AN5711 BGA decoupling placement
+  url: https://www.st.com/resource/en/application_note/an5711-getting-started-with-stm32h5-mcu-hardware-development-stmicroelectronics.pdf
+  source_type: vendor_app_note
+  domain: layout_emi
+  focus: BGA packages may need capacitors on the opposite side of the PCB
+  status: processed
+- id: AUTH-043
+  title: ST AN5711 wide short via
+  url: https://www.st.com/resource/en/application_note/an5711-getting-started-with-stm32h5-mcu-hardware-development-stmicroelectronics.pdf
+  source_type: vendor_app_note
+  domain: layout_emi
+  focus: wide short traces and vias reduce decoupling inductance
+  status: processed
+- id: AUTH-044
+  title: ST AN5711 power schemes
+  url: https://www.st.com/resource/en/application_note/an5711-getting-started-with-stm32h5-mcu-hardware-development-stmicroelectronics.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: MCU package power scheme must match board supply implementation
+  status: processed
+- id: AUTH-045
+  title: ST AN5711 ground bounce
+  url: https://www.st.com/resource/en/application_note/an5711-getting-started-with-stm32h5-mcu-hardware-development-stmicroelectronics.pdf
+  source_type: vendor_app_note
+  domain: measurement
+  focus: dynamic current spikes require waveform evidence near the pins
+  status: processed
+- id: AUTH-046
+  title: TI SNVA559 output ripple measurement
+  url: https://www.ti.com/lit/an/snva559c/snva559c.pdf
+  source_type: vendor_app_note
+  domain: measurement
+  focus: differential measurement rejects common-mode pickup in switching ripple tests
+  status: processed
+- id: AUTH-047
+  title: TI SNVA559 scope ground lead pickup
+  url: https://www.ti.com/lit/an/snva559c/snva559c.pdf
+  source_type: vendor_app_note
+  domain: measurement
+  focus: scope probe ground lead can act as an antenna for switching spikes
+  status: processed
+- id: AUTH-048
+  title: TI SNVA559 layout sensitivity
+  url: https://www.ti.com/lit/an/snva559c/snva559c.pdf
+  source_type: vendor_app_note
+  domain: layout_emi
+  focus: fast switching currents make physical layout part of the circuit
+  status: processed
+- id: AUTH-049
+  title: TI SNVA559 inductor current evidence
+  url: https://www.ti.com/lit/an/snva559c/snva559c.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: inductor current waveform separates saturation and control behavior
+  status: processed
+- id: AUTH-050
+  title: TI SNVA559 switch-node waveform
+  url: https://www.ti.com/lit/an/snva559c/snva559c.pdf
+  source_type: vendor_app_note
+  domain: measurement
+  focus: switch-node voltage reveals ringing, duty cycle, and startup behavior
+  status: processed
+- id: AUTH-051
+  title: TI SLVA630 buck ripple model
+  url: https://www.ti.com/lit/an/slva630a/slva630a.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: buck ripple depends on capacitor, ESR, switching frequency, duty cycle, and load
+  status: processed
+- id: AUTH-052
+  title: TI SLVA630 ESR contribution
+  url: https://www.ti.com/lit/an/slva630a/slva630a.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: ESR produces a separate output ripple component
+  status: processed
+- id: AUTH-053
+  title: TI SLVA630 ripple calculation
+  url: https://www.ti.com/lit/an/slva630a/slva630a.pdf
+  source_type: vendor_app_note
+  domain: measurement
+  focus: calculate expected ripple before changing regulator IC
+  status: processed
+- id: AUTH-054
+  title: TI SLVA630 SPICE validation
+  url: https://www.ti.com/lit/an/slva630a/slva630a.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: model and simulation can bound plausible ripple before lab changes
+  status: processed
+- id: AUTH-055
+  title: TI SLVA630 component sensitivity
+  url: https://www.ti.com/lit/an/slva630a/slva630a.pdf
+  source_type: vendor_app_note
+  domain: production
+  focus: capacitor tolerance and ESR spread affect production ripple
+  status: processed
+- id: AUTH-056
+  title: ADI AN-1144 ripple measurement
+  url: https://www.analog.com/en/resources/app-notes/an-1144.html
+  source_type: vendor_app_note
+  domain: measurement
+  focus: measure output ripple and switching transients with appropriate probing
+  status: processed
+- id: AUTH-057
+  title: ADI AN-1144 switching spur impact
+  url: https://www.analog.com/en/resources/app-notes/an-1144.html
+  source_type: vendor_app_note
+  domain: power
+  focus: switching supply ripple can degrade ADC spectrum performance
+  status: processed
+- id: AUTH-058
+  title: ADI AN-1144 LDO substitution tradeoff
+  url: https://www.analog.com/en/resources/app-notes/an-1144.html
+  source_type: vendor_app_note
+  domain: power
+  focus: replace-switcher-with-LDO decision trades efficiency for noise
+  status: processed
+- id: AUTH-059
+  title: ADI AN-1144 transient capture
+  url: https://www.analog.com/en/resources/app-notes/an-1144.html
+  source_type: vendor_app_note
+  domain: measurement
+  focus: switching transients require bandwidth-aware capture
+  status: processed
+- id: AUTH-060
+  title: ADI AN-1144 noise-sensitive rail
+  url: https://www.analog.com/en/resources/app-notes/an-1144.html
+  source_type: vendor_app_note
+  domain: analog
+  focus: load sensitivity determines whether ripple is actually a system fault
+  status: processed
+- id: AUTH-061
+  title: ADI AN-1119 buck layout
+  url: https://www.analog.com/en/resources/app-notes/an-1119.html
+  source_type: vendor_app_note
+  domain: layout_emi
+  focus: buck regulator PCB layout determines noise and emissions behavior
+  status: processed
+- id: AUTH-062
+  title: ADI AN-1119 high-current loops
+  url: https://www.analog.com/en/resources/app-notes/an-1119.html
+  source_type: vendor_app_note
+  domain: power
+  focus: input capacitor and switching FET loop area control voltage spikes
+  status: processed
+- id: AUTH-063
+  title: ADI AN-1119 bypass capacitor
+  url: https://www.analog.com/en/resources/app-notes/an-1119.html
+  source_type: vendor_app_note
+  domain: layout_emi
+  focus: bypass capacitors need low-inductance connection to active pins
+  status: processed
+- id: AUTH-064
+  title: ADI AN-1119 switching node
+  url: https://www.analog.com/en/resources/app-notes/an-1119.html
+  source_type: vendor_app_note
+  domain: measurement
+  focus: switch-node placement and size affect coupling into sensitive nodes
+  status: processed
+- id: AUTH-065
+  title: ADI AN-1119 low noise buck
+  url: https://www.analog.com/en/resources/app-notes/an-1119.html
+  source_type: vendor_app_note
+  domain: analog
+  focus: layout fixes can beat unnecessary part replacement for noise problems
+  status: processed
+- id: AUTH-066
+  title: ADI AN-149 loop compensation model
+  url: https://www.analog.com/media/en/technical-documentation/application-notes/an149fa.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: buck power stage has poles and zeros that compensation must respect
+  status: processed
+- id: AUTH-067
+  title: ADI AN-149 output capacitor impact
+  url: https://www.analog.com/media/en/technical-documentation/application-notes/an149fa.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: COUT and ESR shift loop phase and stability margin
+  status: processed
+- id: AUTH-068
+  title: ADI AN-149 Bode measurement
+  url: https://www.analog.com/media/en/technical-documentation/application-notes/an149fa.pdf
+  source_type: vendor_app_note
+  domain: measurement
+  focus: measure loop gain instead of guessing compensation values
+  status: processed
+- id: AUTH-069
+  title: ADI AN-149 operating condition instability
+  url: https://www.analog.com/media/en/technical-documentation/application-notes/an149fa.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: minimum on-time, off-time, and sync limits can mimic compensation errors
+  status: processed
+- id: AUTH-070
+  title: ADI AN-149 pulse skipping
+  url: https://www.analog.com/media/en/technical-documentation/application-notes/an149fa.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: pulse skipping must be distinguished from unstable closed-loop oscillation
+  status: processed
+- id: AUTH-071
+  title: ADI loop stability basics
+  url: https://www.analog.com/en/resources/technical-articles/power-supply-loop-stability-loop-compensation.html
+  source_type: vendor_training
+  domain: power
+  focus: Bode plots quantify bandwidth and stability margin
+  status: processed
+- id: AUTH-072
+  title: ADI loop stability margin
+  url: https://www.analog.com/en/resources/technical-articles/power-supply-loop-stability-loop-compensation.html
+  source_type: vendor_training
+  domain: power
+  focus: phase margin and gain margin guide compensation confidence
+  status: processed
+- id: AUTH-073
+  title: ADI loop stability measurement setup
+  url: https://www.analog.com/en/resources/technical-articles/power-supply-loop-stability-loop-compensation.html
+  source_type: vendor_training
+  domain: measurement
+  focus: injection setup determines whether measured loop gain is trustworthy
+  status: processed
+- id: AUTH-074
+  title: ADI loop stability Nyquist caution
+  url: https://www.analog.com/en/resources/technical-articles/power-supply-loop-stability-loop-compensation.html
+  source_type: vendor_training
+  domain: power
+  focus: multiple gain crossings can make simple Bode interpretation misleading
+  status: processed
+- id: AUTH-075
+  title: ADI loop stability lab examples
+  url: https://www.analog.com/en/resources/technical-articles/power-supply-loop-stability-loop-compensation.html
+  source_type: vendor_training
+  domain: measurement
+  focus: lab measurement and modeling should agree in critical frequency range
+  status: processed
+- id: AUTH-076
+  title: ADI problematic Bode plots
+  url: https://www.analog.com/en/resources/technical-articles/understanding-power-supply-loop-stability-and-compensation-part-2.html
+  source_type: vendor_training
+  domain: power
+  focus: unusual Bode plots need interpretation before compensation changes
+  status: processed
+- id: AUTH-077
+  title: ADI low phase before crossover
+  url: https://www.analog.com/en/resources/technical-articles/understanding-power-supply-loop-stability-and-compensation-part-2.html
+  source_type: vendor_training
+  domain: power
+  focus: low phase away from critical point may not imply instability
+  status: processed
+- id: AUTH-078
+  title: ADI load transient correlation
+  url: https://www.analog.com/en/resources/technical-articles/understanding-power-supply-loop-stability-and-compensation-part-2.html
+  source_type: vendor_training
+  domain: measurement
+  focus: load transient response cross-checks loop interpretation
+  status: processed
+- id: AUTH-079
+  title: ADI slope compensation caution
+  url: https://www.analog.com/en/resources/technical-articles/understanding-power-supply-loop-stability-and-compensation-part-2.html
+  source_type: vendor_training
+  domain: power
+  focus: internal slope compensation changes what external tuning can fix
+  status: processed
+- id: AUTH-080
+  title: ADI Nyquist alternative
+  url: https://www.analog.com/en/resources/technical-articles/understanding-power-supply-loop-stability-and-compensation-part-2.html
+  source_type: vendor_training
+  domain: power
+  focus: Nyquist plot can clarify cases where Bode margin looks confusing
+  status: processed
+- id: AUTH-081
+  title: ADI MOSFET SOA hot swap
+  url: https://www.analog.com/en/resources/technical-articles/mosfet-safe-operating-area-and-hot-swap-circuits.html
+  source_type: vendor_training
+  domain: power
+  focus: hot-swap MOSFET selection must satisfy transient SOA
+  status: processed
+- id: AUTH-082
+  title: ADI MOSFET SOA time limit
+  url: https://www.analog.com/en/resources/technical-articles/mosfet-safe-operating-area-and-hot-swap-circuits.html
+  source_type: vendor_training
+  domain: power
+  focus: SOA plot combines voltage, current, and exposure time
+  status: processed
+- id: AUTH-083
+  title: ADI hot swap capacitive load
+  url: https://www.analog.com/en/resources/technical-articles/mosfet-safe-operating-area-and-hot-swap-circuits.html
+  source_type: vendor_training
+  domain: power
+  focus: large output capacitor makes startup a linear-mode stress event
+  status: processed
+- id: AUTH-084
+  title: ADI SOAtherm simulation
+  url: https://www.analog.com/en/resources/technical-articles/mosfet-safe-operating-area-and-hot-swap-circuits.html
+  source_type: vendor_training
+  domain: power
+  focus: simulation can check MOSFET SOA before hardware stress
+  status: processed
+- id: AUTH-085
+  title: ADI parallel MOSFET SOA
+  url: https://www.analog.com/en/resources/technical-articles/mosfet-safe-operating-area-and-hot-swap-circuits.html
+  source_type: vendor_training
+  domain: power
+  focus: parallel MOSFETs require current sharing assumptions to be proven
+  status: processed
+- id: AUTH-086
+  title: Infineon designing with power MOSFETs
+  url: https://www.infineon.com/assets/row/public/documents/24/42/infineon-designing-with-power-mosfets-applicationnotes-en.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: MOSFET operating region and SOA must match application stress
+  status: processed
+- id: AUTH-087
+  title: Infineon MOSFET hot swap linear mode
+  url: https://www.infineon.com/assets/row/public/documents/24/42/infineon-designing-with-power-mosfets-applicationnotes-en.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: slowed turn-on and hot-swap operate the MOSFET in linear mode
+  status: processed
+- id: AUTH-088
+  title: Infineon MOSFET gate resistor
+  url: https://www.infineon.com/assets/row/public/documents/24/42/infineon-designing-with-power-mosfets-applicationnotes-en.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: gate drive shaping changes switching loss and EMI
+  status: processed
+- id: AUTH-089
+  title: Infineon MOSFET thermal impedance
+  url: https://www.infineon.com/assets/row/public/documents/24/42/infineon-designing-with-power-mosfets-applicationnotes-en.pdf
+  source_type: vendor_app_note
+  domain: measurement
+  focus: transient thermal impedance is needed for pulse stress interpretation
+  status: processed
+- id: AUTH-090
+  title: Infineon MOSFET avalanche and body diode
+  url: https://www.infineon.com/assets/row/public/documents/24/42/infineon-designing-with-power-mosfets-applicationnotes-en.pdf
+  source_type: vendor_app_note
+  domain: power
+  focus: body diode and avalanche limits are not interchangeable with forward SOA
+  status: processed
+- id: AUTH-091
+  title: Infineon CoolMOS 7 linear mode
+  url: https://www.infineon.com/dgdl/Infineon-MOSFET_CoolMOS_7_linear_mode_at_high_voltage-ApplicationNotes-v02_00-EN.pdf?fileId=5546d46272e49d2a01730eef0c7529dd
+  source_type: vendor_app_note
+  domain: power
+  focus: high-voltage superjunction MOSFETs can have narrowed linear-mode SOA
+  status: processed
+- id: AUTH-092
+  title: Infineon CoolMOS 7 hot swap stress
+  url: https://www.infineon.com/dgdl/Infineon-MOSFET_CoolMOS_7_linear_mode_at_high_voltage-ApplicationNotes-v02_00-EN.pdf?fileId=5546d46272e49d2a01730eef0c7529dd
+  source_type: vendor_app_note
+  domain: power
+  focus: hot-swap and inrush limiters are typical linear-mode stress cases
+  status: processed
+- id: AUTH-093
+  title: Infineon CoolMOS 7 thermal instability
+  url: https://www.infineon.com/dgdl/Infineon-MOSFET_CoolMOS_7_linear_mode_at_high_voltage-ApplicationNotes-v02_00-EN.pdf?fileId=5546d46272e49d2a01730eef0c7529dd
+  source_type: vendor_app_note
+  domain: power
+  focus: thermal instability boundary can dominate SOA at high voltage
+  status: processed
+- id: AUTH-094
+  title: Infineon CoolMOS 7 derating
+  url: https://www.infineon.com/dgdl/Infineon-MOSFET_CoolMOS_7_linear_mode_at_high_voltage-ApplicationNotes-v02_00-EN.pdf?fileId=5546d46272e49d2a01730eef0c7529dd
+  source_type: vendor_app_note
+  domain: production
+  focus: temperature derating changes whether a MOSFET survives repeated startup
+  status: processed
+- id: AUTH-095
+  title: Infineon CoolMOS 7 safe envelope
+  url: https://www.infineon.com/dgdl/Infineon-MOSFET_CoolMOS_7_linear_mode_at_high_voltage-ApplicationNotes-v02_00-EN.pdf?fileId=5546d46272e49d2a01730eef0c7529dd
+  source_type: vendor_app_note
+  domain: power
+  focus: safe debug must define voltage-current-time envelope before retest
+  status: processed
+- id: AUTH-096
+  title: TI common DC/DC mistakes basics
+  url: https://www.ti.com/video/series/common-mistakes-in-dc-dc-converters-and-how-to-fix-them.html
+  source_type: vendor_training
+  domain: power
+  focus: buck converter capabilities and part selection before blame assignment
+  status: processed
+- id: AUTH-097
+  title: TI common DC/DC mistakes components
+  url: https://www.ti.com/video/series/common-mistakes-in-dc-dc-converters-and-how-to-fix-them.html
+  source_type: vendor_training
+  domain: power
+  focus: component selection and feature settings can dominate debug outcome
+  status: processed
+- id: AUTH-098
+  title: TI common DC/DC mistakes layout
+  url: https://www.ti.com/video/series/common-mistakes-in-dc-dc-converters-and-how-to-fix-them.html
+  source_type: vendor_training
+  domain: layout_emi
+  focus: board layout and measurement technique are first-class DC/DC fault domains
+  status: processed
+- id: AUTH-099
+  title: TI boost converter debug
+  url: https://www.ti.com/document-viewer/ja-jp/lit/html/SSZTAK6/GUID-D9A728EE-AD76-4B09-A853-7B5F5F666D99
+  source_type: vendor_training
+  domain: power
+  focus: compare boards and rule out soldering or damage early
+  status: processed
+- id: AUTH-100
+  title: TI boost converter basic checks
+  url: https://www.ti.com/document-viewer/ja-jp/lit/html/SSZTAK6/GUID-D9A728EE-AD76-4B09-A853-7B5F5F666D99
+  source_type: vendor_training
+  domain: measurement
+  focus: measure adjacent-pin resistance and internal diode paths before deeper theory
+  status: processed

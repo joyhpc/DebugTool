@@ -1,0 +1,92 @@
+id: CLR-014
+source:
+  title: "Microchip TB3331 Serial Debug - Abstraction Layers"
+  url: "https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ApplicationNotes/ApplicationNotes/TB3331-Debug-SerialInterf-EmbeddedSystems-DS90003331.pdf"
+  type: vendor_app_note
+domain: digital_interface
+blindness_note: "The brief explicitly teaches abstraction layers; this record turns it into cost-aware debug behavior."
+blind_input:
+  symptom: "A serial device does not respond correctly, but the failure could be mechanical, electrical, protocol, driver, or application-level."
+  background: "The debug path is unclear because firmware API calls, protocol bytes, and physical wires are all involved."
+  observations:
+  - "software reports an error or constant return value"
+  - "there may be multiple plausible domains"
+  - "changing application code has not isolated the root cause"
+  constraints:
+  - "do not jump to the highest abstraction layer before proving lower layers"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Classify the symptom by abstraction layer: mechanical, electrical, protocol, driver, or application."
+  why: "layer mapping prevents random trial-and-error."
+  expected: "the next measurement targets the lowest unproven layer."
+  p_hit: 0.35
+  p_exclude: 0.60
+  time_min: 10
+  setup_min: 0
+  risk_penalty: 0
+  priority_score: 0.065
+- node: A1
+  type: action
+  check: "Prove mechanical/electrical prerequisites before protocol decoding."
+  why: "bad connection, logic level, or ground can make protocol symptoms meaningless."
+  expected: "pinout, ground, voltage levels, and pull-ups/drive modes are valid."
+  p_hit: 0.40
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.034
+- node: A2
+  type: action
+  check: "Capture the actual transaction before blaming application logic."
+  why: "API success and application failure can mask lower-layer errors."
+  expected: "waveform or decoded trace shows whether the intended transaction occurred."
+  p_hit: 0.45
+  p_exclude: 0.45
+  time_min: 20
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.019
+- node: T1
+  type: terminal
+  check: "Promote stable layer ordering into bus-specific link models."
+  why: "the same layered ordering applies across I2C, SPI, and UART."
+  expected: "future trees avoid application-first misdiagnosis."
+  p_hit: 0.25
+  p_exclude: 0.10
+  time_min: 20
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.012
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Microchip TB3331 recommends mapping serial communication issues into abstraction layers so the possible causes can be narrowed rather than mixed together."
+  evidence:
+  - "the brief separates mechanical, electrical, protocol, driver, and application layers"
+  - "lower-layer facts are used to eliminate whole classes of causes"
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - A2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Layer ordering is a probability/time-cost tool: cheap lower-layer checks can exclude many expensive upper-layer branches."
+  - "Serial debug should be link-model-first, not API-message-first."
+  what_to_change_in_assets:
+  - "Apply mechanical/electrical/protocol/driver/application layers to LM-I2C-BUS and LM-SPI-TRANSACTION."
+  anti_pattern_observed:
+  - "rewriting application code before proving physical and protocol layers"
+promotion:
+  proposed_assets:
+  - "LM-I2C-BUS"
+  - "LM-SPI-TRANSACTION"
+  regression_candidate: "REG-SERIAL-LAYERED-DEBUG-FIRST"
+status: reviewed

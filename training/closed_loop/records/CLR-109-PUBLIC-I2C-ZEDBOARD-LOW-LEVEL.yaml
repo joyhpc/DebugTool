@@ -1,0 +1,94 @@
+id: CLR-109
+quality_tier: T1
+public_case_id: PUB-019
+source:
+  title: "I2C communication not working with Xilinx Zedboard"
+  url: "https://electronics.stackexchange.com/questions/565650/i2c-communication-not-working"
+  type: public_solved_case
+domain: digital_interface
+blindness_note: "Final answer was read after drafting threshold/low-level branches."
+blind_input:
+  symptom: "External microcontroller cannot reliably communicate with a Xilinx Zedboard over I2C."
+  background: "Scope shows the Zedboard does not pull SDA low enough for the microcontroller during ACK."
+  observations:
+  - "ACK low level from Zedboard is about 600 mV above the microcontroller low level"
+  - "the microcontroller works with other I2C peripherals"
+  - "the connection uses external board pins and pull-ups"
+  constraints:
+  - "do not treat analyzer decode as enough; compare actual voltage to receiver thresholds"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Measure SDA low level at the receiver and compare against VIL."
+  why: "I2C ACK can be visible but not low enough for the receiving device."
+  expected: "low-level margin is insufficient at the microcontroller input."
+  p_hit: 0.60
+  p_exclude: 0.55
+  time_min: 10
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.044
+- node: D2
+  type: decision
+  check: "Trace the selected Zedboard pins for series resistors, protection parts, IO standard, and pull-up domain."
+  why: "board-level series resistance or unsuitable pins can prevent a valid low."
+  expected: "chosen pins include resistance or configuration that weakens the low level."
+  p_hit: 0.55
+  p_exclude: 0.40
+  time_min: 20
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.030
+- node: A1
+  type: action
+  check: "Move to pins without the problematic series path or add a proper I2C buffer/translator."
+  why: "the fix must create valid low-level margin at the receiver."
+  expected: "I2C communication succeeds with a valid low-level path."
+  p_hit: 0.55
+  p_exclude: 0.20
+  time_min: 30
+  setup_min: 30
+  risk_penalty: 1
+  priority_score: 0.011
+- node: T1
+  type: terminal
+  check: "Record threshold-margin rule for cross-board I2C."
+  why: "future debug should not stop at waveform shape or decoder output."
+  expected: "regression requires VIH/VIL/receiver threshold mention."
+  p_hit: 0.30
+  p_exclude: 0.10
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.018
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The answer identified board pin series resistance/protection as causing the low level to be too high; moving to suitable pins solved the communication problem."
+  evidence:
+  - "the observed low level corresponded to a high effective low-side resistance"
+  - "Zedboard pins had series resistance in the path"
+  - "using different pins solved the problem"
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - D2
+  - A1
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "I2C debug must compare actual low level to receiver VIL, especially across boards."
+  - "Pin-level board circuitry can invalidate a logically correct I2C connection."
+  what_to_change_in_assets:
+  - "LM-I2C-BUS should keep receiver-threshold and board-pin circuitry checks."
+  anti_pattern_observed:
+  - "assuming ACK waveform shape is valid without low-level margin"
+promotion:
+  proposed_assets:
+  - "LM-I2C-BUS"
+  regression_candidate: "REG-I2C-ACK-LOW-THRESHOLD-FIRST"
+status: reviewed

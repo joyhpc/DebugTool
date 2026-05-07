@@ -1,0 +1,40 @@
+asset_type: debug_principle
+id: DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+title: Use Dynamic Evidence Before Trusting Static Ratings
+version: 0.98.0
+domain: hardware
+applicability: general
+use_when:
+- condition: failure occurs during startup, switching, reset, bus transaction, hot-plug, load step, or temperature transition
+  weight: high
+- condition: static datasheet values look acceptable but the system fails in a transient condition
+  weight: high
+do_not_use_when:
+- fault is purely DC and all relevant startup/transient paths are proven inactive
+required_evidence:
+- kind: waveform
+  must_be: present
+  description: time-aligned waveform around the failing transient when safe
+principle: Static ratings and DC checks do not exclude transient, sequencing, saturation, recovery, or timing failures.
+diagnostic_rule: For transient failures, capture the event with relevant control, power, and data signals aligned before replacing parts or accepting nominal ratings.
+anti_patterns:
+- trusting typical saturation current without peak-current waveform or margin
+- using DC output voltage to dismiss hiccup or startup failure
+- checking I2C/SPI state after reset but not the transaction/reset overlap that creates the stuck state
+references:
+- id: LM-POWER-CHAIN
+  relation: supports
+- id: LM-HOTSWAP-HIGHSIDE-MOSFET
+  relation: supports
+safety_level: S2
+destructive: false
+source:
+  type: seed
+  citation: Generalized from power, hot-swap, and bus-stuck seed examples.
+confidence: medium
+counterexamples:
+- description: The fault is reproducible in a static state with no relevant transition.
+  evidence_required: static isolation evidence and absence of startup/switching/reset dependence
+status: candidate
+last_validated: ''
+review_due: ''

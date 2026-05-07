@@ -1,0 +1,222 @@
+asset_type: link_model
+id: LM-POWER-CHAIN
+title: Power Rail Startup and Distribution Model
+version: 0.96.0
+domain: power
+applicability: general
+use_when:
+- condition: power rail no output
+  weight: high
+- condition: VOUT missing, low, overshooting, unstable, or noisy during startup
+  weight: high
+- condition: VIN OK but EN, UVLO, PG, FAULT, or sequencing signal abnormal
+  weight: high
+- condition: power sequencing failure or downstream enable missing
+  weight: high
+- condition: overcurrent, short, inrush, thermal shutdown, or protection latch suspected
+  weight: high
+- condition: regulator starts only with no load or only when downstream module removed
+  weight: medium
+do_not_use_when:
+- pure digital protocol decode issue with all rails verified in tolerance
+- mechanical connector issue with no power symptoms
+- software-only API failure with independent power-good evidence
+required_evidence:
+- kind: measurement
+  must_be: present
+  description: VIN at source and VIN at regulator input, not only adapter nameplate voltage
+- kind: measurement
+  must_be: present
+  description: VOUT behavior during startup or under controlled load
+- kind: schematic
+  must_be: present
+  description: rail source, regulator, EN/PG/FAULT, feedback, downstream load path when available
+causal_order:
+- source capability and current limit
+- input protection, fuse, ideal diode, eFuse, hot-swap, reverse polarity path
+- VIN at regulator input under startup load
+- EN, UVLO, soft-start, reset, sequencing, and control ownership
+- converter switching or pass-device conduction
+- feedback, sense, compensation, and remote-sense return path
+- output capacitor, preload, downstream load, short, and backfeed
+- PG/FAULT reporting and downstream enable propagation
+- thermal behavior, current limit, hiccup/latch-off, and recovery conditions
+stage_model:
+- stage: source capability and current limit
+  measurement_points:
+  - supply output at no load
+  - supply output at board input during startup
+  - input current waveform or supply current limit flag
+  expected_observations:
+  - source remains above minimum operating voltage
+  - current limit is not hit during normal startup
+  strong_indicators:
+  - bench supply folds back
+  - input voltage droops only when board connected
+  - startup succeeds with current limit increased within safe bound
+  actions:
+  - set conservative current limit first
+  - compare no-load and board-connected voltage
+  - use series current measurement or current probe if available
+  counterexamples:
+  - adapter LED on is not proof of sufficient dynamic source capability
+  safety_notes:
+  - Never remove current limit to force startup on an unknown short.
+- stage: input protection path
+  measurement_points:
+  - voltage before and after fuse/eFuse/ideal diode/hot-swap FET
+  - FAULT pin
+  - temperature of protection device
+  expected_observations:
+  - small expected drop across protection device
+  - no fault latch during valid startup
+  strong_indicators:
+  - voltage present before protection but absent after
+  - FAULT asserted
+  - device overheats before regulator starts
+  actions:
+  - measure both sides of each series protection element
+  - check eFuse enable, ILIM, dV/dt, and fault latch
+  - isolate downstream load if safe
+  counterexamples:
+  - VIN at connector is not equal to VIN at regulator if there is a protection path
+  safety_notes:
+  - Use current-limited supply for suspected short or hot-swap faults.
+- stage: EN/UVLO/soft-start/sequencing
+  measurement_points:
+  - EN pin
+  - UVLO divider node
+  - soft-start capacitor pin
+  - upstream PG
+  - MCU/FPGA GPIO controlling enable
+  expected_observations:
+  - EN crosses threshold after prerequisite rails are valid
+  - soft-start ramp is monotonic
+  - no premature fault reset loop
+  strong_indicators:
+  - VIN OK but EN low
+  - EN toggles repeatedly
+  - UVLO node below threshold due to divider/assembly issue
+  actions:
+  - trace EN ownership before replacing regulator
+  - force EN only if datasheet limits and downstream safety allow
+  - check BOM values on UVLO and SS components
+  counterexamples:
+  - VOUT=0 with EN low is usually not a failed regulator
+  safety_notes:
+  - Do not bypass sequencing on multi-rail SoC/FPGA boards without checking absolute maximum and rail order constraints.
+- stage: converter startup and switching
+  measurement_points:
+  - switch node
+  - gate drive or boot pin
+  - inductor current
+  - VOUT ramp
+  - soft-start ramp
+  expected_observations:
+  - switching starts after EN valid
+  - VOUT ramp follows soft-start/current limit profile
+  strong_indicators:
+  - no switching despite valid VIN/EN
+  - hiccup waveform
+  - switch node stuck high/low
+  - inductor saturation signature
+  actions:
+  - scope switch node with appropriate probe grounding
+  - check bootstrap diode/capacitor if buck topology
+  - compare startup with reduced load
+  counterexamples:
+  - DMM average VOUT alone may hide hiccup or burst-mode behavior
+  safety_notes:
+  - Avoid unsafe probe ground connections on non-isolated or high-side nodes.
+- stage: feedback/sense/compensation
+  measurement_points:
+  - FB pin
+  - remote sense pins
+  - compensation node
+  - feedback divider values and solder joints
+  expected_observations:
+  - FB approaches reference voltage in regulation
+  - sense return is continuous to load ground/reference
+  strong_indicators:
+  - FB far from reference
+  - remote sense open
+  - wrong divider value
+  - VOUT overshoot or oscillation
+  actions:
+  - measure FB with high impedance probe
+  - verify divider population and layout return path
+  - disable remote sense only if datasheet supports local sense fallback
+  counterexamples:
+  - correct output capacitor is not enough if feedback path is open
+  safety_notes:
+  - Overshoot can damage downstream ICs; use preload and current/voltage limit during experiments.
+- stage: load and downstream domain
+  measurement_points:
+  - rail resistance to ground with power off
+  - load current
+  - downstream module temperature
+  - backfeed voltage when rail is off
+  expected_observations:
+  - load current within budget
+  - no abnormal low resistance or backfeed path
+  strong_indicators:
+  - rail rises when load removed
+  - one downstream IC hot
+  - VOUT clamped at diode drop
+  - backfeed through IO or ESD path
+  actions:
+  - isolate loads by jumpers/ferrites/0-ohm resistors if designed
+  - thermal image at current-limited voltage
+  - compare impedance with known-good board
+  counterexamples:
+  - low resistance is not always a short on high-current core rails; compare with known-good and voltage-injection behavior
+  safety_notes:
+  - For voltage injection, start low voltage/current and monitor heat; do not inject into unknown sensitive rails blindly.
+- stage: PG/FAULT and downstream enable propagation
+  measurement_points:
+  - PG pin
+  - FAULT pin
+  - reset supervisor output
+  - downstream EN pins
+  - sequencer state
+  expected_observations:
+  - PG asserts only after VOUT within tolerance
+  - downstream enable follows valid PG/order
+  strong_indicators:
+  - rail is valid but PG absent
+  - fault latch blocks downstream rail
+  - PG pulled down by another device
+  actions:
+  - check pull-up domain for PG/FAULT
+  - isolate wired-OR lines
+  - verify threshold and delay components
+  counterexamples:
+  - valid VOUT does not guarantee system power-good if PG logic is wrong
+  safety_notes:
+  - Do not short PG/FAULT to fake readiness unless downstream power order is verified.
+debug_rules:
+- Measure VIN at the regulator input, not only at the bench supply or connector.
+- Check EN/UVLO/PG/FAULT before replacing the regulator.
+- If overcurrent, short, inrush, or thermal behavior is suspected, branch into current-limited safe isolation before repeating full-power startup.
+- Use waveform evidence for startup/hiccup problems; DMM readings are insufficient for transient faults.
+- Treat sequencing overrides as S2/S3 unless rail order and downstream limits are known.
+common_false_paths:
+- Replacing the regulator before proving EN and load conditions.
+- Starting with software/driver investigation when the rail is electrically absent.
+- Assuming LED-on means the power path after protection devices is valid.
+- Repeating full-power startup on a suspected short or SOA failure.
+references: []
+safety_level: S2
+destructive: false
+source:
+  type: seed
+  citation: Internal seed model; validate against real founder-pilot cases before team-wide use.
+confidence: medium
+counterexamples:
+- description: Some FPGA/SoC core rails have naturally low resistance to ground.
+  evidence_required: known-good impedance comparison and controlled current-limited voltage injection
+- description: A power rail may be intentionally disabled by firmware or security state.
+  evidence_required: enable-owner trace or firmware log/source evidence
+status: candidate
+last_validated: ''
+review_due: ''

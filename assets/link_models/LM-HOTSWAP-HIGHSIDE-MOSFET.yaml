@@ -1,0 +1,132 @@
+asset_type: link_model
+id: LM-HOTSWAP-HIGHSIDE-MOSFET
+title: High-Side MOSFET Hot-Swap / Inrush / SOA Model
+version: 0.96.0
+domain: power
+applicability: general
+use_when:
+- condition: high-side MOSFET hot-swap burns or overheats during plug-in
+  weight: high
+- condition: large downstream capacitance causes inrush or input collapse
+  weight: high
+- condition: MOSFET fails during startup, hot-plug, precharge, or load insertion
+  weight: high
+- condition: VDS and ID overlap during slow turn-on or Miller plateau
+  weight: high
+- condition: eFuse or ideal diode replacement considered for inrush/SOA issue
+  weight: medium
+do_not_use_when:
+- low-current logic rail no inrush path and no pass FET stress symptom
+- pure converter compensation instability without upstream pass device stress
+required_evidence:
+- kind: schematic
+  must_be: present
+  description: high-side FET orientation, gate driver/control, downstream capacitance, load, protection devices
+- kind: measurement
+  must_be: present
+  description: controlled startup waveforms for VIN, VOUT, VGS, VDS, and current when safe
+- kind: measurement
+  must_be: present
+  description: thermal evidence or failed component location if available
+causal_order:
+- input source impedance and current limit
+- connector/hot-plug bounce and pre-charge state
+- pass FET orientation, body diode, and VDS stress
+- gate drive ramp, Miller plateau, VGS limit, and dV/dt control
+- downstream capacitance and load current demand
+- inrush current, VDS*ID power pulse, SOA margin, and thermal impedance
+- fault detection, current limit, timer/latch behavior, and recovery
+- post-start steady-state RDS(on), dissipation, and thermal path
+stage_model:
+- stage: source and safe test envelope
+  measurement_points:
+  - bench supply current limit
+  - input voltage at connector
+  - input current waveform
+  - series fuse/eFuse status
+  strong_indicators:
+  - supply hits current limit immediately
+  - input collapses during cap charge
+  - connector spark/bounce correlates with failure
+  safe_actions:
+  - start with current-limited supply
+  - use lower voltage or smaller capacitance surrogate if acceptable
+  - insert temporary series resistance/precharge path for diagnosis
+  unsafe_actions:
+  - repeat full-power hot-plug into full capacitance without current limit
+  - short or bypass protection to see if it works
+- stage: pass FET stress window
+  measurement_points:
+  - VGS
+  - VDS
+  - VOUT ramp
+  - ID/inrush current
+  - case temperature
+  strong_indicators:
+  - long VDS and ID overlap
+  - gate stalls at Miller plateau
+  - VGS exceeds abs max
+  - VDS spike on plug-in
+  safe_actions:
+  - capture single-shot startup with differential probe/current probe if available
+  - estimate energy and compare against transient SOA
+  - check gate clamp, gate resistor, RC soft-start, and driver current
+  counterexamples:
+  - low steady-state RDS(on) loss does not prove safe startup SOA
+- stage: downstream capacitance/load
+  measurement_points:
+  - total effective output capacitance
+  - load current during ramp
+  - pre-biased output voltage
+  - backfeed paths
+  strong_indicators:
+  - failure disappears with reduced capacitance/load
+  - VOUT ramp too slow/fast relative to FET SOA
+  - load turns on before rail is ready
+  safe_actions:
+  - separate capacitive inrush from active load startup
+  - stage capacitance or add precharge
+  - sequence downstream enables after PG
+- stage: protection/control choice
+  measurement_points:
+  - fault timer
+  - current limit threshold
+  - thermal shutdown
+  - PG/FAULT pins
+  - sense resistor voltage
+  strong_indicators:
+  - no current limit or timer exists
+  - timer too long for MOSFET SOA
+  - current sense blanking hides hot-plug pulse
+  safe_actions:
+  - consider dedicated hot-swap/eFuse controller
+  - set ILIM/timer/dVdt from SOA, capacitance, and load requirements
+  - add TVS/snubber if plug-in transient confirmed
+debug_rules:
+- Do not repeat destructive full-power hot-plug to reproduce the fault; first define a current-limited safe test envelope.
+- For MOSFET hot-swap, steady-state current rating is not enough; verify transient SOA under VDS*ID overlap.
+- Measure VGS, VDS, VOUT, and current in the same startup event if safe.
+- Separate capacitive inrush from active downstream load enable.
+- If SOA margin is uncertain, treat reproduction as S3 until limited by supply, fuse, precharge, or sacrificial test setup.
+common_false_paths:
+- Choosing a lower RDS(on) MOSFET only from DC loss without checking SOA.
+- Adding more output capacitance without recalculating inrush energy.
+- Slowing the gate excessively, increasing time spent at high VDS and high ID.
+- Bypassing current limit or protection to force startup.
+references:
+- id: LM-POWER-CHAIN
+  relation: refines
+safety_level: S3
+destructive: true
+source:
+  type: seed
+  citation: Internal seed model synthesized from standard hot-swap debug reasoning; validate with controlled founder-pilot cases.
+confidence: medium
+counterexamples:
+- description: MOSFET damage may come from reverse polarity or inductive transient rather than capacitive inrush.
+  evidence_required: polarity/transient waveform and failed part analysis
+- description: Thermal failure during steady-state may dominate instead of startup SOA.
+  evidence_required: steady-state dissipation and thermal measurement
+status: candidate
+last_validated: ''
+review_due: ''

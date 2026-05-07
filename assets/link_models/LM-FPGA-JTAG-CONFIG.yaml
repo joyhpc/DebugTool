@@ -1,0 +1,174 @@
+asset_type: link_model
+id: LM-FPGA-JTAG-CONFIG
+title: FPGA JTAG and Configuration Bring-Up Model
+version: 0.99.4
+domain: digital_interface
+applicability: intel_altera_xilinx_fpga_bringup
+use_when:
+- condition: FPGA or CPLD is not detected in JTAG scan chain
+  weight: high
+- condition: Quartus, Vivado, or another FPGA tool sees the cable but cannot see the target device
+  weight: high
+- condition: FPGA configuration fails before user logic runs
+  weight: high
+- condition: Nios or soft-core debug node is missing after successful FPGA programming
+  weight: medium
+- condition: configuration status pins such as nSTATUS, CONF_DONE, INIT_DONE, or DONE are abnormal
+  weight: medium
+do_not_use_when:
+- user logic is already running and the issue is isolated to an application-level protocol or RTL bug
+required_evidence:
+- kind: measurement
+  must_be: preferred
+  description: TCK, TMS, TDI, TDO waveforms at the connector and, when possible, at the FPGA pins during scan
+- kind: status_pin
+  must_be: preferred
+  description: nCONFIG/nSTATUS/CONF_DONE or equivalent configuration status pins during attempted configuration
+- kind: tool_output
+  must_be: preferred
+  description: jtagconfig, Quartus Auto Detect, Vivado Hardware Manager, or equivalent tool result
+causal_order:
+- host tool / jtagserver / cable enumeration
+- target VREF / cable power sense / ground
+- connector / ribbon / adapter / pinout continuity
+- board-side JTAG path and signal integrity
+- target power rails and configuration-bank validity
+- reset / nCONFIG / nSTATUS / CONF_DONE / INIT_DONE readiness
+- JTAG chain order / TDI-TDO return path / bypass devices
+- configuration mode pins / MSEL / boot-source interaction
+- programming file and device mismatch
+- internal debug hub / soft-core debug node / JTAG UART presence
+- user logic / timing / interface debug after configuration is proven
+stage_model:
+- stage: host tool / jtagserver / cable enumeration
+  measurement_points:
+  - Device Manager or OS USB listing
+  - jtagconfig output
+  - Quartus Programmer hardware setup
+  strong_indicators:
+  - OS sees cable but Quartus does not list it
+  - jtagconfig cannot connect to JTAG server
+  actions:
+  - check jtagserver version, service state, driver binding, and tool-version errata before board rework
+- stage: target VREF / cable power sense / ground
+  measurement_points:
+  - VCC(TRGT) or VREF at download-cable connector
+  - cable ground continuity
+  strong_indicators:
+  - cable enumerates but refuses to drive target-side JTAG
+  - target-side TCK/TMS/TDI remain flat during scan
+  actions:
+  - verify VREF, ground, connector orientation, and cable target-voltage range
+- stage: connector / ribbon / adapter / pinout continuity
+  measurement_points:
+  - JTAG header pins
+  - ribbon or adapter continuity
+  - series resistors or jumpers
+  strong_indicators:
+  - tool sees cable but no scan waveform reaches the board or FPGA-side pins
+  actions:
+  - ring out cable/header/adapter and substitute a known-good download cable before FPGA rework
+- stage: board-side JTAG path and signal integrity
+  measurement_points:
+  - TCK/TMS/TDI/TDO near connector and near FPGA
+  - TCK edge quality and speed
+  strong_indicators:
+  - inconsistent IDCODEs
+  - scan works only at lower TCK or with shorter cabling
+  actions:
+  - slow TCK, inspect stubs/pull-ups/series damping, and compare connector-side versus FPGA-side waveforms
+- stage: target power rails and configuration-bank validity
+  measurement_points:
+  - core, auxiliary, and JTAG/config bank supplies
+  - power-good timing
+  strong_indicators:
+  - JTAG pins toggle but TDO is absent or invalid
+  - nSTATUS remains in reset state
+  actions:
+  - verify all required rails are within datasheet limits and stable through scan/configuration
+- stage: reset / nCONFIG / nSTATUS / CONF_DONE / INIT_DONE readiness
+  measurement_points:
+  - nCONFIG
+  - nSTATUS
+  - CONF_DONE
+  - INIT_DONE
+  strong_indicators:
+  - nCONFIG or nSTATUS not released before scan
+  - CONF_DONE never rises after data transfer
+  actions:
+  - capture status pins at the FPGA end before changing bitstream or programming files
+- stage: JTAG chain order / TDI-TDO return path / bypass devices
+  measurement_points:
+  - TDI into first device
+  - TDO out of each chain segment
+  - CDF or tool chain order
+  strong_indicators:
+  - TDI toggles but no TDO return
+  - device order or IR length mismatch in chain description
+  actions:
+  - isolate single-device chain, bypass upstream devices, and validate chain order with auto-detect/jtagconfig
+- stage: configuration mode pins / MSEL / boot-source interaction
+  measurement_points:
+  - MSEL or equivalent mode pins
+  - boot flash interface pins
+  - nCE
+  strong_indicators:
+  - active-serial or passive-serial boot fails while JTAG IDCODE scan still works
+  actions:
+  - separate JTAG IDCODE access from non-JTAG boot-source debug and verify mode pins are not floating
+- stage: programming file and device mismatch
+  measurement_points:
+  - target device ID
+  - SOF/POF/JIC target part
+  - Quartus or Vivado messages
+  strong_indicators:
+  - scan detects a device but programming file is rejected or removed
+  actions:
+  - regenerate programming file for the exact device and tool version after the physical chain is proven
+- stage: internal debug hub / soft-core debug node / JTAG UART presence
+  measurement_points:
+  - jtagconfig -n node list
+  - System Console service list
+  - Platform Designer debug settings
+  strong_indicators:
+  - FPGA device ID appears but Nios/JTAG UART/debug node is absent
+  actions:
+  - verify the loaded SOF contains the debug module, JTAG UART, SLD hub, and matching sopcinfo/sysinfo
+- stage: user logic / timing / interface debug after configuration is proven
+  measurement_points:
+  - Signal Tap captures
+  - PLL lock and reset release
+  - peripheral stimulus/response
+  strong_indicators:
+  - IDCODE, configuration, and internal debug nodes are all healthy
+  actions:
+  - move to clock/reset, timing, RTL, or external-interface debug only after bring-up primitives pass
+debug_rules:
+- Cable enumeration proves only the host-to-cable path; it does not prove target-side JTAG waveforms.
+- Do not debug bitstream contents before the device ID or chain behavior is observable.
+- If target-side TCK/TMS/TDI are absent, prioritize VREF, connector, cable, and continuity over FPGA replacement.
+- If JTAG IDCODE works but Nios debug fails, branch to loaded SOF content, debug-module enablement, SLD hub nodes, reset, and memory map.
+- If CONF_DONE or nSTATUS is abnormal, capture status pins and configuration bus waveforms at the FPGA end before changing random project settings.
+references:
+- id: CASE-XCKU3P-JTAG-CABLE-RIBBON-OPEN
+  relation: supports
+- id: DP-MEASUREMENT-BEFORE-DESIGN-CHANGE
+  relation: supports
+- id: DP-EXPECTED-VALUE-BEFORE-HABIT
+  relation: supports
+safety_level: S0
+destructive: false
+source:
+  type: authoritative_doc
+  citation: "Seeded from Intel/Altera Quartus Programmer help, FPGA Configuration Troubleshooter, Download Cable II User Guide, and Embedded Design Handbook JTAG sections."
+confidence: medium
+counterexamples:
+- description: The cable does not enumerate on the host at all, so target-side JTAG debug is premature.
+  evidence_required: OS and jtagconfig show no cable or JTAG server cannot reach any hardware
+- description: FPGA is detected and configured, but application logic fails after user mode.
+  evidence_required: valid IDCODE, successful configuration, and clean internal debug access
+- description: JTAG IDCODE works but flash boot fails in Active Serial mode.
+  evidence_required: JTAG scan success plus failing DCLK/DATA/nCS/nSTATUS/CONF_DONE boot-source waveform
+status: candidate
+last_validated: '2026-05-02'
+review_due: ''

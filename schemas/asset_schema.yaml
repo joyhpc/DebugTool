@@ -1,0 +1,43 @@
+asset_type: link_model | signature | case_record | pattern_bundle | debug_principle
+id: stable unique id
+title: human readable name
+version: semver
+domain: power | embedded | high_speed | software | system | measurement | production
+  | other
+applicability: general | project_specific
+project_id: optional, required if project_specific
+use_when:
+- condition: ''
+  weight: high | medium | low
+do_not_use_when: []
+required_evidence:
+- kind: waveform | log | schematic | measurement | doc | user_input
+  must_be: present | absent | matches_pattern
+references:
+- id: another_asset_id
+  relation: derived_from | refines | counterexample_of | parent_of | supports
+safety_level: S0 | S1 | S2 | S3
+destructive: false
+source:
+  type: seed | real_case | authoritative_doc | project_doc | hypothesis | public_article
+    | public_forum | vendor_app_note | user_provided_article
+  citation: ''
+confidence: low | medium | high
+counterexamples:
+- description: ''
+  evidence_required: ''
+status: draft | candidate | validated_seed | validated_real_case | generalized | deprecated
+last_validated: ''
+review_due: ''
+
+# pattern_bundle-only fields
+patterns:
+- symptom: ''
+  likely_root_cause: ''
+  first_checks: []
+  misleading_path: ''
+
+# debug_principle-only fields
+principle: ''
+diagnostic_rule: ''
+anti_patterns: []

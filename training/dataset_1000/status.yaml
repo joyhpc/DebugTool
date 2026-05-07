@@ -1,0 +1,27 @@
+version: 0.99.5
+last_updated: '2026-05-02'
+target_count: 1000
+current_counts:
+  official_source_prior_closed: 116
+  closed_loop_records_total: 130
+  public_or_forum_reviewed_records: 13
+  real_project_reviewed_cases: 1
+  near_hit_or_miss_records: 2
+  regression_tests: 40
+  safety_high_risk_assets_or_records: 3
+gaps:
+- "Need hundreds of solved public/vendor cases with complete symptom -> investigation -> resolution."
+- "Need real project cases from user/team material; do not synthesize these."
+- "Need more near-hit/miss cases; they are disproportionately valuable for pruning bad branches."
+- "Need safety-high-risk cases beyond hot-swap/SOA."
+- "Intel/Altera FPGA branch now has a seed queue and first closures, but still needs more solved configuration, EMIF, transceiver, and Platform Designer cases."
+- "MIPI DSI/CSI branch now has a seed queue and first closures, but still needs more solved panel, camera, bridge, production-yield, and physical-layer cases."
+next_batch:
+  target_size: 50
+  priority: "MIPI and Intel/Altera FPGA public/vendor solved cases plus hardware-debug articles"
+  domains:
+  - digital_interface
+  - clock_reset
+  - power
+  - measurement
+  - layout_emi

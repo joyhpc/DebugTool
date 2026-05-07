@@ -1,0 +1,61 @@
+id: RPC-000
+status: draft | sanitized | reviewed | promoted | blocked
+confidentiality:
+  anonymized: false
+  customer_removed: false
+  product_codename_removed: false
+  raw_files_location: ''
+project_context:
+  domain: power | digital_interface | analog | clock_reset | embedded_software | production | repair | other
+  board_revision: ''
+  schematic_revision: ''
+  firmware_revision: ''
+  date_range: ''
+initial_problem:
+  symptom: ''
+  background: ''
+  failure_rate: ''
+  first_seen_at: bringup | validation | production | field | repair | unknown
+  constraints: []
+available_evidence_before_solution:
+  measurements: []
+  waveforms: []
+  logs: []
+  photos: []
+  schematic_facts: []
+  layout_facts: []
+  change_history: []
+blind_debug_tree:
+- node: D1
+  type: decision | action | gate | terminal
+  check: ''
+  why: ''
+  expected: ''
+  p_hit: 0.0
+  p_exclude: 0.0
+  time_min: 0
+  setup_min: 0
+  risk_penalty: 0
+  priority_score: 0.0
+actual_resolution:
+  root_cause: ''
+  fix: ''
+  evidence_that_proved_it: []
+  evidence_that_disproved_other_paths: []
+coverage:
+  result: hit | near_hit | miss | blocked
+  matched_nodes: []
+  missing_nodes: []
+  wasted_actions: []
+meta_reflection:
+  probability_prior_update: []
+  time_cost_prior_update: []
+  safety_update: []
+  asset_changes:
+    link_models: []
+    signatures: []
+    principles: []
+    regressions: []
+promotion_gate:
+  ready_for_case_record: false
+  blockers: []

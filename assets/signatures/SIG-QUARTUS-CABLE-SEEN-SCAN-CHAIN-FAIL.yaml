@@ -1,0 +1,53 @@
+asset_type: signature
+id: SIG-QUARTUS-CABLE-SEEN-SCAN-CHAIN-FAIL
+title: Quartus Cable Visible but Scan Chain Fails
+version: 0.99.4
+domain: digital_interface
+applicability: intel_altera_fpga_bringup
+use_when:
+- condition: Quartus Programmer or jtagconfig sees an Intel FPGA download cable
+  weight: high
+- condition: Auto Detect reports unable to scan device chain or no device detected
+  weight: high
+- condition: board is newly assembled or target FPGA was recently changed
+  weight: medium
+- condition: target-side JTAG waveform evidence is missing or inconclusive
+  weight: medium
+do_not_use_when:
+- Quartus cannot see the download cable at all
+- FPGA device ID appears and only programming file association fails
+required_evidence:
+- kind: tool_output
+  must_be: present
+  description: Quartus Programmer Auto Detect, JTAG Chain Debugger, or jtagconfig result
+- kind: measurement
+  must_be: preferred
+  description: TCK/TMS/TDI/TDO at the FPGA end during scan
+min_match_count: 2
+top_actions:
+- Run jtagconfig or Auto Detect to separate cable visibility from target chain visibility.
+- Measure VREF, ground, TCK, TMS, TDI, and TDO at the FPGA-end connector during a scan.
+- If no waveform reaches the target, inspect cable orientation, ribbon continuity, adapter pinout, and VCC(TRGT).
+- If TCK/TDI reach the FPGA but TDO does not return, isolate chain order, power rails, nCONFIG/nSTATUS state, and possible damaged device.
+- Slow TCK or shorten cabling when IDCODEs are inconsistent or signal integrity is suspect.
+references:
+- id: LM-FPGA-JTAG-CONFIG
+  relation: supports
+- id: SIG-JTAG-CABLE-SEEN-NO-TARGET-WAVEFORM
+  relation: refines
+- id: DP-MEASUREMENT-BEFORE-DESIGN-CHANGE
+  relation: supports
+safety_level: S0
+destructive: false
+source:
+  type: authoritative_doc
+  citation: "Seeded from Intel Quartus Programmer help, FPGA Configuration Troubleshooter, Download Cable II User Guide, and XCKU3P real-case signature."
+confidence: medium
+counterexamples:
+- description: The host cannot see the USB-Blaster or Download Cable at all.
+  evidence_required: Device Manager/jtagconfig lacks the cable
+- description: The device ID is detected but SOF/POF programming fails.
+  evidence_required: valid scan chain with programming-file or device mismatch message
+status: candidate
+last_validated: '2026-05-02'
+review_due: ''

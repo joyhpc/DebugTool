@@ -1,0 +1,42 @@
+asset_type: link_model
+id: LM-VIDEO-LINK
+title: Video Link Debug Model
+version: 0.9.1
+domain: high_speed
+applicability: general
+use_when:
+- condition: video black screen
+  weight: high
+- condition: display flicker or intermittent display
+  weight: high
+- condition: HDMI/DP/MIPI/LVDS chain issue
+  weight: high
+- condition: temperature-related video failure
+  weight: high
+- condition: source switching causes display loss
+  weight: medium
+do_not_use_when: []
+required_evidence: []
+causal_order:
+- source
+- receiver/decoder
+- clock/data recovery
+- FPGA/frame buffer
+- panel interface
+- panel init/backlight
+debug_rules:
+- Intermittent temperature-related video issues need reproduction/isolation and clock/SI
+  checks.
+references:
+- id: LM-CLOCK-RESET-TREE
+  relation: depends_on
+safety_level: S0
+destructive: false
+source:
+  type: seed
+  citation: ''
+confidence: medium
+counterexamples: []
+status: candidate
+last_validated: ''
+review_due: ''

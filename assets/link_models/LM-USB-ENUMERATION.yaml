@@ -1,0 +1,41 @@
+asset_type: link_model
+id: LM-USB-ENUMERATION
+title: USB Device Enumeration Model
+version: 0.9.1
+domain: embedded
+applicability: general
+use_when:
+- condition: USB device not detected
+  weight: high
+- condition: software reports device not connected
+  weight: high
+- condition: Device Manager shows unknown/missing/flapping device
+  weight: high
+- condition: USB tool powered but application cannot connect
+  weight: high
+do_not_use_when: []
+required_evidence: []
+causal_order:
+- power/VBUS
+- cable/data pair
+- USB port/hub
+- device descriptor
+- OS enumeration
+- driver binding
+- application connection
+debug_rules:
+- LED/power does not prove USB data enumeration.
+- Application debug follows OS enumeration.
+references:
+- id: LM-POWER-CHAIN
+  relation: depends_on
+safety_level: S0
+destructive: false
+source:
+  type: seed
+  citation: ''
+confidence: medium
+counterexamples: []
+status: candidate
+last_validated: ''
+review_due: ''

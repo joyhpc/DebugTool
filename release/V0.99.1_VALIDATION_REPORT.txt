@@ -1,0 +1,59 @@
+V0.99.1 Validation Report
+Date: 2026-05-02
+
+Scope
+-----
+Near-hit promotion, authoritative closed-loop training batch, real project case intake,
+regression structure, and validators.
+
+Commands
+--------
+python -m py_compile scripts\output_validator.py scripts\run_output_validator_smoke.py scripts\lint_assets.py scripts\regression_suite_linter.py scripts\regression_runner.py scripts\lint_closed_loop.py scripts\lint_real_project_cases.py
+python scripts\lint_assets.py
+python scripts\lint_closed_loop.py
+python scripts\regression_suite_linter.py
+python scripts\lint_real_project_cases.py
+python scripts\run_output_validator_smoke.py
+
+Results
+-------
+Python compile: PASS
+
+Asset lint:
+PASS: 26 assets
+Warnings:
+- CASE-LA1010-USB-CABLE has no misleading_paths.
+- Legacy link_models still need counterexamples.
+
+Closed-loop training lint:
+PASS: 18 records
+
+Regression suite structure:
+PASS: 23 tests
+
+Real project case lint:
+PASS: 0 case files
+
+Output validator smoke:
+PASS: 5 cases
+
+Training State
+--------------
+Authoritative queue:
+- target_count: 100
+- current_units: 100
+- official training units marked processed: 12
+
+Closed-loop records:
+- total reviewed records: 18
+- all reviewed records include probability/time-cost fields
+
+Real project case intake:
+- schema/form/linter created
+- no real project case files ingested yet
+
+Known Limits
+------------
+- The 100 authoritative units remain a queue; only processed/reviewed records are treated as learned.
+- Real project cases require user-provided anonymized evidence before promotion.
+- Several legacy link models still need counterexamples.

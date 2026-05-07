@@ -1,0 +1,121 @@
+id: RPC-001
+status: reviewed
+confidentiality:
+  anonymized: true
+  customer_removed: true
+  product_codename_removed: true
+  raw_files_location: ''
+project_context:
+  domain: digital_interface
+  board_revision: unknown
+  schematic_revision: unknown
+  firmware_revision: not_relevant
+  date_range: '2026-05-02'
+initial_problem:
+  symptom: "XCKU3P on a board with STM32H745IIK6 cannot be detected in Vivado Hardware Manager; Vivado can see the Xilinx cable but no FPGA device."
+  background: "Newly assembled board. Schematic and FPGA power rails were later confirmed good. STM32 had no JTAG reuse or buffer control on the FPGA JTAG path."
+  failure_rate: "constant on the tested setup"
+  first_seen_at: bringup
+  constraints:
+  - "do not assume bitstream, flash, or FPGA configuration issue before IDCODE scan exists"
+  - "avoid rework on FPGA or power rails until JTAG physical drive is proven at the FPGA pins"
+available_evidence_before_solution:
+  measurements:
+  - "Vivado can see the Xilinx downloader/cable."
+  - "FPGA-side TCK/TDI/TDO have no waveform during Vivado refresh."
+  - "FPGA schematic and power rails were confirmed good."
+  - "STM32 does not share or buffer-control the FPGA JTAG path."
+  waveforms:
+  - "No TCK/TDI/TDO activity observed near FPGA."
+  logs:
+  - "Vivado Hardware Manager shows cable but no device."
+  photos: []
+  schematic_facts:
+  - "XCKU3P JTAG schematic path considered correct."
+  - "No STM32 JTAG reuse or control buffer in the path."
+  layout_facts: []
+  change_history: []
+blind_debug_tree:
+- node: D1
+  type: decision
+  check: "Does Vivado see the cable, and does the cable drive TCK/TDI/TMS at the JTAG header?"
+  why: "Cable enumeration only proves USB/cable control, not target-side signal delivery."
+  expected: "If header has no TCK/TDI/TMS, root cause is before or at the connector/cable/VREF path."
+  p_hit: 0.45
+  p_exclude: 0.70
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.080
+- node: D2
+  type: decision
+  check: "If header has activity but FPGA near pins do not, trace continuity through connector, cable, series resistors, and 0R links."
+  why: "No waveform at FPGA pins while the board design is good indicates a physical path break."
+  expected: "Continuity or probing localizes the open to cable, connector, or board path."
+  p_hit: 0.50
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.039
+- node: A1
+  type: action
+  check: "Substitute a known-good Xilinx cable/ribbon or measure ribbon continuity pin-by-pin."
+  why: "A broken ribbon wire can leave Vivado able to see the cable while the target receives no JTAG clocks/data."
+  expected: "Known-good cable restores TCK/TDI/TMS at the connector and FPGA can be scanned."
+  p_hit: 0.55
+  p_exclude: 0.50
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.080
+- node: T1
+  type: terminal
+  check: "Replace or repair the downloader ribbon cable and re-run Vivado scan."
+  why: "The fault is upstream of the board and does not require FPGA/board rework."
+  expected: "Vivado detects the XCKU3P IDCODE after the physical cable path is restored."
+  p_hit: 0.60
+  p_exclude: 0.20
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.070
+actual_resolution:
+  root_cause: "One wire in the Xilinx downloader ribbon cable was open between the downloader and the board JTAG connector."
+  fix: "Replace or repair the broken downloader ribbon cable."
+  evidence_that_proved_it:
+  - "Vivado saw the downloader but FPGA-side JTAG pins had no waveform."
+  - "Fault was localized to the path from Xilinx downloader to JTAG connector."
+  - "A broken ribbon conductor was found."
+  evidence_that_disproved_other_paths:
+  - "Schematic was confirmed good."
+  - "FPGA power rails were confirmed good."
+  - "STM32 did not reuse or buffer the FPGA JTAG path."
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - T1
+  missing_nodes: []
+  wasted_actions: []
+meta_reflection:
+  probability_prior_update:
+  - "If cable is visible but no TCK/TDI reaches the FPGA, target-side cable/header/ribbon faults should outrank FPGA configuration and power-theory branches."
+  - "Cable enumeration should be treated as partial evidence: USB path is good, target-side signal path is unproven."
+  time_cost_prior_update:
+  - "Header-side waveform and ribbon continuity checks are very low-cost and high-exclusion for no-device JTAG failures."
+  safety_update:
+  - "No destructive action needed; keep checks reversible before board rework."
+  asset_changes:
+    link_models:
+    - "Future JTAG/SWD link model should include downloader-to-header physical continuity before device-level debug."
+    signatures:
+    - "Consider signature for cable visible but no target-side JTAG waveform."
+    principles:
+    - "DP-MEASUREMENT-BEFORE-DESIGN-CHANGE"
+    regressions:
+    - "REG-JTAG-CABLE-SEEN-NO-TCK-PHYSICAL-PATH-FIRST"
+promotion_gate:
+  ready_for_case_record: true
+  blockers: []

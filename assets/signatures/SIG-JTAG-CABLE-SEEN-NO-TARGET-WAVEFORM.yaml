@@ -1,0 +1,51 @@
+asset_type: signature
+id: SIG-JTAG-CABLE-SEEN-NO-TARGET-WAVEFORM
+title: JTAG Cable Enumerates but No Target-Side Waveform
+version: 0.99.3
+domain: digital_interface
+applicability: fpga_mcu_bringup
+use_when:
+- condition: debug tool sees the JTAG cable or probe
+  weight: high
+- condition: target device is not detected in scan chain
+  weight: high
+- condition: target-side TCK/TDI/TMS have no waveform during scan or refresh
+  weight: high
+- condition: target power and schematic path appear correct
+  weight: medium
+do_not_use_when:
+- target-side TCK/TDI/TMS are present and only TDO is missing
+- host cannot enumerate the debug cable
+required_evidence:
+- kind: waveform
+  must_be: present
+  description: TCK/TDI/TMS measured at JTAG connector or target-side pins during scan
+- kind: continuity
+  must_be: preferred
+  description: cable, adapter, connector, and series-link continuity check
+min_match_count: 2
+top_actions:
+- Measure TCK/TDI/TMS at the JTAG header during a scan or Vivado refresh.
+- Confirm VREF and ground at the cable target connector.
+- If header-side signals are missing, inspect cable orientation, adapter pinout, VREF, and ribbon continuity.
+- Substitute a known-good cable or ring out the ribbon before board rework.
+- Only move to FPGA power/configuration debug after target-side JTAG waveforms exist.
+references:
+- id: CASE-XCKU3P-JTAG-CABLE-RIBBON-OPEN
+  relation: derived_from
+- id: DP-MEASUREMENT-BEFORE-DESIGN-CHANGE
+  relation: supports
+safety_level: S0
+destructive: false
+source:
+  type: real_case
+  citation: "Derived from anonymized XCKU3P JTAG bring-up case, 2026-05-02."
+confidence: medium
+counterexamples:
+- description: Header-side signals exist but do not reach target pins.
+  evidence_required: header waveform present and downstream continuity or series resistor failure
+- description: Target-side signals exist but scan fails due TDO path, voltage, chain order, or TCK signal quality.
+  evidence_required: target-side TCK/TDI/TMS waveform plus missing or invalid TDO
+status: validated_real_case
+last_validated: '2026-05-02'
+review_due: ''

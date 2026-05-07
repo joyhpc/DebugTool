@@ -1,0 +1,107 @@
+id: CLR-006
+source:
+  title: "TI SCPA069 I2C Stuck Bus Prevention and Workarounds"
+  url: "https://www.ti.com/lit/an/scpa069/scpa069.pdf"
+  type: vendor_app_note
+domain: digital_interface
+blindness_note: "The source title exposes the broad I2C stuck-bus class, but not the specific fastest debug ordering."
+blind_input:
+  symptom: "I2C bus is unavailable because SDA is held low while SCL is high."
+  background: "Multiple devices share the bus. The failure can happen after noise, hot insertion, reset, or an interrupted transaction."
+  observations:
+  - "controller cannot issue a normal START or STOP because SDA is not released"
+  - "system firmware may block while waiting for SDA to return high"
+  - "the physical line state is more important than the register-level error code"
+  constraints:
+  - "do not start with address decoding until the physical line owner is known"
+  - "do not power-cycle or pulse lines blindly if a target may be back-powered"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Confirm whether SDA is physically low and whether SCL is free."
+  why: "stuck SDA with SCL high is a distinct recovery and root-cause class."
+  expected: "DMM or scope shows SDA low and SCL high at the stuck event."
+  p_hit: 0.30
+  p_exclude: 0.55
+  time_min: 3
+  setup_min: 2
+  risk_penalty: 0
+  priority_score: 0.115
+- node: D2
+  type: decision
+  check: "Isolate which target or bus segment is holding SDA low."
+  why: "one target waiting for a missing clock can hold the whole bus."
+  expected: "removing a target, buffer segment, or series link releases SDA."
+  p_hit: 0.45
+  p_exclude: 0.60
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 1
+  priority_score: 0.047
+- node: A1
+  type: action
+  check: "Capture SDA and SCL around the last good transaction with enough bandwidth to see false edges."
+  why: "a false SCL edge can desynchronize controller and target bit counts."
+  expected: "controller and target effectively disagree about which clock is the ACK clock."
+  p_hit: 0.55
+  p_exclude: 0.25
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.019
+- node: A2
+  type: action
+  check: "Try controlled bus recovery clocks only after confirming voltage domains and ownership."
+  why: "a target waiting for the ninth falling edge may release SDA after clocking."
+  expected: "SDA releases after recovery pulses or device reset."
+  p_hit: 0.50
+  p_exclude: 0.20
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 2
+  priority_score: 0.050
+- node: T1
+  type: terminal
+  check: "If false-edge or hot-insertion risk is confirmed, add filtering, recovery buffer, reset sequencing, or firmware timeout."
+  why: "the fix must prevent recurrence rather than only clearing one stuck event."
+  expected: "repeated noise/reset/hot-insertion tests no longer wedge the bus."
+  p_hit: 0.40
+  p_exclude: 0.10
+  time_min: 30
+  setup_min: 20
+  risk_penalty: 1
+  priority_score: 0.009
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The TI app note identifies stuck SDA as often caused by a false SCL edge that makes the controller and target disagree about transaction phase; the target can hold SDA low while waiting for the expected clock. It recommends prevention and recovery strategies such as bus recovery, hot-swap buffers with stuck-bus recovery, and robust software or hardware handling."
+  evidence:
+  - "SDA stuck low with SCL high prevents normal START/STOP generation."
+  - "false SCL edges can shift one side of the transaction relative to the other."
+  - "recovery depends on clocking, reset, buffering, or prevention of the false edge source."
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - D2
+  - A1
+  - A2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "I2C stuck-bus debug should first establish physical line ownership, then time-domain desynchronization."
+  - "A low-cost DMM/scope line-state check has a better expected value than protocol-level address analysis."
+  - "Recovery action needs voltage-domain and backfeed checks even when its raw time cost is low."
+  what_to_change_in_assets:
+  - "LM-I2C-BUS should include false-clock desynchronization and recovery-clock stages."
+  - "Future node ordering should put line-state and actor isolation ahead of register/address branches."
+  anti_pattern_observed:
+  - "assuming an I2C address or firmware configuration problem before proving who owns SDA"
+promotion:
+  proposed_assets:
+  - "DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING"
+  regression_candidate: "REG-I2C-STUCK-FALSE-CLOCK-RECOVERY"
+status: reviewed

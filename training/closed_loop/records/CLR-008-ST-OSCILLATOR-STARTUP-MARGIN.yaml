@@ -1,0 +1,106 @@
+id: CLR-008
+source:
+  title: "ST AN2867 Oscillator Design Guide for STM8AF/AL/S, STM32 MCUs and MPUs"
+  url: "https://www.st.com/resource/en/application_note/an2867-oscillator-design-guide-for-stm8afals-stm32-mcus-and-mpus-stmicroelectronics.pdf"
+  type: vendor_app_note
+domain: clock_reset
+blindness_note: "The source is a design guide rather than a single failure post; the blind tree starts from a common no-start symptom."
+blind_input:
+  symptom: "MCU external crystal oscillator does not start reliably, or starts only on some boards or environmental corners."
+  background: "Pierce oscillator with external crystal and load capacitors. Firmware may fall back to an internal clock or report clock startup timeout."
+  observations:
+  - "some boards start after probing, heating, cooling, or repeated resets"
+  - "nominal crystal frequency and load capacitance were copied from a reference design"
+  - "firmware symptoms can look like boot failure or communication timeout"
+  constraints:
+  - "avoid loading oscillator pins with a low-impedance probe"
+  - "check configuration, supply, and reset before changing crystal components"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Verify supply, reset, clock source selection, and oscillator enable/configuration bits."
+  why: "a clock-design fault and a configuration fault produce similar no-clock symptoms."
+  expected: "MCU is actually requesting the external oscillator under valid supply/reset conditions."
+  p_hit: 0.35
+  p_exclude: 0.55
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.042
+- node: A1
+  type: action
+  check: "Measure oscillator behavior with high-impedance, low-capacitance probing or indirect CLKOUT."
+  why: "probing can add capacitance and change startup behavior."
+  expected: "waveform or CLKOUT shows whether startup fails, is slow, or is intermittent."
+  p_hit: 0.40
+  p_exclude: 0.45
+  time_min: 20
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.018
+- node: D2
+  type: decision
+  check: "Calculate crystal load capacitance including stray capacitance and capacitor tolerance."
+  why: "nominal capacitor values rarely equal effective oscillator load."
+  expected: "effective CL is inside crystal and MCU oscillator recommendations."
+  p_hit: 0.45
+  p_exclude: 0.35
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.021
+- node: D3
+  type: decision
+  check: "Check ESR and required oscillator gain margin against the MCU oscillator capability."
+  why: "startup margin is set by loop gain, crystal ESR, and load capacitance."
+  expected: "selected crystal has enough gain margin across temperature and voltage."
+  p_hit: 0.55
+  p_exclude: 0.25
+  time_min: 25
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.017
+- node: T1
+  type: terminal
+  check: "Adjust crystal, load capacitors, layout, or drive setting and validate across voltage and temperature."
+  why: "oscillator startup is a margin problem, so a single room-temperature pass is weak evidence."
+  expected: "startup is reliable across the intended operating corners."
+  p_hit: 0.60
+  p_exclude: 0.10
+  time_min: 60
+  setup_min: 60
+  risk_penalty: 1
+  priority_score: 0.005
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "ST AN2867 frames oscillator reliability as a loop-gain and component-margin problem. Crystal ESR, load capacitance, layout parasitics, gain margin, and measurement loading all affect whether an oscillator starts reliably."
+  evidence:
+  - "load capacitance and ESR feed directly into oscillator startup margin."
+  - "layout and parasitics alter the oscillator loop."
+  - "measurement method can disturb the oscillator and mislead debug."
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - D2
+  - D3
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Clock debug should rank low-cost configuration and supply checks first, then move to non-invasive waveform evidence."
+  - "A crystal is not validated by nominal frequency alone; ESR, CL, layout, and corner margin matter."
+  - "Probe-induced fixes are evidence that the measurement changed the circuit."
+  what_to_change_in_assets:
+  - "Add LM-OSCILLATOR-STARTUP with config, supply, non-invasive measurement, CL, ESR, layout, and corner-validation stages."
+  anti_pattern_observed:
+  - "changing capacitors blindly because a crystal nominal value looked correct"
+promotion:
+  proposed_assets:
+  - "DP-MEASUREMENT-BEFORE-DESIGN-CHANGE"
+  regression_candidate: "REG-OSCILLATOR-NO-START-MARGIN-FIRST"
+status: reviewed

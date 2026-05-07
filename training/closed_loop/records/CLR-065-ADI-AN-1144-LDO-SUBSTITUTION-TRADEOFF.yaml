@@ -1,0 +1,98 @@
+id: CLR-065
+queue_unit: AUTH-058
+source:
+  title: ADI AN-1144 LDO substitution tradeoff
+  url: https://www.analog.com/en/resources/app-notes/an-1144.html
+  type: vendor_app_note
+domain: power
+blindness_note: Section-level authoritative queue focus can leak the target lesson; retained as official-source closure, not
+  a lab-perfect blind test.
+blind_input:
+  symptom: A power path, converter, load, or analog rail behaves incorrectly under dynamic conditions.
+  background: The failure may depend on source capability, startup, current path, control loop, layout, load, or thermal/SOA
+    limits.
+  observations:
+  - static ratings or DC voltage do not fully explain the dynamic behavior
+  - startup, switching, load step, or hot-plug conditions are likely
+  - source, converter, and load must be separated before part replacement
+  constraints:
+  - do not repeat destructive power events without a current-limited safe envelope
+  - measure relevant voltage, current, and time waveforms before replacement advice
+predicted_debug_tree:
+- node: G1
+  type: decision
+  check: Define the safe measurement envelope and current/thermal limits before reproduction.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.25
+  p_exclude: 0.45
+  time_min: 10
+  setup_min: 20
+  risk_penalty: 0
+  priority_score: 0.016
+- node: A1
+  type: action
+  check: Capture source, switch/control, load voltage, and current waveforms during the event.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.6
+  p_exclude: 0.4
+  time_min: 30
+  setup_min: 30
+  risk_penalty: 1
+  priority_score: 0.013
+- node: D1
+  type: decision
+  check: 'Evaluate the official lesson: replace-switcher-with-LDO decision trades efficiency for noise.'
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.62
+  p_exclude: 0.35
+  time_min: 25
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.02
+- node: T1
+  type: terminal
+  check: Apply the fix and re-test inside the safe envelope across load and temperature.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.55
+  p_exclude: 0.1
+  time_min: 60
+  setup_min: 60
+  risk_penalty: 2
+  priority_score: 0.005
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: (p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: 'The official source highlights this durable debug lesson: replace-switcher-with-LDO decision trades efficiency
+    for noise. The predicted tree included a dedicated branch for that mechanism and ranked prerequisite measurements before
+    irreversible or high-effort changes.'
+  evidence:
+  - Authoritative unit AUTH-058 from ADI AN-1144 LDO substitution tradeoff
+  - 'Focus: replace-switcher-with-LDO decision trades efficiency for noise'
+  - Coverage judged at section-level against official troubleshooting guidance.
+coverage:
+  result: hit
+  matched_nodes:
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - Official section-level lessons are best stored as cost-aware branch priors, not as validated real cases.
+  - The first useful action is the fastest safe measurement that can either support the mechanism or exclude it.
+  - Repeated support should update LM-POWER-CHAIN rather than create isolated one-off advice.
+  what_to_change_in_assets:
+  - Use this unit as supporting evidence for LM-POWER-CHAIN.
+  - Promote to stronger asset status only after real or fully solved public cases repeat the same mechanism.
+  anti_pattern_observed:
+  - jumping to familiar component replacement or firmware changes before proving the official fault mechanism
+promotion:
+  proposed_assets:
+  - LM-POWER-CHAIN
+  regression_candidate: REG-POWER-CHAIN-NO-REGULATOR-FIRST
+status: reviewed

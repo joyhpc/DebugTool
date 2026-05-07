@@ -1,0 +1,395 @@
+target_count: 100
+closed_units: 100
+generated_this_run:
+- CLR-019
+- CLR-020
+- CLR-021
+- CLR-022
+- CLR-023
+- CLR-024
+- CLR-025
+- CLR-026
+- CLR-027
+- CLR-028
+- CLR-029
+- CLR-030
+- CLR-031
+- CLR-032
+- CLR-033
+- CLR-034
+- CLR-035
+- CLR-036
+- CLR-037
+- CLR-038
+- CLR-039
+- CLR-040
+- CLR-041
+- CLR-042
+- CLR-043
+- CLR-044
+- CLR-045
+- CLR-046
+- CLR-047
+- CLR-048
+- CLR-049
+- CLR-050
+- CLR-051
+- CLR-052
+- CLR-053
+- CLR-054
+- CLR-055
+- CLR-056
+- CLR-057
+- CLR-058
+- CLR-059
+- CLR-060
+- CLR-061
+- CLR-062
+- CLR-063
+- CLR-064
+- CLR-065
+- CLR-066
+- CLR-067
+- CLR-068
+- CLR-069
+- CLR-070
+- CLR-071
+- CLR-072
+- CLR-073
+- CLR-074
+- CLR-075
+- CLR-076
+- CLR-077
+- CLR-078
+- CLR-079
+- CLR-080
+- CLR-081
+- CLR-082
+- CLR-083
+- CLR-084
+- CLR-085
+- CLR-086
+- CLR-087
+- CLR-088
+- CLR-089
+- CLR-090
+- CLR-091
+- CLR-092
+- CLR-093
+- CLR-094
+- CLR-095
+- CLR-096
+- CLR-097
+- CLR-098
+- CLR-099
+- CLR-100
+- CLR-101
+- CLR-102
+- CLR-103
+- CLR-104
+- CLR-105
+- CLR-106
+unit_to_records:
+- unit: AUTH-001
+  records:
+  - CLR-006
+- unit: AUTH-002
+  records:
+  - CLR-006
+- unit: AUTH-003
+  records:
+  - CLR-019
+- unit: AUTH-004
+  records:
+  - CLR-013
+- unit: AUTH-005
+  records:
+  - CLR-013
+- unit: AUTH-006
+  records:
+  - CLR-014
+- unit: AUTH-007
+  records:
+  - CLR-007
+- unit: AUTH-008
+  records:
+  - CLR-015
+- unit: AUTH-009
+  records:
+  - CLR-018
+- unit: AUTH-010
+  records:
+  - CLR-016
+- unit: AUTH-011
+  records:
+  - CLR-020
+- unit: AUTH-012
+  records:
+  - CLR-021
+- unit: AUTH-013
+  records:
+  - CLR-022
+- unit: AUTH-014
+  records:
+  - CLR-023
+- unit: AUTH-015
+  records:
+  - CLR-024
+- unit: AUTH-016
+  records:
+  - CLR-008
+- unit: AUTH-017
+  records:
+  - CLR-025
+- unit: AUTH-018
+  records:
+  - CLR-026
+- unit: AUTH-019
+  records:
+  - CLR-027
+- unit: AUTH-020
+  records:
+  - CLR-028
+- unit: AUTH-021
+  records:
+  - CLR-029
+- unit: AUTH-022
+  records:
+  - CLR-030
+- unit: AUTH-023
+  records:
+  - CLR-031
+- unit: AUTH-024
+  records:
+  - CLR-032
+- unit: AUTH-025
+  records:
+  - CLR-033
+- unit: AUTH-026
+  records:
+  - CLR-034
+- unit: AUTH-027
+  records:
+  - CLR-035
+- unit: AUTH-028
+  records:
+  - CLR-036
+- unit: AUTH-029
+  records:
+  - CLR-037
+- unit: AUTH-030
+  records:
+  - CLR-038
+- unit: AUTH-031
+  records:
+  - CLR-039
+- unit: AUTH-032
+  records:
+  - CLR-040
+- unit: AUTH-033
+  records:
+  - CLR-041
+- unit: AUTH-034
+  records:
+  - CLR-042
+- unit: AUTH-035
+  records:
+  - CLR-043
+- unit: AUTH-036
+  records:
+  - CLR-044
+- unit: AUTH-037
+  records:
+  - CLR-045
+- unit: AUTH-038
+  records:
+  - CLR-046
+- unit: AUTH-039
+  records:
+  - CLR-047
+- unit: AUTH-040
+  records:
+  - CLR-048
+- unit: AUTH-041
+  records:
+  - CLR-049
+- unit: AUTH-042
+  records:
+  - CLR-050
+- unit: AUTH-043
+  records:
+  - CLR-051
+- unit: AUTH-044
+  records:
+  - CLR-052
+- unit: AUTH-045
+  records:
+  - CLR-053
+- unit: AUTH-046
+  records:
+  - CLR-009
+- unit: AUTH-047
+  records:
+  - CLR-054
+- unit: AUTH-048
+  records:
+  - CLR-055
+- unit: AUTH-049
+  records:
+  - CLR-056
+- unit: AUTH-050
+  records:
+  - CLR-057
+- unit: AUTH-051
+  records:
+  - CLR-058
+- unit: AUTH-052
+  records:
+  - CLR-059
+- unit: AUTH-053
+  records:
+  - CLR-060
+- unit: AUTH-054
+  records:
+  - CLR-061
+- unit: AUTH-055
+  records:
+  - CLR-062
+- unit: AUTH-056
+  records:
+  - CLR-063
+- unit: AUTH-057
+  records:
+  - CLR-064
+- unit: AUTH-058
+  records:
+  - CLR-065
+- unit: AUTH-059
+  records:
+  - CLR-066
+- unit: AUTH-060
+  records:
+  - CLR-067
+- unit: AUTH-061
+  records:
+  - CLR-068
+- unit: AUTH-062
+  records:
+  - CLR-069
+- unit: AUTH-063
+  records:
+  - CLR-070
+- unit: AUTH-064
+  records:
+  - CLR-071
+- unit: AUTH-065
+  records:
+  - CLR-072
+- unit: AUTH-066
+  records:
+  - CLR-073
+- unit: AUTH-067
+  records:
+  - CLR-074
+- unit: AUTH-068
+  records:
+  - CLR-075
+- unit: AUTH-069
+  records:
+  - CLR-076
+- unit: AUTH-070
+  records:
+  - CLR-077
+- unit: AUTH-071
+  records:
+  - CLR-078
+- unit: AUTH-072
+  records:
+  - CLR-079
+- unit: AUTH-073
+  records:
+  - CLR-080
+- unit: AUTH-074
+  records:
+  - CLR-081
+- unit: AUTH-075
+  records:
+  - CLR-082
+- unit: AUTH-076
+  records:
+  - CLR-083
+- unit: AUTH-077
+  records:
+  - CLR-084
+- unit: AUTH-078
+  records:
+  - CLR-085
+- unit: AUTH-079
+  records:
+  - CLR-086
+- unit: AUTH-080
+  records:
+  - CLR-087
+- unit: AUTH-081
+  records:
+  - CLR-010
+- unit: AUTH-082
+  records:
+  - CLR-088
+- unit: AUTH-083
+  records:
+  - CLR-089
+- unit: AUTH-084
+  records:
+  - CLR-090
+- unit: AUTH-085
+  records:
+  - CLR-091
+- unit: AUTH-086
+  records:
+  - CLR-092
+- unit: AUTH-087
+  records:
+  - CLR-093
+- unit: AUTH-088
+  records:
+  - CLR-094
+- unit: AUTH-089
+  records:
+  - CLR-095
+- unit: AUTH-090
+  records:
+  - CLR-096
+- unit: AUTH-091
+  records:
+  - CLR-097
+- unit: AUTH-092
+  records:
+  - CLR-098
+- unit: AUTH-093
+  records:
+  - CLR-099
+- unit: AUTH-094
+  records:
+  - CLR-100
+- unit: AUTH-095
+  records:
+  - CLR-101
+- unit: AUTH-096
+  records:
+  - CLR-102
+- unit: AUTH-097
+  records:
+  - CLR-103
+- unit: AUTH-098
+  records:
+  - CLR-104
+- unit: AUTH-099
+  records:
+  - CLR-105
+- unit: AUTH-100
+  records:
+  - CLR-106
+limits:
+- Section-level official-source closures are not validated real project cases.
+- Records generated from queue focus should be used as priors and regression prompts until backed by real solved cases.

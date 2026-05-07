@@ -1,0 +1,91 @@
+id: CLR-018
+source:
+  title: "Microchip TB3331 SPI Multi-CS and Tri-State Assumptions"
+  url: "https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ApplicationNotes/ApplicationNotes/TB3331-Debug-SerialInterf-EmbeddedSystems-DS90003331.pdf"
+  type: vendor_app_note
+domain: digital_interface
+blindness_note: "This official-source record targets shared-SPI contention and multi-CS behavior."
+blind_input:
+  symptom: "SPI works with one device populated but fails or returns corrupted data when multiple devices share the bus."
+  background: "Several devices share SCLK/MOSI/MISO, each with a separate chip select."
+  observations:
+  - "MISO waveform looks driven when a device should be inactive"
+  - "one device works alone"
+  - "failures correlate with another CS or device option"
+  constraints:
+  - "avoid continued contention if two devices may drive MISO"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Verify inactive devices release MISO when their CS is deasserted."
+  why: "shared MISO requires tri-state behavior from all unselected devices."
+  expected: "only the selected target drives MISO."
+  p_hit: 0.55
+  p_exclude: 0.50
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.031
+- node: A1
+  type: action
+  check: "Capture all CS lines, SCLK, and MISO during the failing transaction."
+  why: "multi-CS timing or accidental overlap can select two devices."
+  expected: "no overlapping CS assertions and MISO releases outside selection."
+  p_hit: 0.50
+  p_exclude: 0.45
+  time_min: 20
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.021
+- node: D2
+  type: decision
+  check: "Check power/reset state of unselected devices and their MISO behavior."
+  why: "a powered-off or reset device may clamp or fail to tri-state."
+  expected: "inactive device state matches datasheet shared-bus requirements."
+  p_hit: 0.45
+  p_exclude: 0.30
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.019
+- node: T1
+  type: terminal
+  check: "Fix CS timing, add series isolation, buffer MISO, or choose devices that release the bus."
+  why: "shared-bus correctness depends on electrical release, not just command order."
+  expected: "multiple devices work without MISO contention."
+  p_hit: 0.50
+  p_exclude: 0.10
+  time_min: 60
+  setup_min: 45
+  risk_penalty: 2
+  priority_score: 0.005
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Microchip TB3331 calls out SPI issues around multi-CS activity and shared-bus behavior; unselected devices must not drive MISO, and CS timing must prevent overlapping selection."
+  evidence:
+  - "multi-CS activity can create bus-level conflicts"
+  - "shared SPI buses depend on inactive devices releasing MISO"
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Shared SPI debug should treat MISO ownership like a current-path problem."
+  - "Multiple CS lines must be captured together, not inferred from firmware sequence."
+  what_to_change_in_assets:
+  - "LM-SPI-TRANSACTION should keep MISO tri-state and multi-CS stages."
+  anti_pattern_observed:
+  - "debugging SPI mode while two devices may be driving MISO"
+promotion:
+  proposed_assets:
+  - "LM-SPI-TRANSACTION"
+  regression_candidate: "REG-SPI-MULTICS-TRISTATE-FIRST"
+status: reviewed

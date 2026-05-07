@@ -1,0 +1,144 @@
+target_count: 100
+current_candidates: 20
+source_rule: "MIPI DSI/CSI focused queue. Use vendor/app-note/IP-guide content as priors; only mark public cases reviewed when symptom, investigation, and resolution are visible enough for blind-tree comparison."
+candidates:
+- id: MIPI-001
+  title: "SN65DSI83/84/85 debugging and troubleshooting tips"
+  url: "https://www.ti.com/content/dam/videos/external-videos/en-us/3/3816841626001/5843894806001.mp4/subassets/debugging.pdf"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "DSI-to-LVDS bridge debug must verify init sequence, DSI clock HS, data lane LP11, CSR init, PLL enable, soft reset, and video stream order"
+  status: reviewed
+- id: MIPI-002
+  title: "Troubleshooting SN65DSI8x - Tips and Tricks"
+  url: "https://www.ti.com/lit/an/slla356/slla356.pdf"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "test pattern, DSI timing, line time, active pixels, lane count, DSI clock range, VCORE, and error registers isolate no-output-video causes"
+  status: reviewed
+- id: MIPI-003
+  title: "SN65DSI83-Q1 MIPI DSI video mode issue on STM32H747"
+  url: "https://e2e.ti.com/support/interface-group/interface/f/interface-forum/1630914/sn65dsi83-q1-issue-with-mipi-dsi-video-mode-and-sn65dsi83-bridge-on-stm32h747"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "before bridge register edits, prove DSI clock HS and data lane LP11/HS transition sequence"
+  status: queued_blind
+- id: MIPI-004
+  title: "SN65DSI84-Q1 DSI clock HS mode issue"
+  url: "https://e2e.ti.com/support/interface-group/interface/f/interface-forum/1612198/sn65dsi84-q1-sn65dsi84-q1-sequence-dsi-clk-hs-mode-issue"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "some bridges require DSI clock lane to remain HS except during disable/restart sequence"
+  status: queued_blind
+- id: MIPI-005
+  title: "NVIDIA Jetson sensor software driver programming debugging tips"
+  url: "https://docs.nvidia.com/jetson/archives/r36.3/DeveloperGuide/SD/CameraDevelopment/SensorSoftwareDriverProgramming.html"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "CSI timeout debug should check device-tree num_lanes, CSI port, discontinuous clock, mclk/pixel clock, lane polarity, and I2C power sequence"
+  status: reviewed
+- id: MIPI-006
+  title: "NVIDIA DRIVE debugging CSI capture errors"
+  url: "https://developer.nvidia.com/docs/drive/drive-os/6.0.8/public/drive-os-linux-sdk/common/topics/nvmedia_debugging_csi_errors/DebuggingNvMediaCSICaptureErrors1.html"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "CSI capture debug should use trace logs, CSI/VI registers, frame count, ECC/CRC, and data type evidence"
+  status: reviewed
+- id: MIPI-007
+  title: "AMD MIPI CSI-2 RX hardware debug"
+  url: "https://docs.amd.com/r/en-US/pg232-mipi-csi2-rx/Hardware-Debug"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "CSI RX no-packet debug should read D-PHY packet counts, CSI interrupt status, data type, byte count, frame received, lane configuration, ECC/CRC, and HS_SETTLE"
+  status: reviewed
+- id: MIPI-008
+  title: "AMD MIPI D-PHY hardware debug and PPI status"
+  url: "https://www.xilinx.com/support/documents/ip_documentation/mipi_dphy/v4_1/pg202-mipi-dphy.pdf"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "D-PHY bring-up should follow lane initialization, LP11 T_INIT, stopstate, HS clock, HS data, PPI error, reset, clock, and pin-rule evidence"
+  status: reviewed
+- id: MIPI-009
+  title: "Intel/Altera MIPI CSI-2 IP troubleshooting"
+  url: "https://www.intel.com/content/www/us/en/docs/programmable/813926/25-1/troubleshooting.html"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "IP parameters, PPI clocks, receiver registers, virtual channel, data type, width/height, and zero packet counters isolate CSI integration failures"
+  status: reviewed
+- id: MIPI-010
+  title: "Infineon CX3 MIPI CSI no video from unused floating lanes"
+  url: "https://community.infineon.com/t5/USB-superspeed-peripherals/Debugging-of-CX3-RTOS-project/td-p/1126281"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "unused MIPI CSI lanes on CX3 must be grounded; floating lanes can cause no frame detection or unstable streaming"
+  status: reviewed
+- id: MIPI-011
+  title: "NXP i.MX8 MIPI DSI no display due missing dsi_host node"
+  url: "https://community.nxp.com/t5/i-MX-Processors/Imx8-configure-mipi-dsi-the-screen-does-not-display-Q10-0-0-2-2/m-p/1233959/highlight/true"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "no MIPI waveform can be caused by device-tree/DRM component binding before the DSI host ever enables"
+  status: reviewed
+- id: MIPI-012
+  title: "NXP i.MX8Mplus unused CSI lanes"
+  url: "https://community.nxp.com/t5/i-MX-Processors/i-MX8Mplus-How-to-deal-with-unused-CSI-Lanes/m-p/1607491"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "unused CSI lanes can be a hardware requirement, not a software warning"
+  status: queued_blind
+- id: MIPI-013
+  title: "NXP i.MX8MM MIPI CSI 4-lane capture issue"
+  url: "https://community.nxp.com/t5/xx/xx/td-p/1236361?trMode=source"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "one/two lane capture working does not prove four-lane ordering, settle timing, or driver support"
+  status: queued_blind
+- id: MIPI-014
+  title: "STM32MP15 DSI PLL clock configurations in device tree"
+  url: "https://community.st.com/t5/stm32-mpus-embedded-software-and/dsi-pll-clock-configurations-in-device-tree/td-p/121642"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "DSI mode flags and continuous-clock expectations can decide whether a panel displays reliably"
+  status: queued_blind
+- id: MIPI-015
+  title: "STM32H747 MIPI DSI no LP command signal"
+  url: "https://community.st.com/t5/stm32-mcus-touchgfx-and-gui/stm32h747-mipi-dsi-intreface-problem-no-signal-on-dsi-data-lines/td-p/193073"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "video-mode and command-mode paths must be separated when LP init commands are absent but video data exists"
+  status: queued_blind
+- id: MIPI-016
+  title: "Infineon CX3 MIPI errors in some units"
+  url: "https://community.infineon.com/t5/USB-superspeed-peripherals/MIPI-Errors-in-some-units/td-p/341206"
+  domain: production
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "yield-limited MIPI errors need per-lane error counters, sync-byte errors, and board-to-board comparison"
+  status: queued_blind
+- id: MIPI-017
+  title: "Jetson MIPI LP timeout sensitivity"
+  url: "https://forums.developer.nvidia.com/t/jetson-mipi-lp-timeout-sensitivity/266152"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "LP-to-HS timeout errors can require THS_SETTLE and discontinuous clock branch before sensor driver rewrite"
+  status: queued_blind
+- id: MIPI-018
+  title: "MIPI D-PHY overview"
+  url: "https://www.mipi.org/specifications/d-phy"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "D-PHY is a low-power/high-speed PHY with forwarded or embedded clock modes; debug must respect LP/HS transitions"
+  status: reviewed
+- id: MIPI-019
+  title: "SN65DSI83 I2C bus signal degradation at high temperature"
+  url: "https://e2e.ti.com/support/interface-group/interface/f/interface-forum/1430669/sn65dsi83-i2c-bus-signal-degradation-when-chip-is-subject-to-high-temperature"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "bridge I2C debug should include temperature, clock stretching support, and whether I2C is used only at init"
+  status: queued_blind
+- id: MIPI-020
+  title: "TI DSI setup and debugging guide"
+  url: "https://e2e.ti.com/cfs-file/__key/communityserver-discussions-components-files/94/8551.DSI-Setup-and-Debugging-Guide-v1.0.pdf"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "DSI physical debug should distinguish LP voltage-level command traffic from HS low-swing differential video traffic"
+  status: queued_blind

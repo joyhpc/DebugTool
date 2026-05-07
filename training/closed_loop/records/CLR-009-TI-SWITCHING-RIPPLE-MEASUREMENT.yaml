@@ -1,0 +1,105 @@
+id: CLR-009
+source:
+  title: "TI SNVA559C Switching Regulator Application Report"
+  url: "https://www.ti.com/lit/an/snva559c/snva559c.pdf"
+  type: vendor_app_note
+domain: measurement
+blindness_note: "The official document includes the measurement method; the blind exercise ranks likely checks for a high-ripple complaint."
+blind_input:
+  symptom: "A switching regulator output ripple measurement is much higher than expected."
+  background: "The regulator appears to regulate the correct DC voltage, but oscilloscope ripple includes high-frequency spikes."
+  observations:
+  - "measured ripple depends strongly on probe placement"
+  - "customer or lab limit is stated as peak-to-peak ripple"
+  - "switching edges have high-frequency energy that can couple into measurement loops"
+  constraints:
+  - "do not replace the regulator IC before proving the measurement setup"
+  - "avoid using a long ground lead for high-frequency ripple measurement"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Repeat ripple measurement with short ground spring or differential method at the output capacitor."
+  why: "probe ground loop pickup can create false ripple and spikes."
+  expected: "measured ripple drops or changes shape when the probe loop is minimized."
+  p_hit: 0.55
+  p_exclude: 0.60
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.085
+- node: A1
+  type: action
+  check: "Set bandwidth limit and record both limited ripple and full-bandwidth switching spikes."
+  why: "specs often separate low-frequency ripple from switching transient artifacts."
+  expected: "bandwidth-limited and full-bandwidth measurements explain which component violates the limit."
+  p_hit: 0.35
+  p_exclude: 0.45
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.058
+- node: D2
+  type: decision
+  check: "Compare measured ripple to calculated ripple from L, C, ESR, load current, duty cycle, and frequency."
+  why: "calculation bounds whether the measurement is plausible."
+  expected: "measurement is either consistent with component values or points to setup/layout fault."
+  p_hit: 0.30
+  p_exclude: 0.55
+  time_min: 20
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.023
+- node: A2
+  type: action
+  check: "Measure switch node and input capacitor loop for ringing or layout-induced spikes."
+  why: "real high-frequency spikes can be driven by hot-loop layout or insufficient input decoupling."
+  expected: "switch-node ringing or input loop spikes correlate with output spike timing."
+  p_hit: 0.45
+  p_exclude: 0.30
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.019
+- node: T1
+  type: terminal
+  check: "Only after setup and layout evidence, change output capacitor, snubber, layout, or regulator."
+  why: "component changes should answer a measured mechanism."
+  expected: "ripple improves in the predicted component of the waveform."
+  p_hit: 0.50
+  p_exclude: 0.10
+  time_min: 45
+  setup_min: 20
+  risk_penalty: 2
+  priority_score: 0.008
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "TI's report emphasizes that accurate output ripple measurement is not trivial because fast switching components can be picked up by small antennas such as a probe ground lead. Differential or low-loop probing should precede design changes."
+  evidence:
+  - "switching regulators generate high-frequency components that are easy to pick up."
+  - "a differential measurement method can cancel common-mode pickup."
+  - "the measurement method changes the apparent ripple value."
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "For noisy measurements, the fastest path is often to test the measuring instrument's coupling path first."
+  - "A cheap repeat measurement can have higher expected value than a high-effort component substitution."
+  - "Separate true ripple, switching spikes, and measurement pickup before selecting a fix."
+  what_to_change_in_assets:
+  - "Power ripple patterns should include measurement-method likelihood and cost priors."
+  anti_pattern_observed:
+  - "replacing a regulator to solve a probe-loop artifact"
+promotion:
+  proposed_assets:
+  - "DP-MEASUREMENT-BEFORE-DESIGN-CHANGE"
+  regression_candidate: "REG-POWER-RIPPLE-MEASUREMENT-FIRST"
+status: reviewed

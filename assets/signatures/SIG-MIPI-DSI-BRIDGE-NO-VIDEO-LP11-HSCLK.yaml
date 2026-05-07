@@ -1,0 +1,51 @@
+asset_type: signature
+id: SIG-MIPI-DSI-BRIDGE-NO-VIDEO-LP11-HSCLK
+title: MIPI DSI Bridge No Video LP11 HS Clock
+version: 0.99.5
+domain: digital_interface
+applicability: mipi_dsi_to_lvds_or_panel_bridge
+use_when:
+- condition: DSI bridge or DSI panel has no output video
+  weight: high
+- condition: bridge can be configured over I2C or CSR but display is blank, striped, or unstable
+  weight: high
+- condition: DSI clock HS state, data lane LP11, or init sequence is uncertain
+  weight: high
+- condition: internal bridge test pattern is available
+  weight: medium
+do_not_use_when:
+- camera CSI receive path is the primary symptom
+- display pipeline already has valid live video and only UI/application content is wrong
+required_evidence:
+- kind: control_path
+  must_be: present
+  description: bridge/panel register access and init sequence evidence
+- kind: phy_state
+  must_be: preferred
+  description: DSI clock lane HS state and data lane LP11/HS transition evidence
+min_match_count: 2
+top_actions:
+- Verify the DSI bridge/panel initialization sequence, including power stable, EN/reset timing, CSR writes, PLL enable, soft reset, and stream start order.
+- Confirm DSI clock lane is in the required HS state and data lanes are in LP11 before the bridge is enabled or released, then transition data lanes to HS when video starts.
+- Enable the bridge or panel test pattern to split output-panel/LVDS timing from incoming DSI traffic.
+- Check line time, active pixel count, lane count, DSI clock range, output clock, and bridge error/status registers before changing random timing values.
+- If the test pattern passes but live video fails, focus on DSI input timing, signal integrity, lane configuration, and packet stream.
+references:
+- id: LM-MIPI-DSI-CSI-DPHY
+  relation: supports
+- id: DP-MEASUREMENT-BEFORE-DESIGN-CHANGE
+  relation: supports
+safety_level: S1
+destructive: false
+source:
+  type: vendor_app_note
+  citation: "Seeded from TI SN65DSI83/84/85 debugging PDF and SLLA356."
+confidence: medium
+counterexamples:
+- description: The DSI host driver never binds or enables the DSI host, so no waveform is expected.
+  evidence_required: kernel/device-tree logs showing missing host node or disabled parent device
+- description: Internal test pattern fails, making incoming DSI traffic a lower-priority branch.
+  evidence_required: failed bridge test pattern with valid bridge register access
+status: candidate
+last_validated: '2026-05-02'
+review_due: ''

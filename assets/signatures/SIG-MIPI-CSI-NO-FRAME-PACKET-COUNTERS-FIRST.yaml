@@ -1,0 +1,51 @@
+asset_type: signature
+id: SIG-MIPI-CSI-NO-FRAME-PACKET-COUNTERS-FIRST
+title: MIPI CSI No Frame Packet Counters First
+version: 0.99.5
+domain: digital_interface
+applicability: mipi_csi_camera_soc_fpga_receiver
+use_when:
+- condition: camera sensor is detected but no frames or frame timeout occurs
+  weight: high
+- condition: D-PHY or CSI receiver exposes packet, frame, ECC, CRC, data type, or byte count registers
+  weight: high
+- condition: lane count, lane polarity, discontinuous clock, or data type may be wrong
+  weight: high
+- condition: host reports no valid video packets or no frame received
+  weight: medium
+do_not_use_when:
+- sensor cannot be accessed over I2C or its chip ID cannot be read
+- output application cannot open a camera node but kernel binding has not been checked
+required_evidence:
+- kind: receiver_status
+  must_be: preferred
+  description: D-PHY packet count, CSI packet/image-info registers, frame count, ECC/CRC, and interrupt status
+- kind: host_config
+  must_be: preferred
+  description: num_lanes, port selection, lane polarity, discontinuous clock, data type, VC, pixel clock, and settle timing
+min_match_count: 2
+top_actions:
+- Verify sensor power, MCLK, reset, I2C register writes, and stream-on before packet-layer debug.
+- Read D-PHY packet counters first: zero packets means source-to-PHY path or PHY initialization; nonzero packets move the problem to CSI packet parsing or downstream capture.
+- Check CSI receiver data type, virtual channel, byte count, frame received bit, ECC/CRC, line-buffer, and bandwidth status.
+- Compare host configuration against the sensor: num_lanes, lane order/polarity, discontinuous clock, pixel clock, bit depth, and HS_SETTLE.
+- Use trace logs or receiver registers to distinguish no signal, bad packets, valid packets without frames, and downstream memory/display failure.
+references:
+- id: LM-MIPI-DSI-CSI-DPHY
+  relation: supports
+- id: DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  relation: supports
+safety_level: S1
+destructive: false
+source:
+  type: authoritative_doc
+  citation: "Seeded from NVIDIA Jetson/DRIVE CSI guidance, AMD MIPI CSI-2 RX hardware debug, Intel/Altera MIPI CSI-2 IP guide, and Infineon CX3 solved case."
+confidence: medium
+counterexamples:
+- description: Sensor I2C access fails; power/control path must be fixed first.
+  evidence_required: I2C NACKs, missing chip ID, or failed power_on sequence
+- description: CSI/VI frame count increments normally and failure is in application buffer handling.
+  evidence_required: valid frame received status and downstream-only application error
+status: candidate
+last_validated: '2026-05-02'
+review_due: ''

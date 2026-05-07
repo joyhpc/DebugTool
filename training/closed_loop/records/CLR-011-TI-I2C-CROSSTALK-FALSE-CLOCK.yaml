@@ -1,0 +1,92 @@
+id: CLR-011
+source:
+  title: "TI SCPA069 I2C Stuck Bus - Crosstalk False Clock"
+  url: "https://www.ti.com/lit/an/scpa069/scpa069.pdf"
+  type: vendor_app_note
+domain: digital_interface
+blindness_note: "Official app note section title exposes crosstalk; blind tree still ranks the fastest evidence path."
+blind_input:
+  symptom: "I2C SDA becomes stuck low after otherwise normal transactions."
+  background: "SCL/SDA run near other fast-edge or high-current traces, or long parallel routing exists."
+  observations:
+  - "stuck event appears intermittent"
+  - "normal address/protocol checks may pass before the failure"
+  - "failure can correlate with other switching activity"
+  constraints:
+  - "do not start with address debugging when physical false edges are plausible"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Capture SDA/SCL around the stuck event and look for extra SCL edge or glitch."
+  why: "a false clock can desynchronize controller and target."
+  expected: "one side effectively sees an extra clock before SDA remains low."
+  p_hit: 0.55
+  p_exclude: 0.45
+  time_min: 25
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.019
+- node: D2
+  type: decision
+  check: "Inspect layout for long parallel SCL/SDA routing near fast-edge aggressors."
+  why: "capacitive coupling can inject false edges into weakly pulled-up I2C lines."
+  expected: "SCL or SDA runs near fast switching lines or high-current loops."
+  p_hit: 0.40
+  p_exclude: 0.45
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.031
+- node: A1
+  type: action
+  check: "Temporarily reduce bus speed, add damping/filtering, or isolate aggressor activity."
+  why: "changing edge rate or aggressor timing should change false-edge incidence."
+  expected: "stuck rate changes with SI mitigation, not address configuration."
+  p_hit: 0.45
+  p_exclude: 0.30
+  time_min: 30
+  setup_min: 20
+  risk_penalty: 1
+  priority_score: 0.012
+- node: T1
+  type: terminal
+  check: "If crosstalk is confirmed, fix routing, spacing, pull-up strength, filtering, or buffering."
+  why: "the durable fix removes or rejects the false edge source."
+  expected: "repeat stress test no longer creates stuck SDA."
+  p_hit: 0.50
+  p_exclude: 0.10
+  time_min: 60
+  setup_min: 60
+  risk_penalty: 1
+  priority_score: 0.005
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "TI identifies crosstalk as a source of false I2C clock edges. Long parallel traces and fast edge rates can couple into I2C lines and create the desynchronization that leads to SDA stuck low."
+  evidence:
+  - "I2C highs are weakly pulled up and vulnerable to injected noise."
+  - "false clock edges can occur from coupling near SCL."
+  - "layout spacing and nearby fast edges are part of the root-cause path."
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - D2
+  - A1
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Intermittent I2C stuck bus is a signal-integrity problem until proven otherwise."
+  - "Layout inspection can have higher expected value than another firmware scan when false edges are plausible."
+  what_to_change_in_assets:
+  - "Keep false-clock and crosstalk stages in LM-I2C-BUS."
+  anti_pattern_observed:
+  - "debugging address bytes while SCL integrity is unproven"
+promotion:
+  proposed_assets:
+  - "LM-I2C-BUS"
+  regression_candidate: "REG-I2C-STUCK-FALSE-CLOCK-RECOVERY"
+status: reviewed

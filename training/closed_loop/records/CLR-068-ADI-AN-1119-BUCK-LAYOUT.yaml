@@ -1,0 +1,97 @@
+id: CLR-068
+queue_unit: AUTH-061
+source:
+  title: ADI AN-1119 buck layout
+  url: https://www.analog.com/en/resources/app-notes/an-1119.html
+  type: vendor_app_note
+domain: layout_emi
+blindness_note: Section-level authoritative queue focus can leak the target lesson; retained as official-source closure, not
+  a lab-perfect blind test.
+blind_input:
+  symptom: Measured behavior is noisy, marginal, or inconsistent with expectations.
+  background: The observed fault may be created or hidden by probing, layout parasitics, or return-path coupling.
+  observations:
+  - measurement changes with probe location, bandwidth, or setup
+  - layout and return paths can dominate high-frequency behavior
+  - static readings may miss the failing dynamic event
+  constraints:
+  - do not change the circuit before validating the measurement path
+  - use safe probing around switching or high-current nodes
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: Validate the measurement setup, reference point, bandwidth, and probe return path.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.48
+  p_exclude: 0.6
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.052
+- node: A1
+  type: action
+  check: Capture the relevant dynamic waveform at the physically correct node.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.5
+  p_exclude: 0.45
+  time_min: 20
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.021
+- node: D2
+  type: decision
+  check: 'Evaluate the official lesson: buck regulator PCB layout determines noise and emissions behavior.'
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.55
+  p_exclude: 0.35
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.021
+- node: T1
+  type: terminal
+  check: Fix measurement, layout, decoupling, or return-path mechanism and repeat the same capture.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.5
+  p_exclude: 0.1
+  time_min: 45
+  setup_min: 45
+  risk_penalty: 1
+  priority_score: 0.006
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: (p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: 'The official source highlights this durable debug lesson: buck regulator PCB layout determines noise and emissions
+    behavior. The predicted tree included a dedicated branch for that mechanism and ranked prerequisite measurements before
+    irreversible or high-effort changes.'
+  evidence:
+  - Authoritative unit AUTH-061 from ADI AN-1119 buck layout
+  - 'Focus: buck regulator PCB layout determines noise and emissions behavior'
+  - Coverage judged at section-level against official troubleshooting guidance.
+coverage:
+  result: hit
+  matched_nodes:
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - Official section-level lessons are best stored as cost-aware branch priors, not as validated real cases.
+  - The first useful action is the fastest safe measurement that can either support the mechanism or exclude it.
+  - Repeated support should update DP-MEASUREMENT-BEFORE-DESIGN-CHANGE rather than create isolated one-off advice.
+  what_to_change_in_assets:
+  - Use this unit as supporting evidence for DP-MEASUREMENT-BEFORE-DESIGN-CHANGE.
+  - Promote to stronger asset status only after real or fully solved public cases repeat the same mechanism.
+  anti_pattern_observed:
+  - jumping to familiar component replacement or firmware changes before proving the official fault mechanism
+promotion:
+  proposed_assets:
+  - DP-MEASUREMENT-BEFORE-DESIGN-CHANGE
+  regression_candidate: REG-COST-AWARE-DEBUG-ORDERING
+status: reviewed

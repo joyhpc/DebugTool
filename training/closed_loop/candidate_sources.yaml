@@ -1,0 +1,129 @@
+target_count: 100
+current_candidates: 25
+processed_records: 106
+candidates:
+- id: CAND-001
+  title: TLV320AIC3109-Q1 I2C SDA stuck low due reset/I2C timing overlap
+  url: https://e2e.ti.com/support/audio-group/audio/f/audio-forum/1375222/tlv320aic3109-q1-i2c-sda-stuck-in-low
+  domain: digital_interface
+  status: processed
+- id: CAND-002
+  title: SN65DSI83EVM I2C SDA line held low
+  url: https://e2e.ti.com/support/interface-group/interface/f/interface-forum/988490/sn65dsi83evm-i2c-sda-line-held-low
+  domain: digital_interface
+  status: queued
+- id: CAND-003
+  title: TI FAQ - I2C stuck bus recovery
+  url: https://e2e.ti.com/support/interface-group/interface/f/interface-forum/1397686/faq-tca4307-faq-what-is-stuck-bus-recovery
+  domain: digital_interface
+  status: queued_reference
+- id: CAND-004
+  title: MSP430G2553 I2C SDA held low on some power-ups
+  url: https://e2e.ti.com/support/microcontrollers/msp-low-power-microcontrollers-group/msp430/f/msp-low-power-microcontroller-forum/646168/msp430g2553-i2c-sda-held-low-on-2-of-power-ups
+  domain: digital_interface
+  status: queued
+- id: CAND-005
+  title: BQ25895 I2C SCL stuck low
+  url: https://e2e.ti.com/support/power-management-group/power-management/f/power-management-forum/1008047/bq25895-i2c-line-stuck-low-scl
+  domain: digital_interface
+  status: queued
+- id: CAND-006
+  title: FXOS8700 I2C SDA held low
+  url: https://community.nxp.com/t5/Sensors/FXOS8700-I2C-SDA-Held-Low/m-p/826284
+  domain: digital_interface
+  status: processed
+- id: CAND-007
+  title: Buck converter power circuitry not coming up
+  url: https://electronics.stackexchange.com/questions/684424/power-circuitry-not-coming-up
+  domain: power
+  status: queued
+- id: CAND-008
+  title: Buck converter output drops when downstream traces connected
+  url: https://electronics.stackexchange.com/questions/469178/buck-converter-drops-only-keeps-vout-if-no-traces-are-connected
+  domain: power
+  status: queued
+- id: CAND-009
+  title: STM32H573 LDO has no output due package power configuration
+  url: https://electronics.stackexchange.com/a/754367
+  domain: power
+  status: processed
+- id: CAND-010
+  title: Measuring ripple current and noise in a switching power supply
+  url: https://forum.digikey.com/t/measuring-ripple-current-and-noise-in-a-switching-power-supply/560
+  domain: measurement
+  status: processed
+- id: CAND-011
+  title: STM32 SPI always returns 0xFF
+  url: https://community.st.com/t5/stm32-mcus-boards-and-hardware/spi-always-returns-0xff/td-p/651283
+  domain: digital_interface
+  status: queued
+- id: CAND-012
+  title: ESP32-S3 DPS310 SPI returns only 0xFF
+  url: https://electronics.stackexchange.com/questions/749106/esp32-s3-dps310-breakout-spi-communication-returns-only-0xff
+  domain: digital_interface
+  status: processed
+- id: CAND-013
+  title: ST SPI TransmitReceive receives 0xFF / open MISO debug
+  url: https://community.st.com/t5/stm32-mcus-products/spi-transmitreceive-wrong-behavior/td-p/676176
+  domain: digital_interface
+  status: queued_reference
+- id: CAND-014
+  title: DMA SPI RX not receiving data
+  url: https://community.st.com/t5/stm32-mcus-products/dma-spi-rx-not-receiving-data/td-p/675254
+  domain: digital_interface
+  status: queued
+- id: CAND-015
+  title: LIS3DSH always receiving 0xFF
+  url: https://community.st.com/t5/mems-sensors/problems-with-lis3dsh-always-receiving-0xff/td-p/129916
+  domain: digital_interface
+  status: queued
+- id: CAND-016
+  title: STM32H7 HSE not starting on some boards
+  url: https://community.st.com/t5/stm32-mcus-products/stm32h7-hse-not-starting-on-some-boards/td-p/886337
+  domain: clock_reset
+  status: queued
+- id: CAND-017
+  title: Troubleshoot crystal load capacitance
+  url: https://electronics.stackexchange.com/questions/196280/troubleshoot-load-capacitance-crystal-not-starting
+  domain: clock_reset
+  status: queued_reference
+- id: CAND-018
+  title: TUSB8020B crystal oscillator does not start
+  url: https://e2e.ti.com/support/interface-group/interface/f/interface-forum/728517/tusb8020b-crystal-oscillator-does-not-start
+  domain: clock_reset
+  status: queued
+- id: CAND-019
+  title: TMS320F28377D crystal starts when probed/heated
+  url: https://e2e.ti.com/support/microcontrollers/c2000-microcontrollers-group/c2000/f/c2000-microcontrollers-forum/1401865/tms320f28377d-the-dsp28377d-is-causing-the-crystal-oscillator-to-fail-to-work
+  domain: clock_reset
+  status: queued
+- id: CAND-020
+  title: LSE oscillator on STM32L433 will not start reliably
+  url: https://electronics.stackexchange.com/questions/293524/lse-32-768-khz-oscillator-on-stm32l433-wont-start-reliably
+  domain: clock_reset
+  status: queued
+- id: CAND-021
+  title: AWR1843 CAN demo fails without 120 ohm termination
+  url: https://e2e.ti.com/support/sensors-group/sensors/f/sensors-forum/1231442/awr1843boost-mrr-demo-crashes-when-registor-120ohm-is-removed-from-the-radar-sensor
+  domain: digital_interface
+  status: queued
+- id: CAND-022
+  title: TCAN337 CAN acknowledge error
+  url: https://e2e.ti.com/support/interface-group/interface/f/interface-forum/1594142/tcan337-tcan337---application-error---can-failure---acknowledge-error
+  domain: digital_interface
+  status: queued
+- id: CAND-023
+  title: ISO1050 CAN bus interference and waveform correlation
+  url: https://e2e.ti.com/support/isolation-group/isolation/f/isolation-forum/1013740/iso1050-interference-on-the-can-bus
+  domain: digital_interface
+  status: queued
+- id: CAND-024
+  title: CAN bus termination quick reference
+  url: https://e2e.ti.com/cfs-file/__key/communityserver-discussions-components-files/171/CAN_2D00_Troubleshooting_2D00_Quick_2D00_Reference_2D00_v1.1.pdf
+  domain: digital_interface
+  status: queued_reference
+- id: CAND-025
+  title: STM32 built-in DFU unreliable due HSE crystal
+  url: https://community.st.com/t5/stm32-mcus/dfu-mode-with-system-bootloader-is-not-working-while-usb-does/ta-p/49473
+  domain: clock_reset
+  status: queued

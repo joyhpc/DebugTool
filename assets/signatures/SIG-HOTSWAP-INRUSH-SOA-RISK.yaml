@@ -1,0 +1,52 @@
+asset_type: signature
+id: SIG-HOTSWAP-INRUSH-SOA-RISK
+title: High-Side MOSFET Hot-Swap Inrush / SOA Risk Signature
+version: 0.96.0
+domain: power
+applicability: general
+use_when:
+- condition: high-side MOSFET burns at plug-in or startup
+  weight: high
+- condition: large downstream capacitance or unknown capacitive load
+  weight: high
+- condition: failure occurs before steady-state operation
+  weight: high
+- condition: MOSFET case/package heats rapidly during turn-on
+  weight: medium
+- condition: gate ramp is slow or Miller plateau suspected
+  weight: medium
+do_not_use_when:
+- MOSFET fails only after long steady-state operation with no startup stress evidence
+required_evidence:
+- kind: user_input
+  must_be: matches_pattern
+  description: burns/fails/hot during hot-plug/startup
+- kind: schematic
+  must_be: present
+  description: pass FET and output capacitance preferred, not mandatory for initial safety warning
+min_match_count: 2
+top_actions:
+- Stop destructive full-power reproduction; switch to current-limited safe envelope.
+- Capture VIN, VOUT, VGS, VDS, and ID during one controlled startup event if safe.
+- Estimate inrush energy and MOSFET transient SOA margin before changing FET only by RDS(on).
+- Separate capacitive inrush from active load by staged/precharge or downstream enable isolation.
+- Review gate dV/dt, Miller plateau duration, VGS clamp, fault timer, and current-limit settings.
+references:
+- id: LM-HOTSWAP-HIGHSIDE-MOSFET
+  relation: supports
+- id: LM-POWER-CHAIN
+  relation: supports
+safety_level: S3
+destructive: true
+source:
+  type: seed
+  citation: Internal seed signature for founder-pilot safety validation.
+confidence: medium
+counterexamples:
+- description: Failure due to wrong footprint/pinout rather than SOA.
+  evidence_required: layout/pinout and failed component inspection
+- description: Failure due to downstream short rather than capacitive inrush.
+  evidence_required: load isolation and resistance/current-limited injection evidence
+status: candidate
+last_validated: ''
+review_due: ''

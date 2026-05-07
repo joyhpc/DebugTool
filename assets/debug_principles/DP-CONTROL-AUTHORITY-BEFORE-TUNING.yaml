@@ -1,0 +1,38 @@
+asset_type: debug_principle
+id: DP-CONTROL-AUTHORITY-BEFORE-TUNING
+title: Prove Control Authority Before Tuning Loop Parameters
+version: 0.98.0
+domain: system
+applicability: general
+use_when:
+- condition: feedback-loop circuit behaves nonlinearly, saturates, heats, oscillates, or ignores small parameter changes
+  weight: high
+- condition: op amp, regulator, driver, or controller is expected to enforce a virtual short, regulation point, duty cycle, or current target
+  weight: high
+do_not_use_when:
+- actuator range and linear operating region have already been verified over the fault condition
+required_evidence:
+- kind: measurement
+  must_be: present
+  description: actuator output, feedback node, and operating rails under the failing condition
+principle: A feedback loop cannot be tuned into correctness if its actuator is saturated or outside its valid input/output range.
+diagnostic_rule: Before changing compensation or passive values, verify output swing, common-mode range, load current, supply headroom, loop polarity, and whether the feedback node actually satisfies the assumed virtual condition.
+anti_patterns:
+- changing RC compensation while the op amp output is railed
+- assuming virtual short holds without measuring the op amp inputs
+- treating a rail-to-rail replacement as proof without checking why it improved behavior
+references:
+- id: PBU-HCNR201-ISOLATED-VOLTAGE-SAMPLING-SEED
+  relation: derived_from
+safety_level: S1
+destructive: false
+source:
+  type: seed
+  citation: Generalized from user-provided HCNR201 / LM358 isolated sampling debug article.
+confidence: medium
+counterexamples:
+- description: The actuator has ample margin and the loop is stable but accuracy is still poor.
+  evidence_required: measured output swing/common-mode margins plus gain/offset tolerance analysis
+status: candidate
+last_validated: ''
+review_due: ''

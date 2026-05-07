@@ -1,0 +1,121 @@
+asset_type: link_model
+id: LM-SPI-TRANSACTION
+title: SPI Transaction Model
+version: 0.99.1
+domain: embedded
+applicability: general
+use_when:
+- condition: SPI flash read ID fails
+  weight: high
+- condition: SPI decoded data wrong
+  weight: high
+- condition: CS/SCLK/MOSI/MISO transaction issue
+  weight: high
+- condition: MISO stuck high/low/floating
+  weight: medium
+- condition: SPI returns all 0xFF or all 0x00 while the software API reports success
+  weight: high
+do_not_use_when:
+- a higher-level sensor calculation is wrong but chip ID and raw register reads are already proven correct
+required_evidence:
+- kind: waveform
+  must_be: preferred
+  description: CS, SCLK, MOSI, and MISO for a known chip-ID or reset-default register transaction
+causal_order:
+- power / ground / reset
+- pin mux / digital buffer mode
+- chip select ownership and polarity
+- SCLK existence and frequency
+- MOSI command/address phase
+- command length / dummy clocks / turnaround
+- MISO electrical state
+- CPOL / CPHA / bit order
+- driver API transaction shape
+- decoder / application interpretation
+stage_model:
+- stage: power / ground / reset
+  measurement_points:
+  - sensor VDD
+  - reset pin
+  - ground continuity
+  strong_indicators:
+  - all MISO reads are 0xFF or 0x00 with no device activity
+  actions:
+  - prove the target is powered and out of reset before protocol tuning
+- stage: pin mux / digital buffer mode
+  measurement_points:
+  - MCU pin configuration
+  - alternate-function mapping
+  strong_indicators:
+  - clock or MOSI absent despite API success
+  actions:
+  - verify pin mux and disable analog mode on digital SPI pins
+- stage: chip select ownership and polarity
+  measurement_points:
+  - CS at target pin
+  - CS setup/hold relative to SCLK
+  strong_indicators:
+  - MISO remains pulled high because target is never selected
+  actions:
+  - capture CS/SCLK/MOSI/MISO together for one read
+- stage: MOSI command/address phase
+  measurement_points:
+  - decoded command byte
+  - address bits
+  - read/write bit
+  strong_indicators:
+  - software sends a transaction but target never receives a valid read command
+  actions:
+  - compare waveform against datasheet timing diagram
+- stage: command length / dummy clocks / turnaround
+  measurement_points:
+  - total clocks
+  - dummy cycles
+  - RX sampling window
+  strong_indicators:
+  - response is shifted or read during command clocks
+  actions:
+  - separate command, address, dummy, and receive phases
+- stage: MISO electrical state
+  measurement_points:
+  - MISO voltage when selected and unselected
+  - pull-up / pull-down
+  strong_indicators:
+  - MISO is stuck high, stuck low, floating, or contested
+  actions:
+  - isolate open MISO, unselected target, shared-bus contention, and level mismatch
+- stage: driver API transaction shape
+  measurement_points:
+  - driver transaction fields
+  - command/address flags
+  - tx/rx buffer lengths
+  strong_indicators:
+  - bus transaction differs from intended register read even though API reports success
+  actions:
+  - check command/address phase APIs, dummy bits, tx_data flags, DMA length, and chip-select handling
+debug_rules:
+- Do not debug CPOL/CPHA before CS and SCLK exist at the target pin.
+- A successful SPI driver return code is not proof that the intended bus transaction happened.
+- For all-0xFF reads, split open/high MISO, unselected target, wrong command/address phase, and driver API transaction-shape branches.
+- Only configure sensor application registers after a chip-ID or reset-default register read is stable.
+references:
+- id: DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  relation: supports
+- id: DP-CURRENT-LOOP-BEFORE-NAMED-NET
+  relation: supports
+safety_level: S0
+destructive: false
+source:
+  type: vendor_app_note
+  citation: "Refined with Microchip TB3331 and closed-loop records CLR-004/007."
+confidence: medium
+counterexamples:
+- description: Raw chip-ID read is correct and only scaled application data is wrong.
+  evidence_required: stable known-register reads and raw data comparison
+- description: Decoder shows wrong mode but raw waveform matches the target datasheet.
+  evidence_required: manual timing check independent of analyzer decoder
+- description: All 0xFF is caused by an open MISO or unselected target, not by driver API framing.
+  evidence_required: MISO voltage and CS/SCLK waveform at the target pin
+status: candidate
+last_validated: ''
+review_due: ''

@@ -1,0 +1,93 @@
+id: CLR-126
+quality_tier: T0
+source:
+  title: "AMD MIPI D-PHY LogiCORE IP Product Guide"
+  url: "https://www.xilinx.com/support/documents/ip_documentation/mipi_dphy/v4_1/pg202-mipi-dphy.pdf"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The D-PHY hardware debug flow was revealed after drafting lane initialization and stopstate checks."
+blind_input:
+  symptom: "MIPI D-PHY link does not initialize or does not enter HS clock/data transfer."
+  background: "The PHY exposes PPI stopstate, init_done, lock signals, CL/DL status registers, and HS/LP error indicators."
+  observations:
+  - "LP11 and stopstate are prerequisite states before HS traffic"
+  - "HS clock transfer and HS data transfer are separate steps"
+  constraints:
+  - "do not debug packet layer before lane initialization and HS clock are proven"
+predicted_debug_tree:
+- node: P1
+  type: decision
+  check: "Confirm timing constraints, MMCM/PLL lock, IO pin planning, reset sequence, and expected clocks."
+  why: "D-PHY IP can fail before any serial-line protocol event."
+  expected: "core clocks are present, locked, constrained, and reset is released in the recommended order."
+  p_hit: 0.50
+  p_exclude: 0.60
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.023
+- node: P2
+  type: decision
+  check: "Verify serial lines are driven LP11 for T_INIT and stopstate/init_done asserts."
+  why: "the receiver completes initialization only after a valid stop-state interval."
+  expected: "stopstate and initialization status bits assert before HS transfer."
+  p_hit: 0.60
+  p_exclude: 0.65
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.031
+- node: P3
+  type: action
+  check: "Verify HS clock transfer, then HS data transfer using CL/DL status, txrequesths/rxactivehs, packet count, and PPI errors."
+  why: "D-PHY debug order is lane initialization, HS clock, then HS data."
+  expected: "HS clock status asserts before HS data packet counters advance."
+  p_hit: 0.55
+  p_exclude: 0.60
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.021
+- node: P4
+  type: terminal
+  check: "If errsoths or errsotsynchs persist, check HS_SETTLE and signal integrity after lane skew and mapping are bounded."
+  why: "SoT errors can mean settle mismatch or physical integrity."
+  expected: "error counters respond to settle/SI correction."
+  p_hit: 0.45
+  p_exclude: 0.45
+  time_min: 40
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.012
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "AMD's D-PHY guide orders hardware debug through general clock/reset/constraint checks, protocol checks, LP11/T_INIT lane initialization and stopstate, HS clock transfer, HS data transfer, PPI errors, and HS_SETTLE/SI investigation."
+  evidence:
+  - "the hardware debug flow explicitly sequences lane initialization, HS clock transfer, and HS data transfer"
+  - "the guide says LP11 for T_INIT is required and stopstate confirms initialization"
+  - "errsoths/errsotsynchs point to HS_SETTLE or signal-integrity branches"
+coverage:
+  result: hit
+  matched_nodes:
+  - P1
+  - P2
+  - P3
+  - P4
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "D-PHY failures must be ordered by PHY state machine, not by guessed video semantics."
+  - "Stopstate and HS clock are gating evidence for packet-layer debug."
+  what_to_change_in_assets:
+  - "Make LP11/T_INIT/stopstate/HS clock/HS data stages explicit in MIPI link model."
+  anti_pattern_observed:
+  - "looking for CSI frames before the D-PHY lane ever initialized"
+promotion:
+  proposed_assets:
+  - "LM-MIPI-DSI-CSI-DPHY"
+  regression_candidate: "REG-MIPI-DPHY-LP11-STOPSTATE-HS-ORDER"
+status: reviewed

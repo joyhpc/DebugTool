@@ -1,0 +1,91 @@
+id: CLR-015
+source:
+  title: "Microchip TB3331 I2C Weak Pull-Ups and Bus Capacitance"
+  url: "https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ApplicationNotes/ApplicationNotes/TB3331-Debug-SerialInterf-EmbeddedSystems-DS90003331.pdf"
+  type: vendor_app_note
+domain: digital_interface
+blindness_note: "The section name reveals weak pull-ups; record focuses on ordering versus address/application branches."
+blind_input:
+  symptom: "I2C device randomly NACKs or communication fails intermittently."
+  background: "The bus has multiple devices, wiring, connectors, or long traces."
+  observations:
+  - "failure appears random rather than a constant wrong address"
+  - "rise edges may be slow or rounded"
+  - "higher bus speed worsens the issue"
+  constraints:
+  - "do not change the device driver before measuring rise time and pull-up network"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Measure SDA/SCL rise time at the target pin."
+  why: "weak pull-ups or excess capacitance create slow edges and timing violations."
+  expected: "rise time is too slow for the selected I2C speed."
+  p_hit: 0.55
+  p_exclude: 0.50
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.032
+- node: D2
+  type: decision
+  check: "Estimate bus capacitance and effective pull-up resistance."
+  why: "RC time constant determines whether highs are valid before sampling."
+  expected: "RC estimate matches the rounded waveform."
+  p_hit: 0.45
+  p_exclude: 0.40
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.033
+- node: A1
+  type: action
+  check: "Lower bus speed or adjust pull-ups within sink-current limits as an A/B test."
+  why: "timing-sensitive failures should move with RC or speed."
+  expected: "NACK rate improves when rise-time margin improves."
+  p_hit: 0.50
+  p_exclude: 0.35
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.022
+- node: T1
+  type: terminal
+  check: "Fix pull-up value, bus segmentation, capacitance, routing, or speed."
+  why: "stable I2C requires electrical timing margin before protocol/application tuning."
+  expected: "random NACKs disappear across temperature and population."
+  p_hit: 0.50
+  p_exclude: 0.10
+  time_min: 45
+  setup_min: 30
+  risk_penalty: 1
+  priority_score: 0.007
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Microchip's I2C random-NACK example identifies weak pull-ups or excessive bus capacitance as an electrical-layer cause, verifiable by oscilloscope rise-time observation."
+  evidence:
+  - "rounded I2C rising edges indicate too much capacitance or weak pull-ups"
+  - "electrical-layer checks can eliminate many protocol/application hypotheses"
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - D2
+  - A1
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Random I2C NACKs deserve rise-time measurement before address or driver rewrites."
+  - "Speed-reduction A/B tests are high-value because they test the RC timing hypothesis cheaply."
+  what_to_change_in_assets:
+  - "LM-I2C-BUS should rank rise-time and capacitance before application-level branches for random NACKs."
+  anti_pattern_observed:
+  - "treating random NACK as a register-address issue before measuring the line"
+promotion:
+  proposed_assets:
+  - "LM-I2C-BUS"
+  regression_candidate: "REG-I2C-RANDOM-NACK-RISETIME-FIRST"
+status: reviewed

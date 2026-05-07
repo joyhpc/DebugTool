@@ -1,0 +1,36 @@
+asset_type: signature
+id: SIG-POWER-VIN-OK-EN-LOW
+title: VIN OK, EN low, VOUT absent
+version: 0.9.1
+domain: power
+applicability: general
+use_when:
+- condition: VIN normal
+  weight: high
+- condition: EN low
+  weight: high
+- condition: VOUT zero/no output
+  weight: high
+min_match_count: 3
+top_actions:
+- Measure EN at pin
+- Trace EN source
+- Check UVLO/PG/fault
+- Verify sequencing
+do_not_use_when: []
+required_evidence:
+- kind: user_input
+  must_be: matches_pattern
+references:
+- id: LM-POWER-CHAIN
+  relation: derived_from
+safety_level: S1
+destructive: false
+source:
+  type: seed
+  citation: ''
+confidence: medium
+counterexamples: []
+status: candidate
+last_validated: ''
+review_due: ''

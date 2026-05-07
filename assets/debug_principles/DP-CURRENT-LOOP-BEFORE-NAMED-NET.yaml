@@ -1,0 +1,38 @@
+asset_type: debug_principle
+id: DP-CURRENT-LOOP-BEFORE-NAMED-NET
+title: Debug Current Loops Before Named Nets
+version: 0.98.0
+domain: hardware
+applicability: general
+use_when:
+- condition: layout, grounding, decoupling, ringing, EMI, ripple, or high-current switching behavior is suspected
+  weight: high
+- condition: schematic net names look correct but measured noise, spikes, or instability remain
+  weight: medium
+do_not_use_when:
+- issue is proven to be a pure firmware/configuration fault independent of physical interconnect
+required_evidence:
+- kind: schematic
+  must_be: present
+  description: power, return, and signal path around the suspected loop
+principle: A schematic net name does not guarantee a low-impedance physical return path; debug the closed current loop and parasitics.
+diagnostic_rule: For high di/dt or sensitive analog nodes, inspect loop area, capacitor placement, return path continuity, plane cuts, vias, and probe reference point before changing ICs.
+anti_patterns:
+- assuming a large ground pour is a good ground without checking return path
+- treating an input capacitor as effective when it is physically far from the IC hot loop
+- evaluating switch-node ringing with a long probe ground lead
+references:
+- id: PBU-POWER-DEBUG-10-PITFALLS-SEED
+  relation: derived_from
+safety_level: S1
+destructive: false
+source:
+  type: seed
+  citation: Generalized from user-provided power-debug pitfall article.
+confidence: medium
+counterexamples:
+- description: Physical loop and return path are verified and the symptom follows a logical control/configuration state.
+  evidence_required: layout inspection, impedance/continuity checks, and control-state correlation
+status: candidate
+last_validated: ''
+review_due: ''

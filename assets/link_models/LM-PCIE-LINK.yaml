@@ -1,0 +1,45 @@
+asset_type: link_model
+id: LM-PCIE-LINK
+title: PCIe Link Bring-up Model
+version: 0.9.1
+domain: high_speed
+applicability: general
+use_when:
+- condition: PCIe device not enumerating
+  weight: high
+- condition: PCIe link training failure
+  weight: high
+- condition: LTSSM stuck in Detect/Polling/Recovery
+  weight: high
+- condition: PCIe lane down or negotiated width lower than expected
+  weight: medium
+- condition: REFCLK or PERST# suspected
+  weight: medium
+do_not_use_when: []
+required_evidence: []
+causal_order:
+- power
+- REFCLK
+- PERST#
+- lanes/AC coupling
+- LTSSM
+- enumeration
+- driver
+debug_rules:
+- Do not debug driver before link training.
+- If REFCLK is missing, stop at clock branch.
+references:
+- id: LM-POWER-CHAIN
+  relation: depends_on
+- id: LM-CLOCK-RESET-TREE
+  relation: depends_on
+safety_level: S0
+destructive: false
+source:
+  type: seed
+  citation: ''
+confidence: medium
+counterexamples: []
+status: candidate
+last_validated: ''
+review_due: ''

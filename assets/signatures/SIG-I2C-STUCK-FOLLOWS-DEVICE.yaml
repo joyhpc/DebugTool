@@ -1,0 +1,50 @@
+asset_type: signature
+id: SIG-I2C-STUCK-FOLLOWS-DEVICE
+title: I2C SDA Stuck Low Follows Device / Damage Signature
+version: 0.99.1
+domain: embedded
+applicability: general
+use_when:
+- condition: SDA remains low after reset and full power removal
+  weight: high
+- condition: isolating the target shows the target side still pulls SDA low
+  weight: high
+- condition: recovery clocks do not release SDA
+  weight: high
+- condition: the same component reproduces the failure on another board
+  weight: medium
+do_not_use_when:
+- SDA releases after normal recovery clocks or target reset
+required_evidence:
+- kind: measurement
+  must_be: present
+  description: SDA/SCL line state and isolation result
+- kind: experiment
+  must_be: preferred
+  description: recovery pulse, reset, or component-following test result
+min_match_count: 2
+top_actions:
+- Isolate the suspect target or bus segment before address/protocol debug.
+- Attempt controlled recovery clocks only after voltage-domain and backfeed checks.
+- If reset and power-cycle do not release SDA, measure leakage/resistance against known-good.
+- If the fault follows the component, branch to ESD, latch-up, contamination, or damaged-device failure analysis.
+- Preserve failed parts and avoid repeated stress once damage is suspected.
+references:
+- id: LM-I2C-BUS
+  relation: supports
+- id: DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  relation: supports
+safety_level: S1
+destructive: false
+source:
+  type: seed
+  citation: "Promoted from closed-loop near-hit CLR-003 and I2C stuck-bus counterexample analysis."
+confidence: medium
+counterexamples:
+- description: The target releases SDA after 8-16 recovery clocks.
+  evidence_required: waveform showing SDA release after controlled SCL pulses
+- description: The board contamination or solder bridge stays with the PCB rather than the component.
+  evidence_required: component swap and board leakage comparison
+status: candidate
+last_validated: ''
+review_due: ''

@@ -1,0 +1,92 @@
+id: CLR-017
+source:
+  title: "Microchip TB3331 Logic Levels and Mixed Voltage Domains"
+  url: "https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ApplicationNotes/ApplicationNotes/TB3331-Debug-SerialInterf-EmbeddedSystems-DS90003331.pdf"
+  type: vendor_app_note
+domain: digital_interface
+blindness_note: "The official section names reveal the domain; the record tests whether electrical thresholds are ranked early enough."
+blind_input:
+  symptom: "Serial communication is intermittent or one direction fails between devices on different voltage domains."
+  background: "The board connects MCU and peripheral I/O that may not share the same VDD or VIH/VIL thresholds."
+  observations:
+  - "logic analyzer decode may look inconsistent"
+  - "communication may work at one voltage or temperature but fail at another"
+  - "one device's high level may be marginal for the receiver"
+  constraints:
+  - "do not assume a decoded 1 or 0 is valid without checking receiver thresholds"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Compare measured VOH/VOL against receiver VIH/VIL across the actual supply rails."
+  why: "logic analyzers can decode levels that the target input treats as undefined."
+  expected: "signal margins are positive at the receiving pin."
+  p_hit: 0.55
+  p_exclude: 0.50
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.032
+- node: D2
+  type: decision
+  check: "Verify whether any level translator, pull-up rail, or open-drain high level is wrong."
+  why: "mixed voltage systems often fail through pull-up rail or translator direction assumptions."
+  expected: "all lines reference legal levels for both devices."
+  p_hit: 0.50
+  p_exclude: 0.40
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.035
+- node: A1
+  type: action
+  check: "A/B test at slower speed or corrected pull-up/translator setting."
+  why: "marginal levels and edge rates should improve with corrected electrical margin."
+  expected: "communication reliability changes with electrical margin."
+  p_hit: 0.45
+  p_exclude: 0.30
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.019
+- node: T1
+  type: terminal
+  check: "Fix voltage translation, pull-up rail, bus speed, or incompatible I/O configuration."
+  why: "protocol tuning cannot compensate for undefined input levels."
+  expected: "waveform thresholds pass across voltage and temperature."
+  p_hit: 0.50
+  p_exclude: 0.10
+  time_min: 45
+  setup_min: 30
+  risk_penalty: 1
+  priority_score: 0.007
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Microchip TB3331 treats logic levels and mixed voltage domains as electrical-layer causes: the receiving input must see valid VIH/VIL, and undefined regions can create intermittent serial failures."
+  evidence:
+  - "VIH and VIL define guaranteed digital input interpretation"
+  - "mixed voltage domains and pull-up rails must be checked before protocol conclusions"
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - D2
+  - A1
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Decoded bits are not evidence of valid input margin unless measured at the receiver."
+  - "Voltage-domain checks are often cheaper than protocol rework."
+  what_to_change_in_assets:
+  - "Add threshold-margin wording to I2C/SPI/UART debug prompts."
+  anti_pattern_observed:
+  - "trusting analyzer decode while receiver VIH/VIL margin is unverified"
+promotion:
+  proposed_assets:
+  - "LM-I2C-BUS"
+  - "LM-SPI-TRANSACTION"
+  regression_candidate: "REG-SERIAL-VOLTAGE-THRESHOLD-FIRST"
+status: reviewed

@@ -1,0 +1,37 @@
+asset_type: link_model
+id: LM-CLOCK-RESET-TREE
+title: Clock and Reset Dependency Model
+version: 0.9.1
+domain: system
+applicability: general
+use_when:
+- condition: subsystem does not start
+  weight: medium
+- condition: clock missing or unstable
+  weight: high
+- condition: reset held or reset release timing issue
+  weight: high
+- condition: device inactive despite power present
+  weight: medium
+do_not_use_when: []
+required_evidence: []
+causal_order:
+- power valid
+- clock source
+- clock enable/distribution
+- reset assertion
+- reset release timing
+- dependent subsystem start
+debug_rules:
+- Do not debug protocol before clock/reset prerequisites pass.
+references: []
+safety_level: S0
+destructive: false
+source:
+  type: seed
+  citation: ''
+confidence: medium
+counterexamples: []
+status: candidate
+last_validated: ''
+review_due: ''

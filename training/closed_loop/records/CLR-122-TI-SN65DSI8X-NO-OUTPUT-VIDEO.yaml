@@ -1,0 +1,94 @@
+id: CLR-122
+quality_tier: T0
+source:
+  title: "Troubleshooting SN65DSI8x - Tips and Tricks"
+  url: "https://www.ti.com/lit/an/slla356/slla356.pdf"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The final TI no-output checklist was revealed after drafting test-pattern and line-time branches."
+blind_input:
+  symptom: "SN65DSI8x bridge has no output video or incorrect video during normal operation."
+  background: "Bridge converts DSI to LVDS and has a DSI-Tuner-generated configuration, internal test pattern, and error registers."
+  observations:
+  - "live DSI input timing may differ from LVDS output timing"
+  - "test pattern can bypass most of the DSI input path"
+  constraints:
+  - "do not treat blank panel as proof of bad panel or bad MIPI until test-pattern split is done"
+predicted_debug_tree:
+- node: N1
+  type: decision
+  check: "Enable the SN65DSI8x test pattern and check whether the panel/LVDS path displays it correctly."
+  why: "the test pattern isolates bridge output/panel timing from DSI input traffic."
+  expected: "good test pattern shifts suspicion to DSI input; bad pattern shifts to registers, LVDS timing, panel, or output path."
+  p_hit: 0.55
+  p_exclude: 0.70
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.036
+- node: N2
+  type: decision
+  check: "Compare DSI source timing, bridge CSR timing, active pixels, LVDS panel timing, and line time."
+  why: "the bridge preserves line time and does not realign timing arbitrarily."
+  expected: "active pixels match CSR and line time matches output requirement."
+  p_hit: 0.60
+  p_exclude: 0.60
+  time_min: 35
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.020
+- node: N3
+  type: action
+  check: "Verify active DSI lane count, DSI CLK range register, LVDS clock frequency, VCORE, and error registers."
+  why: "configuration and power/status registers provide higher signal than blind timing edits."
+  expected: "lane count, clock range, VCORE, and error registers either match design or identify a concrete mismatch."
+  p_hit: 0.55
+  p_exclude: 0.55
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.021
+- node: N4
+  type: terminal
+  check: "If line time is short, fill with blanking packets or LP11; if long, increase DSI clock if within spec."
+  why: "the bridge's line-time budget is a direct timing dependency."
+  expected: "line-time correction changes video stability or output presence."
+  p_hit: 0.45
+  p_exclude: 0.35
+  time_min: 45
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.011
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "TI's no-output-video procedure prioritizes correct initialization, test pattern isolation, matching source/bridge/panel timing, line time, active pixel count, lane count, DSI signal integrity, DSI clock range, LVDS clock, VCORE, and error registers."
+  evidence:
+  - "TI notes the test pattern does not use DSI input except clock as an option"
+  - "the app note states active pixels and line time must match the bridge/panel expectations"
+  - "the checklist includes lane count, signal integrity, clock range, LVDS clock, VCORE, and error registers"
+coverage:
+  result: hit
+  matched_nodes:
+  - N1
+  - N2
+  - N3
+  - N4
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "MIPI bridge no-video problems need split tests, not monolithic display guesses."
+  - "Line time and packet blanking are as important as pixel totals."
+  what_to_change_in_assets:
+  - "Add bridge test pattern and line-time stages to the MIPI link model."
+  anti_pattern_observed:
+  - "changing panel timing while ignoring bridge line-time preservation and active-pixel constraints"
+promotion:
+  proposed_assets:
+  - "SIG-MIPI-DSI-BRIDGE-NO-VIDEO-LP11-HSCLK"
+  - "LM-MIPI-DSI-CSI-DPHY"
+  regression_candidate: "REG-MIPI-DSI-TEST-PATTERN-LINE-TIME-FIRST"
+status: reviewed

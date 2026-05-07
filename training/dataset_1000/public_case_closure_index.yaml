@@ -1,0 +1,26 @@
+target_count: 300
+reviewed_public_cases: 6
+existing_records:
+- public_case_id: PUB-018
+  records:
+  - CLR-004
+  note: "Existing SPI all-0xFF public case record before dataset_1000 queue creation."
+new_records:
+- public_case_id: PUB-010
+  records:
+  - CLR-107
+- public_case_id: PUB-017
+  records:
+  - CLR-108
+- public_case_id: PUB-019
+  records:
+  - CLR-109
+- public_case_id: PUB-015
+  records:
+  - CLR-110
+- public_case_id: PUB-016
+  records:
+  - CLR-111
+limits:
+- "These are public solved-case closures, stronger than official-source priors but still not real project cases."
+- "Queue candidates remain unreviewed until converted into CLR records."

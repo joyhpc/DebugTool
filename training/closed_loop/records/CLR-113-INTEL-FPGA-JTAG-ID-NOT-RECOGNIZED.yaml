@@ -1,0 +1,91 @@
+id: CLR-113
+quality_tier: T0
+source:
+  title: "FPGA Configuration Troubleshooter - Quartus programmer fails to recognize the device ID"
+  url: "https://www.altera.com/design/guidance/configuration/debug"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The official checklist was revealed after drafting JTAG readiness and status-pin branches."
+blind_input:
+  symptom: "Quartus Programmer fails to recognize an Intel/Altera FPGA device ID."
+  background: "The board is in a configuration or JTAG bring-up state, and the user may be tempted to change files or device selections."
+  observations:
+  - "device ID cannot be read reliably or at all"
+  - "configuration pins and dedicated JTAG pins may share the failure boundary"
+  constraints:
+  - "capture signals at the FPGA end; connector-only measurements can hide board path faults"
+predicted_debug_tree:
+- node: J1
+  type: decision
+  check: "Verify MSEL/mode pins, nCE, nCONFIG, nSTATUS, CONF_DONE, and JTAG pull-ups/pull-downs against the device handbook."
+  why: "floating mode/status pins can keep the device out of a state where IDCODE instructions are accepted."
+  expected: "configuration pins are strapped correctly and released to valid logic levels."
+  p_hit: 0.45
+  p_exclude: 0.55
+  time_min: 25
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.024
+- node: J2
+  type: decision
+  check: "Measure required power rails and configuration-bank supplies during Auto Detect."
+  why: "JTAG can fail if the target is still in reset or not powered properly."
+  expected: "all required rails are stable and within datasheet range."
+  p_hit: 0.50
+  p_exclude: 0.65
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.041
+- node: J3
+  type: action
+  check: "Probe TCK, TDI, and TDO at the FPGA end while Auto Detect runs."
+  why: "the official support information asks for FPGA-end JTAG screenshots because connector-side evidence is incomplete."
+  expected: "TCK/TDI activity reaches the FPGA and TDO shows a return path, or the fault localizes to the physical path."
+  p_hit: 0.55
+  p_exclude: 0.70
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.030
+- node: J4
+  type: terminal
+  check: "If signals and supplies are valid, inspect chain order, device family support, and possible damaged device."
+  why: "these branches have lower value until physical and readiness evidence is clean."
+  expected: "the failing branch is not explained by missing signals, reset, or power."
+  p_hit: 0.35
+  p_exclude: 0.40
+  time_min: 45
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.010
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The Altera configuration troubleshooter prioritizes mode/status/JTAG pin setup, stable power supplies, nCONFIG/nSTATUS release, and FPGA-end TDO/TDI/TCK screenshots when Quartus cannot recognize the device ID."
+  evidence:
+  - "the checklist includes MSEL, nCE, nCONFIG, nSTATUS, CONF_DONE, and dedicated JTAG pins"
+  - "the debug information requested includes nCONFIG, nSTATUS, TDO, TDI, and TCK probed at the FPGA end"
+coverage:
+  result: hit
+  matched_nodes:
+  - J1
+  - J2
+  - J3
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "For FPGA IDCODE failures, configuration-readiness pins are part of the JTAG debug tree."
+  - "The measurement location matters; FPGA-end captures beat schematic confidence."
+  what_to_change_in_assets:
+  - "LM-FPGA-JTAG-CONFIG should include reset/status pin readiness before programming-file branches."
+  anti_pattern_observed:
+  - "assuming a wrong device file before proving the target accepts JTAG instructions"
+promotion:
+  proposed_assets:
+  - "LM-FPGA-JTAG-CONFIG"
+  regression_candidate: "REG-INTEL-FPGA-JTAG-NCONFIG-NSTATUS-GATE"
+status: reviewed

@@ -1,0 +1,91 @@
+id: CLR-115
+quality_tier: T0
+source:
+  title: "Embedded Design Handbook - JTAG Signal Integrity"
+  url: "https://www.intel.com/content/www/us/en/docs/programmable/683689/current/jtag-signal-integrity.html"
+  type: official_source_prior
+domain: digital_interface
+blindness_note: "The official paragraph was revealed after drafting the branch from intermittent JTAG/debug behavior."
+blind_input:
+  symptom: "Intel FPGA JTAG programming or debug behavior is intermittent or inconsistent."
+  background: "The JTAG interface is used for programming, System Console, Signal Tap, and Nios debug."
+  observations:
+  - "debug behavior may change with cable length, TCK speed, or board revision"
+  - "tool-level errors can look like software/debugger instability"
+  constraints:
+  - "do not assume the debugger is at fault until JTAG electrical integrity is bounded"
+predicted_debug_tree:
+- node: S1
+  type: decision
+  check: "Use jtagconfig or System Console to verify whether the JTAG chain is stable over repeated scans."
+  why: "repeatability separates host setup issues from marginal signal integrity."
+  expected: "device and node readings are stable across scans, or IDCODE/node readings vary."
+  p_hit: 0.40
+  p_exclude: 0.55
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.045
+- node: S2
+  type: decision
+  check: "Lower TCK frequency and compare connector-side versus FPGA-side TCK/TMS/TDI/TDO waveforms."
+  why: "marginal edges often improve at lower clock speed and reveal physical-layer dependence."
+  expected: "scan reliability improves with lower TCK or cleaner waveform path."
+  p_hit: 0.45
+  p_exclude: 0.60
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.025
+- node: S3
+  type: action
+  check: "Inspect layout, stubs, pull-ups, series damping, and cable/adapter length."
+  why: "JTAG can be a high-consequence low-pin-count signal integrity problem."
+  expected: "layout or interconnect changes explain edge quality or intermittent scan results."
+  p_hit: 0.35
+  p_exclude: 0.45
+  time_min: 45
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.010
+- node: S4
+  type: terminal
+  check: "Move to application debug only after JTAG scan and internal debug access are stable."
+  why: "unstable debug transport can falsify all downstream observations."
+  expected: "Signal Tap, System Console, or Nios debug failures are reproduced over a stable chain."
+  p_hit: 0.30
+  p_exclude: 0.35
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.012
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Intel's Embedded Design Handbook treats JTAG signal integrity as critical because programming and debug depend on it; it notes that poor JTAG integrity can prevent JTAG debug or cause inconsistent debugger behavior and suggests System Console as a chain verification tool."
+  evidence:
+  - "the handbook explicitly links poor JTAG signal integrity to failed or inconsistent debug behavior"
+  - "the handbook names System Console as a way to verify the JTAG chain"
+coverage:
+  result: hit
+  matched_nodes:
+  - S1
+  - S2
+  - S3
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Debug transport integrity is a prerequisite; it is not merely a convenience layer."
+  - "Repeated scans and TCK speed changes are fast discriminators for marginal JTAG."
+  what_to_change_in_assets:
+  - "Add TCK speed and repeated-chain-stability checks to the FPGA JTAG/config model."
+  anti_pattern_observed:
+  - "trusting Signal Tap or Nios debugger symptoms while the JTAG transport is unstable"
+promotion:
+  proposed_assets:
+  - "LM-FPGA-JTAG-CONFIG"
+  regression_candidate: "REG-INTEL-FPGA-JTAG-SI-BEFORE-SIGNALTAP"
+status: reviewed

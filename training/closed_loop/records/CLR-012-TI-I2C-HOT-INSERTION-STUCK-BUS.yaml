@@ -1,0 +1,92 @@
+id: CLR-012
+source:
+  title: "TI SCPA069 I2C Stuck Bus - Hot Insertion"
+  url: "https://www.ti.com/lit/an/scpa069/scpa069.pdf"
+  type: vendor_app_note
+domain: digital_interface
+blindness_note: "The training unit focuses on hot insertion; blind tree ranks the safe debug path."
+blind_input:
+  symptom: "I2C bus locks up when a board or module is inserted into a powered system."
+  background: "A powered backplane sees a previously unpowered I2C segment with parasitic capacitance."
+  observations:
+  - "SDA/SCL may dip during insertion"
+  - "failure is tied to physical connection timing"
+  - "the bus may work after power-cycling"
+  constraints:
+  - "do not repeatedly hot-plug without current/backfeed and ESD controls"
+predicted_debug_tree:
+- node: G1
+  type: decision
+  check: "Define a safe insertion test with current limit, ESD precautions, and line monitoring."
+  why: "hot insertion can stress both power and signal paths."
+  expected: "test setup limits damage while capturing SDA/SCL."
+  p_hit: 0.20
+  p_exclude: 0.30
+  time_min: 10
+  setup_min: 20
+  risk_penalty: 0
+  priority_score: 0.012
+- node: A1
+  type: action
+  check: "Capture SDA/SCL and supply rails at insertion."
+  why: "parasitic capacitance or backfeed can create a false SCL edge."
+  expected: "SCL/SDA dip or glitch coincides with insertion."
+  p_hit: 0.60
+  p_exclude: 0.35
+  time_min: 25
+  setup_min: 20
+  risk_penalty: 1
+  priority_score: 0.017
+- node: D1
+  type: decision
+  check: "Does buffering, precharge, or delayed connection prevent the glitch?"
+  why: "hot-swap buffer behavior separates insertion transient from protocol fault."
+  expected: "protected/buffered connection prevents stuck bus."
+  p_hit: 0.55
+  p_exclude: 0.30
+  time_min: 30
+  setup_min: 30
+  risk_penalty: 1
+  priority_score: 0.011
+- node: T1
+  type: terminal
+  check: "Add hot-swap buffer, precharge, sequencing, or connector/power-domain control."
+  why: "the fix must prevent the insertion transient from becoming a false edge."
+  expected: "repeated safe insertion tests do not create stuck bus."
+  p_hit: 0.55
+  p_exclude: 0.10
+  time_min: 60
+  setup_min: 60
+  risk_penalty: 2
+  priority_score: 0.005
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "TI describes hot insertion as a mechanism where a non-powered I2C segment adds parasitic capacitance to a live bus, causing line dips that can look like false clocks and produce a stuck bus."
+  evidence:
+  - "unpowered daughter-card capacitance can pull live SDA/SCL down during insertion."
+  - "the transient can corrupt data or create stuck bus behavior."
+  - "hot-swap buffer devices can isolate until both sides are ready."
+coverage:
+  result: hit
+  matched_nodes:
+  - G1
+  - A1
+  - D1
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Hot-insertion debug belongs to both signal integrity and safety domains."
+  - "Insertion-time waveform capture has better value than post-failure register reads."
+  what_to_change_in_assets:
+  - "LM-I2C-BUS should keep hot-insertion as a first-class false-edge source."
+  anti_pattern_observed:
+  - "using uncontrolled hot-plug repetition as the main debug method"
+promotion:
+  proposed_assets:
+  - "LM-I2C-BUS"
+  regression_candidate: "REG-I2C-STUCK-FALSE-CLOCK-RECOVERY"
+status: reviewed

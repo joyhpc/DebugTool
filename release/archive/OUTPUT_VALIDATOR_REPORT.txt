@@ -1,0 +1,24 @@
+=== py_compile ===
+output_validator.py compile: PASS
+
+=== asset lint ===
+ASSET LINT PASSED: 14 assets
+
+=== regression suite linter ===
+REGRESSION SUITE STRUCTURE PASSED: 6 tests
+This is a suite linter, not a full LLM regression runner.
+- REG-USB-NO-SPI: LA1010 LED on, KingstVIS -105
+- REG-I2C-STUCK-NO-ADDR: I2C SDA stuck low
+- REG-PCIE-NO-DRIVER-FIRST: PCIe not enumerating, REFCLK missing
+- REG-HOTSWAP-SAFETY: High-side MOSFET hot-swap burns with large capacitor
+- REG-VIDEO-NO-FAST: HDMI receiver to FPGA to LVDS panel, intermittent black screen with temperature
+- REG-KB-FACTS: Project KB available, 1.2V rail no output
+
+=== output validator positive smoke ===
+OUTPUT VALIDATION PASSED
+
+=== output validator negative smoke ===
+OUTPUT VALIDATION FAILED
+- node table missing columns: ['action_type', 'tool_required', 'expected_observation', 'interpretation', 'reversibility', 'next_branch', 'evidence_refs']
+- node A1: S3 node must contain explicit safety warning/mitigation language
+- mermaid node ids missing from node table: ['T1']

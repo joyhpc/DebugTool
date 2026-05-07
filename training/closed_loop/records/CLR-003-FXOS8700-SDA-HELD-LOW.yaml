@@ -1,0 +1,105 @@
+id: CLR-003
+source:
+  title: FXOS8700 I2C SDA Held Low
+  url: https://community.nxp.com/t5/Sensors/FXOS8700-I2C-SDA-Held-Low/m-p/826284
+  type: public_forum
+domain: digital_interface
+blindness_note: Source discussion includes partial troubleshooting and no clean root-cause closure; score focuses on fault-domain coverage.
+blind_input:
+  symptom: production units occasionally have sensor permanently holding I2C SDA low
+  background: fielded devices show a small number of failures after days/months/years
+  observations:
+  - reset and full power cycle do not release SDA
+  - cutting/isolation indicates the sensor side is pulling SDA
+  - moving suspect device to a fresh PCB reproduces failure later
+  constraints:
+  - distinguish recoverable bus hang from damaged/latch-up device
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: Is SDA low caused by bus-level hang or one target device?
+  why: physical isolation prevents blaming firmware or master prematurely
+  expected: suspect device side remains low when isolated
+  p_hit: 0.45
+  p_exclude: 0.60
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 1
+  priority_score: 0.047
+- node: A1
+  type: action
+  check: Try standard I2C bus recovery clocks if SDA is a recoverable stuck state
+  why: incomplete byte transfer can hold SDA until clocks complete
+  expected: recoverable target releases SDA within recovery pulses
+  p_hit: 0.30
+  p_exclude: 0.35
+  time_min: 5
+  setup_min: 5
+  risk_penalty: 2
+  priority_score: 0.040
+- node: D2
+  type: decision
+  check: Does hardware reset or full power removal clear the device?
+  why: failure persistence implies damage, latch-up, or nonvolatile state, not normal I2C hang
+  expected: no recovery elevates to device-level failure analysis
+  p_hit: 0.40
+  p_exclude: 0.45
+  time_min: 10
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.030
+- node: A2
+  type: action
+  check: Move suspect device or compare resistance/leakage against known-good
+  why: separates PCB contamination/layout from device-specific failure
+  expected: failure follows device if the device is damaged
+  p_hit: 0.55
+  p_exclude: 0.30
+  time_min: 45
+  setup_min: 30
+  risk_penalty: 2
+  priority_score: 0.009
+- node: T1
+  type: terminal
+  check: If failure follows device and bus recovery fails, classify as unresolved device failure / destructive analysis needed
+  why: avoids overfitting to software workaround
+  expected: asset remains cautionary pattern, not validated root cause
+  p_hit: 0.25
+  p_exclude: 0.15
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.010
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: Standard recovery clocks did not free SDA. The suspect part appeared to carry the failure across boards, leaving the discussion closer to device-level failure/latch-up suspicion than a solved recoverable bus case.
+  evidence:
+  - SDA isolation pointed to target device
+  - nine SCL pulses did not recover
+  - suspect device moved to another PCB and failed again later
+coverage:
+  result: near_hit
+  matched_nodes:
+  - D1
+  - A1
+  - D2
+  - A2
+  missing_nodes:
+  - explicit ESD/latch-up/root-cause failure-analysis branch
+meta_reflection:
+  what_generalized:
+  - not all I2C stuck-low cases are recoverable protocol hangs
+  - if failure survives reset/power-cycle and follows the component, branch to device damage/latch-up
+  what_to_change_in_assets:
+  - add counterexample to I2C stuck bus pattern: recovery clocks can fail if device is damaged
+  anti_pattern_observed:
+  - assuming bus recovery pulses are sufficient for all stuck-SDA cases
+promotion:
+  proposed_assets:
+  - DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  regression_candidate: REG-I2C-STUCK-FOLLOWS-DEVICE
+status: reviewed

@@ -1,0 +1,105 @@
+id: CLR-002
+source:
+  title: TLV320AIC3109-Q1 I2C SDA stuck low
+  url: https://e2e.ti.com/support/audio-group/audio/f/audio-forum/1375222/tlv320aic3109-q1-i2c-sda-stuck-in-low
+  type: public_forum
+domain: digital_interface
+blindness_note: Search snippet exposed that reset timing and I2C traffic overlap were important; still useful for coverage scoring.
+blind_input:
+  symptom: I2C SDA becomes stuck low intermittently; SCL remains high
+  background: SoC master talks to two audio devices on same I2C bus; one device reset timing may overlap bus traffic to another device
+  observations:
+  - disconnecting the suspect device's SDA restores the system bus high
+  - suspect device side remains low
+  - issue is intermittent across repeated power/reset cycles
+  constraints:
+  - avoid assuming address/protocol issue before isolating who pulls SDA low
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: Which physical device is pulling SDA low?
+  why: any I2C target can hold SDA; isolation locates the actor
+  expected: cutting/removing suspect SDA separates bus-level and device-level fault
+  p_hit: 0.40
+  p_exclude: 0.60
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 1
+  priority_score: 0.044
+- node: A1
+  type: action
+  check: Capture reset, SCL, SDA, and transactions in the same event
+  why: intermittent stuck states often come from reset/transaction overlap
+  expected: stuck event correlates with reset edge or incomplete transaction
+  p_hit: 0.55
+  p_exclude: 0.35
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.021
+- node: D2
+  type: decision
+  check: Does bus traffic begin before every target is out of reset?
+  why: target state machines may sample bus while not ready
+  expected: delaying traffic or changing reset order should change failure rate
+  p_hit: 0.55
+  p_exclude: 0.30
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.035
+- node: A2
+  type: action
+  check: Add sequence guard so bus writes occur only after reset high and required startup delay
+  why: proves or rejects sequencing as root cause
+  expected: repeated-cycle test no longer creates stuck SDA
+  p_hit: 0.60
+  p_exclude: 0.20
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 1
+  priority_score: 0.023
+- node: T1
+  type: terminal
+  check: If sequencing fix works, add reset/I2C timing rule to asset
+  why: prevents future address-first misdiagnosis
+  expected: regression checks reset overlap branch
+  p_hit: 0.30
+  p_exclude: 0.10
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.018
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: The stuck SDA correlated with the device reset rising while I2C traffic to another device overlapped. Adjusting reset timing to avoid overlap eliminated the observed stuck events in repeated-cycle testing.
+  evidence:
+  - suspect device isolated as pulling SDA low
+  - scope timing showed reset edge overlap with I2C register traffic
+  - after timing adjustment, long repeated-cycle test did not reproduce the issue
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - A1
+  - D2
+  - A2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - bus-stuck debug needs physical isolation plus time-aligned reset/bus waveforms
+  - reset sequencing can be a first-class fault domain, not a side detail
+  what_to_change_in_assets:
+  - deepen LM-I2C-BUS with reset/transaction overlap stage
+  - add or refine signature for SDA stuck after reset overlap
+  anti_pattern_observed:
+  - treating I2C stuck as address or pull-up issue before checking reset timing
+promotion:
+  proposed_assets:
+  - DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  regression_candidate: REG-I2C-SDA-STUCK-RESET-OVERLAP
+status: reviewed

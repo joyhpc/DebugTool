@@ -1,0 +1,94 @@
+id: CLR-120
+quality_tier: T2
+public_case_id: INTEL-FPGA-009
+source:
+  title: "Error using nios ii - Downloading ELF Process failed"
+  url: "https://community.intel.com/t5/Nios-V-II-Embedded-Design-Suite/Error-using-nios-ii-Downloading-ELF-Process-failed/td-p/688380"
+  type: vendor_forum_fae_resolved
+domain: digital_interface
+blindness_note: "The accepted user resolution was read after drafting SOF, reset/clock, memory-map, and pin-assignment branches."
+blind_input:
+  symptom: "Quartus programs the FPGA SOF successfully, but Nios II SBT/Eclipse fails with Downloading ELF Process failed."
+  background: "A MAX10 Nios II hello-world style system was built in Qsys/Platform Designer and programmed before running software."
+  observations:
+  - "SOF download succeeds"
+  - "the same ELF download failure appears across simple projects"
+  - "System ID may show not found or confusing target-connection state"
+  constraints:
+  - "do not assume the ELF or IDE is bad while the hardware system map is unproven"
+predicted_debug_tree:
+- node: E1
+  type: decision
+  check: "Confirm the SOF loaded into the FPGA exactly matches the sopcinfo used by the software project."
+  why: "stale hardware images make software target connections misleading."
+  expected: "SOF, sopcinfo, BSP, and timestamp align."
+  p_hit: 0.45
+  p_exclude: 0.55
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.048
+- node: E2
+  type: decision
+  check: "Check reset handling, clock input, and whether board reset or power cycle occurred after SOF programming."
+  why: "Nios CPU download depends on a live, clocked, unreset processor."
+  expected: "CPU clock and reset state allow the debug module to pause and download."
+  p_hit: 0.50
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.031
+- node: E3
+  type: action
+  check: "Review pin assignments and top-level Platform Designer connections before changing Eclipse settings."
+  why: "wrong pins can let SOF programming pass while the Nios system itself has no usable clock/reset/peripheral path."
+  expected: "pin-assignment mismatch or missing top-level connection is found and fixed."
+  p_hit: 0.55
+  p_exclude: 0.45
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.022
+- node: E4
+  type: terminal
+  check: "If hardware map passes, inspect reset vector, exception vector, memory span, and jtagconfig -n node list."
+  why: "ELF download and verify depend on memory and debug-node visibility."
+  expected: "Nios debug module, memory map, and vectors are valid for the ELF."
+  p_hit: 0.45
+  p_exclude: 0.45
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.017
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The Intel community thread records guidance to handle reset correctly and program SOF before ELF; the original poster later reported solving the issue after correcting pin assignments."
+  evidence:
+  - "the failure occurred after SOF programming and before Nios software execution"
+  - "forum guidance emphasized reset/SOF ordering"
+  - "the poster's final resolution was incorrect pin assignments"
+coverage:
+  result: hit
+  matched_nodes:
+  - E1
+  - E2
+  - E3
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Nios ELF download failure after SOF success often sits between hardware generation, pin assignment, reset, clock, and debug-node visibility."
+  - "Successful FPGA programming is not proof that the soft processor is clocked, reset-released, or mapped correctly."
+  what_to_change_in_assets:
+  - "Promote a Nios ELF after SOF hardware-map signature."
+  anti_pattern_observed:
+  - "debugging Eclipse/run configuration before checking generated hardware, pins, reset, and clock"
+promotion:
+  proposed_assets:
+  - "SIG-NIOS-ELF-AFTER-SOF-HARDWARE-MAP"
+  regression_candidate: "REG-INTEL-FPGA-NIOS-ELF-HARDWARE-MAP-FIRST"
+status: reviewed

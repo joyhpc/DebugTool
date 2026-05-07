@@ -1,0 +1,93 @@
+id: CLR-128
+quality_tier: T2
+public_case_id: MIPI-010
+source:
+  title: "Debugging of CX3 RTOS project"
+  url: "https://community.infineon.com/t5/USB-superspeed-peripherals/Debugging-of-CX3-RTOS-project/td-p/1126281"
+  type: vendor_forum_fae_resolved
+domain: digital_interface
+blindness_note: "The accepted Infineon answer was read after drafting no-frame D-PHY, lane, and firmware-debug branches."
+blind_input:
+  symptom: "Infineon CX3 MIPI CSI design has no video or no frame detection."
+  background: "The design uses fewer MIPI data lanes than the CX3 supports; debug prints and error thread can be enabled."
+  observations:
+  - "valid CSI framing may not be detected"
+  - "one or more unused MIPI data lanes may be left floating"
+  constraints:
+  - "do not assume firmware can compensate for a strict hardware lane requirement"
+predicted_debug_tree:
+- node: C1
+  type: decision
+  check: "Verify continuous HS clock, D-PHY timing, and valid CSI signals before packet-layer assumptions."
+  why: "no frame detection can start at physical-layer receive."
+  expected: "clock and lane activity are present and consistent with configured lane count."
+  p_hit: 0.45
+  p_exclude: 0.55
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.021
+- node: C2
+  type: decision
+  check: "Check whether every unused MIPI CSI data lane is tied to the required state instead of floating."
+  why: "floating unused lanes can inject noise or prevent frame detection."
+  expected: "unused lanes are grounded per CX3 hardware requirement."
+  p_hit: 0.55
+  p_exclude: 0.65
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.044
+- node: C3
+  type: action
+  check: "Enable CX3 debug and error-thread prints, then compare frame/error counters during stream."
+  why: "runtime counters distinguish no-frame, invalid frame, and unstable stream branches."
+  expected: "debug output identifies CSI framing or MIPI error state."
+  p_hit: 0.40
+  p_exclude: 0.50
+  time_min: 30
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.016
+- node: C4
+  type: terminal
+  check: "If unused lanes are floating, modify hardware or test with a corrected board; do not rely on firmware workaround."
+  why: "the accepted answer says there is no firmware workaround for the strict hardware requirement."
+  expected: "grounded unused lanes remove or reduce no-frame/unstable-stream symptoms."
+  p_hit: 0.55
+  p_exclude: 0.25
+  time_min: 90
+  setup_min: 60
+  risk_penalty: 1
+  priority_score: 0.004
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "Infineon support accepted that unused MIPI CSI-2 data lanes on CX3 must be tied to ground; floating unused lanes can cause no frame detection, unstable streaming, and noise susceptibility, and there is no firmware workaround."
+  evidence:
+  - "the forum answer explicitly calls grounding unused lanes a strict CX3 hardware requirement"
+  - "the answer maps floating unused lanes to no-video/no-frame symptoms"
+coverage:
+  result: hit
+  matched_nodes:
+  - C1
+  - C2
+  - C3
+  - C4
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "Unused MIPI lanes can be active failure actors; they are not always harmless no-connects."
+  - "Some MIPI bring-up failures require hardware correction, not driver retries."
+  what_to_change_in_assets:
+  - "Add unused-lane handling to the MIPI DSI/CSI link model."
+  anti_pattern_observed:
+  - "trying firmware workarounds for a documented hardware lane-termination requirement"
+promotion:
+  proposed_assets:
+  - "LM-MIPI-DSI-CSI-DPHY"
+  regression_candidate: "REG-MIPI-CSI-UNUSED-LANES-NOT-FLOATING"
+status: reviewed

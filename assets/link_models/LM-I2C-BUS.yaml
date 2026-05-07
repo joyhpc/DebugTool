@@ -1,0 +1,127 @@
+asset_type: link_model
+id: LM-I2C-BUS
+title: I2C Bus Model
+version: 0.99.1
+domain: embedded
+applicability: general
+use_when:
+- condition: I2C no ACK
+  weight: high
+- condition: SDA or SCL stuck low
+  weight: high
+- condition: I2C bus idle state abnormal
+  weight: high
+- condition: sensor/peripheral not responding over I2C
+  weight: medium
+- condition: I2C failure appears after reset, hot insertion, EMI, or field aging
+  weight: medium
+do_not_use_when:
+- symptom is known to be inside a higher-level application parser and physical/protocol bus evidence is already clean
+required_evidence:
+- kind: measurement
+  must_be: preferred
+  description: SDA and SCL idle state, pull-up voltage, and at least one transaction waveform when possible
+causal_order:
+- physical connection / common ground
+- pull-ups / idle high
+- line ownership / stuck actor
+- voltage domain / input thresholds
+- bus capacitance / rise time
+- start condition
+- address phase
+- ACK / clock stretching
+- data / repeated-start
+- reset and transaction sequencing
+- false-clock desynchronization
+- recovery clocks / target reset / buffer recovery
+- device damage / latch-up / ESD failure-analysis branch
+stage_model:
+- stage: physical connection / common ground
+  measurement_points:
+  - connector continuity
+  - shared ground reference
+  strong_indicators:
+  - bus only works when touched or when another cable is present
+  actions:
+  - verify pinout and ground before protocol debug
+- stage: pull-ups / idle high
+  measurement_points:
+  - SDA and SCL idle voltage
+  - pull-up resistance
+  strong_indicators:
+  - rounded rising edges
+  - bus stuck below valid VIH
+  actions:
+  - calculate RC rise time and compare with bus speed
+- stage: line ownership / stuck actor
+  measurement_points:
+  - segmented SDA/SCL voltage
+  - current into suspect segment
+  strong_indicators:
+  - SDA releases when one device or segment is isolated
+  actions:
+  - isolate devices before address analysis
+- stage: reset and transaction sequencing
+  measurement_points:
+  - reset
+  - SDA
+  - SCL
+  - transaction start
+  strong_indicators:
+  - stuck event correlates with reset edge or incomplete byte
+  actions:
+  - add startup guard or delay traffic until target ready
+- stage: false-clock desynchronization
+  measurement_points:
+  - high-bandwidth SCL capture around failing transaction
+  - nearby fast-edge aggressor signals
+  strong_indicators:
+  - one extra SCL edge or glitch before SDA remains low
+  actions:
+  - check crosstalk, EMI, hot insertion, and deglitch mismatch
+- stage: recovery clocks / target reset / buffer recovery
+  measurement_points:
+  - SDA release after controlled recovery pulses
+  - reset pin response
+  - buffer RDY/FAULT
+  strong_indicators:
+  - target releases SDA after 8-16 SCL pulses or reset
+  actions:
+  - apply controlled recovery only after voltage-domain and backfeed risks are checked
+- stage: device damage / latch-up / ESD failure-analysis branch
+  measurement_points:
+  - leakage/resistance against known-good
+  - current during power-up
+  - whether failure follows the component
+  strong_indicators:
+  - reset and full power removal do not release SDA
+  - fault follows the device to another board
+  actions:
+  - stop treating the event as recoverable bus hang and branch to device-level failure analysis
+debug_rules:
+- Do not debug address if SDA/SCL is stuck low.
+- Address confusion requires a visible address byte.
+- If reset or hot insertion overlaps traffic, capture reset/SDA/SCL together before changing pull-ups.
+- If recovery clocks fail and the fault follows the device, add latch-up, ESD, contamination, or damaged-device branch.
+- For SDA stuck low with SCL high, compare false-clock, EMI, crosstalk, hot insertion, bad POR, and recovery-buffer branches.
+references:
+- id: DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  relation: supports
+- id: DP-CURRENT-LOOP-BEFORE-NAMED-NET
+  relation: supports
+safety_level: S1
+destructive: false
+source:
+  type: vendor_app_note
+  citation: "Refined with TI SCPA069, Microchip TB3331, and closed-loop records CLR-002/003/006/007."
+confidence: medium
+counterexamples:
+- description: SDA is stuck because the target device is permanently damaged, not because the bus needs recovery clocks.
+  evidence_required: reset and power-cycle fail, leakage differs from known-good, fault follows device
+- description: Repeated NACKs are caused by application busy time rather than electrical bus failure.
+  evidence_required: clean SDA/SCL waveform and datasheet timing or status evidence
+- description: SCL is held low by clock stretching or controller state, not SDA stuck-low false-clock case.
+  evidence_required: SCL-low waveform, controller state, and target clock-stretch capability
+status: candidate
+last_validated: ''
+review_due: ''

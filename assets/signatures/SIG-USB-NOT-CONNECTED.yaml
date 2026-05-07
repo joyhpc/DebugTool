@@ -1,0 +1,37 @@
+asset_type: signature
+id: SIG-USB-NOT-CONNECTED
+title: USB tool not connected while powered
+version: 0.9.1
+domain: embedded
+applicability: general
+use_when:
+- condition: LED on but software reports device not connected
+  weight: high
+- condition: error -105
+  weight: high
+- condition: Device Manager missing/unknown/flapping
+  weight: high
+min_match_count: 2
+top_actions:
+- Use known data-capable cable
+- Direct USB port
+- Device Manager
+- Driver repair
+- Minimal acquisition
+do_not_use_when: []
+required_evidence:
+- kind: user_input
+  must_be: matches_pattern
+references:
+- id: LM-USB-ENUMERATION
+  relation: derived_from
+safety_level: S0
+destructive: false
+source:
+  type: seed
+  citation: ''
+confidence: medium
+counterexamples: []
+status: candidate
+last_validated: ''
+review_due: ''

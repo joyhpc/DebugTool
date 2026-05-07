@@ -1,0 +1,97 @@
+id: CLR-035
+queue_unit: AUTH-027
+source:
+  title: Microchip AN2648 32 kHz test
+  url: https://www.microchip.com/en-us/application-notes/an2648-1
+  type: vendor_app_note
+domain: measurement
+blindness_note: Section-level authoritative queue focus can leak the target lesson; retained as official-source closure, not
+  a lab-perfect blind test.
+blind_input:
+  symptom: Clock, oscillator, or reset-dependent startup behavior is unreliable.
+  background: The design depends on component values, configuration, supply, layout, and measurement method.
+  observations:
+  - startup or operation changes across boards, voltage, temperature, or probing
+  - nominal component values alone do not prove margin
+  - firmware symptoms can mask clock or reset root cause
+  constraints:
+  - avoid loading oscillator pins with a low-impedance probe
+  - check configuration and supply before component replacement
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: Verify supply, reset, and clock/oscillator configuration against the exact device mode.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.38
+  p_exclude: 0.55
+  time_min: 10
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.044
+- node: A1
+  type: action
+  check: Use non-invasive evidence such as CLKOUT, status flags, or high-impedance probing.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.42
+  p_exclude: 0.45
+  time_min: 20
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.018
+- node: D2
+  type: decision
+  check: 'Evaluate the official lesson: test the crystal in the actual application instead of by nominal value only.'
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.55
+  p_exclude: 0.35
+  time_min: 25
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.021
+- node: T1
+  type: terminal
+  check: Apply the fix and validate across voltage, temperature, startup, and production spread.
+  why: This node maximizes early information while respecting safety and prerequisites.
+  expected: The observation either supports the official fault mechanism or cleanly excludes it.
+  p_hit: 0.55
+  p_exclude: 0.1
+  time_min: 60
+  setup_min: 60
+  risk_penalty: 1
+  priority_score: 0.005
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: (p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: 'The official source highlights this durable debug lesson: test the crystal in the actual application instead of
+    by nominal value only. The predicted tree included a dedicated branch for that mechanism and ranked prerequisite measurements
+    before irreversible or high-effort changes.'
+  evidence:
+  - Authoritative unit AUTH-027 from Microchip AN2648 32 kHz test
+  - 'Focus: test the crystal in the actual application instead of by nominal value only'
+  - Coverage judged at section-level against official troubleshooting guidance.
+coverage:
+  result: hit
+  matched_nodes:
+  - D2
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - Official section-level lessons are best stored as cost-aware branch priors, not as validated real cases.
+  - The first useful action is the fastest safe measurement that can either support the mechanism or exclude it.
+  - Repeated support should update LM-CLOCK-RESET-TREE rather than create isolated one-off advice.
+  what_to_change_in_assets:
+  - Use this unit as supporting evidence for LM-CLOCK-RESET-TREE.
+  - Promote to stronger asset status only after real or fully solved public cases repeat the same mechanism.
+  anti_pattern_observed:
+  - jumping to familiar component replacement or firmware changes before proving the official fault mechanism
+promotion:
+  proposed_assets:
+  - LM-CLOCK-RESET-TREE
+  regression_candidate: REG-OSCILLATOR-NO-START-MARGIN-FIRST
+status: reviewed

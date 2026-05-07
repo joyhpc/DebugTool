@@ -1,0 +1,36 @@
+asset_type: case_record
+id: CASE-LA1010-USB-CABLE
+title: LA1010 LED on but KingstVIS -105 due to USB data cable/driver layer
+version: 0.9.1
+domain: measurement
+applicability: general
+use_when:
+- condition: LA1010 LED on and KingstVIS reports -105/not connected
+  weight: high
+do_not_use_when:
+- raw waveform works
+required_evidence:
+- kind: user_input
+  must_be: matches_pattern
+root_cause: USB data path / cable / driver layer, not target SPI
+validated_fix:
+- known data-capable USB cable
+- direct USB port
+- driver repair
+references:
+- id: SIG-USB-NOT-CONNECTED
+  relation: supports
+- id: LM-USB-ENUMERATION
+  relation: supports
+safety_level: S0
+destructive: false
+source:
+  type: real_case
+  citation: conversation-derived seed
+confidence: medium
+counterexamples:
+- description: KingstVIS connects and raw waveform is captured
+  evidence_required: raw capture
+status: candidate
+last_validated: ''
+review_due: ''

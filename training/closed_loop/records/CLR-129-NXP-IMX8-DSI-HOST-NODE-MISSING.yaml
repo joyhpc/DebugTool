@@ -1,0 +1,93 @@
+id: CLR-129
+quality_tier: T2
+public_case_id: MIPI-011
+source:
+  title: "i.MX8 configure MIPI-DSI screen does not display"
+  url: "https://community.nxp.com/t5/i-MX-Processors/Imx8-configure-mipi-dsi-the-screen-does-not-display-Q10-0-0-2-2/m-p/1233959/highlight/true"
+  type: vendor_forum_fae_resolved
+domain: digital_interface
+blindness_note: "The solved device-tree/DRM binding explanation was read after drafting no-waveform branches."
+blind_input:
+  symptom: "i.MX8 MIPI-DSI display has no image and no MIPI waveform can be measured, while another Android target/profile displays normally."
+  background: "The path is MIPI-DSI to serializer/deserializer to LVDS. Software build/profile differs between working and failing cases."
+  observations:
+  - "no MIPI waveform is visible in the failing profile"
+  - "a different lunch target produces display and measurable waveform"
+  constraints:
+  - "do not conclude board routing failure until the DSI host binding/enabling path is proven"
+predicted_debug_tree:
+- node: X1
+  type: decision
+  check: "Compare boot logs between working and failing profiles for DRM/DSI host binding errors."
+  why: "no waveform may mean the host never enabled the DSI block."
+  expected: "failing profile shows missing parent, disabled node, or absent DSI host binding."
+  p_hit: 0.60
+  p_exclude: 0.65
+  time_min: 15
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.046
+- node: X2
+  type: decision
+  check: "Inspect device-tree parent nodes and display subsystem graph for disabled shared blocks."
+  why: "DRM component probing depends on graph and parent availability."
+  expected: "the DSI host or its parent subsystem is disabled or unavailable."
+  p_hit: 0.60
+  p_exclude: 0.55
+  time_min: 30
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.025
+- node: X3
+  type: action
+  check: "Only after host binding exists, measure DSI LP/HS states and downstream bridge signals."
+  why: "probing a disabled DSI host creates misleading no-signal evidence."
+  expected: "MIPI waveform appears when the DSI host binds and enables."
+  p_hit: 0.45
+  p_exclude: 0.50
+  time_min: 20
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.023
+- node: X4
+  type: terminal
+  check: "If the host binds and waveforms exist, branch to bridge/panel timing and D-PHY state."
+  why: "hardware-layer debug is downstream of software graph activation."
+  expected: "the remaining failure localizes to bridge, panel, timing, or D-PHY."
+  p_hit: 0.40
+  p_exclude: 0.40
+  time_min: 45
+  setup_min: 15
+  risk_penalty: 0
+  priority_score: 0.010
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The NXP thread's solver found boot log messages that the parent device of dsi_host nodes was not available; the relevant parent node was disabled, causing Android binding to have no dsi_host node and therefore no display or MIPI waveform."
+  evidence:
+  - "the failing log showed dsi_host parent-device-not-available messages"
+  - "the solver identified a disabled parent node shared with another subsystem"
+  - "absence of DSI host binding explained the absence of waveform"
+coverage:
+  result: hit
+  matched_nodes:
+  - X1
+  - X2
+  - X3
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "No MIPI waveform can be a software-enable problem, not only a PHY/routing problem."
+  - "When one software profile works and another fails, boot graph binding has high expected value."
+  what_to_change_in_assets:
+  - "Add host driver/device-tree graph binding stage before physical probing in MIPI link model."
+  anti_pattern_observed:
+  - "measuring a silent MIPI lane and declaring hardware failure before checking whether the host block was enabled"
+promotion:
+  proposed_assets:
+  - "LM-MIPI-DSI-CSI-DPHY"
+  regression_candidate: "REG-MIPI-DSI-NO-WAVEFORM-HOST-BINDING-FIRST"
+status: reviewed

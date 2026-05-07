@@ -1,0 +1,90 @@
+asset_type: pattern_bundle
+id: PBU-HCNR201-ISOLATED-VOLTAGE-SAMPLING-SEED
+title: Seed Pattern Bundle - HCNR201 Linear Optocoupler Isolated Voltage Sampling
+version: 0.97.0
+domain: measurement
+applicability: general
+use_when:
+- condition: HCNR201 or similar linear optocoupler is used for isolated voltage sampling
+  weight: high
+- condition: isolated analog voltage transfer has poor small-signal linearity
+  weight: high
+- condition: op amp in linear optocoupler feedback loop runs hot or appears saturated
+  weight: high
+- condition: LM358 or other non-rail-to-rail op amp is used near its output swing limit
+  weight: medium
+do_not_use_when:
+- isolation path is digital, transformer-based, or isolated ADC/amplifier with no linear optocoupler LED feedback loop
+- output error is already traced to ADC reference, calibration, or downstream firmware scaling
+required_evidence:
+- kind: schematic
+  must_be: present
+  description: op amp supplies, HCNR201 LED/PD1/PD2 pins, feedback resistors, and output-stage topology
+- kind: measurement
+  must_be: present
+  description: op amp output, LED-side supply, input voltage, and isolated output behavior across small-signal range
+patterns:
+- symptom: LM358 or similar op amp heats in HCNR201 LED drive loop
+  likely_root_cause: op amp output cannot swing close enough to the LED-side supply rail, so unwanted LED current or output-stage stress remains at zero/small input
+  first_checks:
+  - measure op amp output high level versus the LED-side supply voltage
+  - check LED current at zero input and small input
+  - compare required output swing against op amp datasheet headroom at load current
+  misleading_path: change compensation capacitors and resistors before checking output swing headroom
+- symptom: small input voltage transfers poorly or output has large offset/nonlinearity
+  likely_root_cause: feedback loop cannot reach the virtual-short operating point because the LED drive op amp is saturated or out of output swing range
+  first_checks:
+  - verify whether the input-side op amp inputs are actually near virtual short
+  - sweep input near zero and record op amp output, LED current, PD1 current, and isolated output
+  - reduce LED-side supply or use a rail-to-rail op amp if the required high-level swing is impossible
+  misleading_path: assume R1/R2 matching alone guarantees linear transfer
+- symptom: replacing with rail-to-rail op amp improves heat and linearity
+  likely_root_cause: rail-to-rail output restores control authority over LED current across the input range
+  first_checks:
+  - verify the new op amp output swing margin under actual load
+  - confirm improvement at zero input, small signal, and full-scale input
+  - still check whether the LED-side supply can be lowered to reduce required output swing
+  misleading_path: treat rail-to-rail replacement as universally safe without checking load, stability, and input common-mode range
+- symptom: HCNR201 transfer gain is not exactly one-to-one
+  likely_root_cause: resistor ratio, photodiode current transfer tolerance, op amp offsets, and loop headroom all contribute to gain/offset error
+  first_checks:
+  - calculate transfer from R1/R2 and HCNR201 K3 tolerance
+  - check resistor matching and temperature coefficient
+  - calibrate or trim if the required accuracy exceeds raw optocoupler/resistor tolerance
+  misleading_path: expect ideal one-to-one transfer from equal resistors without tolerance and calibration review
+- symptom: debug effort focuses only on layout or passive components
+  likely_root_cause: topology operating point is invalid before layout/passive tuning matters
+  first_checks:
+  - draw the DC current path through LED, PD1, PD2, R1, and R2
+  - check every op amp input/output common-mode and output-swing constraint
+  - confirm loop polarity and saturation state before changing small capacitors
+  misleading_path: tune RC networks while the op amp is already railed
+strong_indicators:
+- zero-input or small-input condition still drives measurable LED current
+- LM358 output sits near its high rail but cannot reach the LED-side supply
+- rail-to-rail op amp improves both heat and small-signal linearity
+- reducing LED-side supply requirement improves control margin
+- input-side virtual short is not maintained at small signal
+misleading_paths:
+- changing compensation and passive values before checking op amp output swing
+- assuming virtual short holds while the op amp is saturated
+- assuming equal R1/R2 is enough for precise isolation transfer
+- treating rail-to-rail op amp replacement as sufficient without supply-headroom review
+- ignoring LED current at zero input
+references: []
+safety_level: S1
+destructive: false
+source:
+  type: user_provided_article
+  citation: User-provided Chinese article about HCNR201 isolated voltage sampling, LM358 heating, and poor small-signal linearity; anecdotal seed, not independently validated.
+confidence: medium
+counterexamples:
+- description: Op amp output swing has adequate margin and zero-input LED current is near zero.
+  evidence_required: measured op amp output, LED current, and supply rails across input range
+- description: Error is caused by resistor tolerance, HCNR201 transfer tolerance, or calibration rather than op amp saturation.
+  evidence_required: resistor measurements, gain/offset sweep, and datasheet tolerance calculation
+- description: Heating is caused by output short, wrong pinout, oscillation, or layout instability.
+  evidence_required: output current, pin verification, oscilloscope stability check, and thermal localization
+status: candidate
+last_validated: ''
+review_due: ''

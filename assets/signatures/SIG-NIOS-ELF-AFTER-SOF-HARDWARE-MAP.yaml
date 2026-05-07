@@ -1,0 +1,51 @@
+asset_type: signature
+id: SIG-NIOS-ELF-AFTER-SOF-HARDWARE-MAP
+title: Nios ELF Download Fails After SOF Programs
+version: 0.99.4
+domain: digital_interface
+applicability: intel_altera_nios_bringup
+use_when:
+- condition: Quartus successfully programs the FPGA SOF
+  weight: high
+- condition: Nios II or Nios V ELF download, run, or debug fails
+  weight: high
+- condition: target connection shows missing or unexpected System ID, debug node, or JTAG UART
+  weight: medium
+- condition: design was recently regenerated in Platform Designer or pin assignments changed
+  weight: medium
+do_not_use_when:
+- FPGA device cannot be detected by JTAG at all
+- ELF file is not built or software compilation already failed
+required_evidence:
+- kind: tool_output
+  must_be: present
+  description: Nios download/debug error plus whether SOF programming succeeds
+- kind: design_state
+  must_be: preferred
+  description: Platform Designer system, sopcinfo/sysinfo, pin assignments, reset vector, exception vector, and debug module settings
+min_match_count: 2
+top_actions:
+- Confirm the exact SOF just programmed matches the sopcinfo/sysinfo used by the software project.
+- Run jtagconfig -n or JTAG server node listing and verify the Nios debug module and JTAG UART nodes exist.
+- Check reset, clock, reset vector, exception vector, on-chip/external memory map, and pin assignments before blaming Eclipse or the ELF.
+- Avoid power cycling or pressing board reset between SOF download and ELF download unless the design intentionally preserves the loaded hardware.
+- Reduce to a minimal Nios system with clock, reset, on-chip memory, debug module, and JTAG UART when the full Platform Designer system is ambiguous.
+references:
+- id: LM-FPGA-JTAG-CONFIG
+  relation: supports
+- id: DP-EXPECTED-VALUE-BEFORE-HABIT
+  relation: supports
+safety_level: S0
+destructive: false
+source:
+  type: public_forum
+  citation: "Seeded from Intel community Nios ELF download failures and Intel Embedded Design Handbook jtagconfig/Platform Designer guidance."
+confidence: medium
+counterexamples:
+- description: JTAG cannot detect the FPGA device, so ELF debug is downstream noise.
+  evidence_required: no device ID or no target-side JTAG chain
+- description: Software build did not produce a valid ELF.
+  evidence_required: build errors or missing ELF artifact
+status: candidate
+last_validated: '2026-05-02'
+review_due: ''

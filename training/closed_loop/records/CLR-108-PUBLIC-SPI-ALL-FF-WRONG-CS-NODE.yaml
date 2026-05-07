@@ -1,0 +1,95 @@
+id: CLR-108
+quality_tier: T1
+public_case_id: PUB-017
+source:
+  title: "SPI interface returns only ones 0xFF"
+  url: "https://electronics.stackexchange.com/questions/379268/spi-interface-returns-only-ones-0xff"
+  type: public_solved_case
+domain: digital_interface
+blindness_note: "Final accepted answer was read after drafting the SPI all-0xFF tree."
+blind_input:
+  symptom: "Linux SPI ADC read returns only 0xFF."
+  background: "Cyclone V / Angstrom Linux, custom board, device tree edited for SPI ADC."
+  observations:
+  - "all bytes are 0xFF"
+  - "software path can open a spidev device"
+  - "SPI mode changes were tried without effect"
+  constraints:
+  - "do not continue changing CPOL/CPHA before proving chip-select ownership"
+predicted_debug_tree:
+- node: D1
+  type: decision
+  check: "Capture or otherwise prove CS, SCK, MOSI, and MISO for the selected spidev node."
+  why: "all-ones can mean target is never selected, MISO is open, or wrong device node is used."
+  expected: "the intended ADC CS asserts during the read."
+  p_hit: 0.50
+  p_exclude: 0.55
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.031
+- node: D2
+  type: decision
+  check: "Verify device-tree chip-select mapping and spidev bus/chip-select number."
+  why: "a valid API call can talk to the wrong chip-select."
+  expected: "spidev node maps to the ADC chip-select, not another device."
+  p_hit: 0.60
+  p_exclude: 0.35
+  time_min: 20
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.031
+- node: A1
+  type: action
+  check: "Run loopback or known-device test if waveform access is limited."
+  why: "loopback separates Linux/SPI controller path from target selection."
+  expected: "loopback returns transmitted data; target still fails if CS/mapping is wrong."
+  p_hit: 0.35
+  p_exclude: 0.45
+  time_min: 15
+  setup_min: 10
+  risk_penalty: 0
+  priority_score: 0.023
+- node: T1
+  type: terminal
+  check: "Correct chip-select/device-node mapping and re-read a known ADC register."
+  why: "stable ID/default read must gate further ADC configuration."
+  expected: "0xFF disappears after the correct chip-select path is used."
+  p_hit: 0.55
+  p_exclude: 0.10
+  time_min: 20
+  setup_min: 5
+  risk_penalty: 0
+  priority_score: 0.024
+cost_model:
+  version: probability_time_cost_v1
+  ranking_rule: "(p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1)"
+  safety_override: true
+  dependency_override: true
+actual_resolution:
+  summary: "The accepted answer reports that the chip-select information was wrong; changing the spidev child node reg value to the correct chip-select solved the all-0xFF read."
+  evidence:
+  - "all-0xFF did not prove sensor configuration failure"
+  - "changing spidev child-node reg to the correct CS fixed the problem"
+  - "a suggested diagnostic was to scope CS/SCK/MOSI or use loopback"
+coverage:
+  result: hit
+  matched_nodes:
+  - D1
+  - D2
+  - T1
+  missing_nodes: []
+meta_reflection:
+  what_generalized:
+  - "SPI all-0xFF should rank chip-select ownership and device-tree mapping near the top."
+  - "Software-open success does not prove the selected hardware target."
+  what_to_change_in_assets:
+  - "LM-SPI-TRANSACTION should include OS/device-tree chip-select mapping."
+  anti_pattern_observed:
+  - "randomly changing SPI mode while talking to the wrong chip-select"
+promotion:
+  proposed_assets:
+  - "LM-SPI-TRANSACTION"
+  - "SIG-SPI-ALL-FF-TRANSACTION-SHAPE"
+  regression_candidate: "REG-SPI-ALL-FF-CS-MAPPING-FIRST"
+status: reviewed

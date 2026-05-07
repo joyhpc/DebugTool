@@ -1,0 +1,42 @@
+asset_type: link_model
+id: LM-DDR-BRINGUP
+title: DDR Bring-up Model
+version: 0.9.1
+domain: high_speed
+applicability: general
+use_when:
+- condition: DDR training failure
+  weight: high
+- condition: memory initialization fails
+  weight: high
+- condition: DDR stress test failure
+  weight: medium
+- condition: temperature-related memory instability
+  weight: medium
+do_not_use_when: []
+required_evidence: []
+causal_order:
+- power rails
+- reference clock
+- reset/CKE
+- topology/termination
+- training
+- stress/temperature
+- software memory test
+debug_rules:
+- Power/clock/reset before timing margin.
+references:
+- id: LM-POWER-CHAIN
+  relation: depends_on
+- id: LM-CLOCK-RESET-TREE
+  relation: depends_on
+safety_level: S0
+destructive: false
+source:
+  type: seed
+  citation: ''
+confidence: medium
+counterexamples: []
+status: candidate
+last_validated: ''
+review_due: ''

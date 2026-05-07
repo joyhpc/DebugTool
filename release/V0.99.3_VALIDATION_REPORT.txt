@@ -1,0 +1,58 @@
+V0.99.3 Validation Report
+Date: 2026-05-02
+
+Scope
+-----
+1000-unit training program seed, public solved-case queue, first public solved-case
+closed-loop batch, dataset linter, regression structure, and existing validators.
+
+Commands
+--------
+python -m py_compile scripts\output_validator.py scripts\run_output_validator_smoke.py scripts\lint_assets.py scripts\regression_suite_linter.py scripts\regression_runner.py scripts\lint_closed_loop.py scripts\lint_real_project_cases.py scripts\close_authoritative_queue.py scripts\lint_dataset_1000.py
+python scripts\lint_dataset_1000.py
+python scripts\lint_closed_loop.py
+python scripts\regression_suite_linter.py
+python scripts\lint_assets.py
+python scripts\lint_real_project_cases.py
+python scripts\run_output_validator_smoke.py
+
+Results
+-------
+Python compile: PASS
+
+Dataset 1000 lint:
+PASS
+
+Closed-loop training lint:
+PASS: 111 records
+
+Regression suite structure:
+PASS: 29 tests
+
+Asset lint:
+PASS: 28 assets
+Warnings:
+- CASE-LA1010-USB-CABLE has no misleading_paths.
+- Legacy link_models still need counterexamples.
+
+Real project case lint:
+PASS: 1 case file
+
+Output validator smoke:
+PASS: 5 cases
+
+Training State
+--------------
+- target_count: 1000
+- closed_loop_records_total: 111
+- official_source_prior_closed: 100
+- public_or_forum_reviewed_records: 10
+- real_project_reviewed_cases: 1
+- near_hit_or_miss_records: 2
+- regression_tests: 29
+
+Known Limits
+------------
+- The 1000 target is not complete; V0.99.3 creates the governed expansion program and first T1 batch.
+- The largest gap remains solved public/vendor cases and real project cases.
+- More near-hit/miss records are needed because they calibrate bad action ordering.

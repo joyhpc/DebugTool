@@ -1,0 +1,144 @@
+target_count: 100
+current_candidates: 20
+source_rule: "Intel/Altera FPGA focused queue. Use official docs as priors and public/vendor forum cases only when symptom -> investigation -> resolution is explicit enough for blind-tree comparison."
+candidates:
+- id: INTEL-FPGA-001
+  title: "Quartus Prime ID:212017 unable to scan device chain"
+  url: "https://www.intel.com/content/www/us/en/programmable/quartushelp/18.1/msgs/msgs/opgmwq_bad_jtag_chain.htm"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "split no-device scan failures into selected hardware, host port use, board power, and JTAG chain reachability"
+  status: reviewed
+- id: INTEL-FPGA-002
+  title: "FPGA configuration troubleshooter: Quartus programmer fails to recognize device ID"
+  url: "https://www.altera.com/design/guidance/configuration/debug"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "device ID failures require MSEL/nCE/nCONFIG/nSTATUS/CONF_DONE/JTAG pins, power stability, and FPGA-end TCK/TDI/TDO evidence"
+  status: reviewed
+- id: INTEL-FPGA-003
+  title: "FPGA configuration troubleshooter: CONF_DONE does not go high"
+  url: "https://www.altera.com/design/guidance/configuration/debug"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "configuration failure debug should branch on nCONFIG/nSTATUS/CONF_DONE timing and DCLK/DATA activity before bitstream theory"
+  status: reviewed
+- id: INTEL-FPGA-004
+  title: "Embedded Design Handbook: JTAG signal integrity"
+  url: "https://www.intel.com/content/www/us/en/docs/programmable/683689/current/jtag-signal-integrity.html"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "poor JTAG signal integrity can create inconsistent debug behavior even when the cable and device are present"
+  status: reviewed
+- id: INTEL-FPGA-005
+  title: "Nios II jtagconfig usage example and SLD node interpretation"
+  url: "https://docs.altera.com/r/docs/683689/current/embedded-design-handbook/jtagconfig-usage-example?contentId=3GNEk_XcJsrNsp1AWzjmFw"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "jtagconfig -n separates cable/device detection from internal Nios debug module and JTAG UART node presence"
+  status: reviewed
+- id: INTEL-FPGA-006
+  title: "Intel FPGA Download Cable II user guide"
+  url: "https://docs.altera.com/r/docs/683719/current/intel-fpga-download-cable-ii-user-guide"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "target VCC, header pinout, cable setup, JTAG timing, and jtagserver settings are first-class JTAG debug branches"
+  status: reviewed
+- id: INTEL-FPGA-007
+  title: "USB-Blaster recognized in Device Manager but not Quartus Programmer"
+  url: "https://www.intel.com/content/www/us/en/support/programmable/articles/000073673.html"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "host-side JTAGServer state can mimic board failure when Device Manager sees the cable but Quartus does not"
+  status: reviewed
+- id: INTEL-FPGA-008
+  title: "Arria 10 IOPLL locked output behavior"
+  url: "https://www.intel.com/content/www/us/en/support/programmable/articles/000074359.html"
+  domain: clock_reset
+  source_type: official_source_prior
+  expected_lesson: "PLL lock needs reset, stable reference clock, and lock-filter timing; do not treat lock as an instantaneous analog truth"
+  status: reviewed
+- id: INTEL-FPGA-009
+  title: "Nios II Downloading ELF Process failed solved by pin assignments"
+  url: "https://community.intel.com/t5/Nios-V-II-Embedded-Design-Suite/Error-using-nios-ii-Downloading-ELF-Process-failed/td-p/688380"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "ELF download failures after SOF programming can be hardware-map/pin/reset issues, not just Eclipse or software build trouble"
+  status: reviewed
+- id: INTEL-FPGA-010
+  title: "Arria 10 IOPLL not locking when dynamic reconfiguration is enabled"
+  url: "https://community.altera.com/kb/knowledge-base/why-does-the-iopll-in-intel%C2%AE-arria%C2%AE10-fpgas-power-up-with-an-incorrect-output-cl/344472"
+  domain: clock_reset
+  source_type: official_source_prior
+  expected_lesson: "dynamic reconfiguration adds startup race branches to PLL lock and output-frequency debug"
+  status: queued_blind
+- id: INTEL-FPGA-011
+  title: "Quartus Can't scan device after electrical event"
+  url: "https://community.intel.com/t5/Intel-Quartus-Prime-Software/Quartus-Can-t-scan-device/td-p/7149"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "if JTAG worked before an electrical event, branch early to power, TDI/TDO activity, and damaged-device checks"
+  status: queued_blind
+- id: INTEL-FPGA-012
+  title: "MAX10 PLL not locking - kHz instead of MHz"
+  url: "https://community.altera.com/discussions/fpga-device/max10-pll-not-locking---khz-instead-of-mhz/188545"
+  domain: clock_reset
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "PLL no-lock cases should include reset-to-known-state, reference-clock quality, and generated-clock constraint branches"
+  status: queued_blind
+- id: INTEL-FPGA-013
+  title: "Nios II CPU with debug module not detected"
+  url: "https://community.intel.com/t5/Programmable-Devices/Nios-II-CPU-with-debug-module-not-detected/td-p/59296"
+  domain: digital_interface
+  source_type: vendor_forum_fae_resolved
+  expected_lesson: "internal debug-node absence is different from external JTAG absence; compare SOF content, SLD nodes, and debug-module enablement"
+  status: queued_blind
+- id: INTEL-FPGA-014
+  title: "Nios V JTAG server node identification"
+  url: "https://docs.altera.com/r/docs/726952/25.3.1/nios-v-embedded-processor-design-handbook/jtag-server"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "JTAG node IDs can confirm whether Nios V debug and JTAG UART blocks are actually present in the loaded design"
+  status: queued_blind
+- id: INTEL-FPGA-015
+  title: "Minimal test system for FPGA embedded bring-up"
+  url: "https://www.intel.com/content/www/us/en/docs/programmable/683689/current/minimal-test-system.html"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "complex Platform Designer failures should be reduced to minimal clock/reset/JTAG/on-chip-memory systems before peripheral debug"
+  status: queued_blind
+- id: INTEL-FPGA-016
+  title: "Stratix 10 EMIF IP debug toolkit"
+  url: "https://www.intel.com/content/www/us/en/docs/programmable/683741/21-3-19-2-4/debugging-emif-ip.html"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "DDR/EMIF debug should read calibration toolkit state rather than guessing from application symptoms"
+  status: queued_blind
+- id: INTEL-FPGA-017
+  title: "Altera JTAG no device found on custom Cyclone IV board"
+  url: "https://electronics.stackexchange.com/questions/620464/altera-jtag-no-device-found"
+  domain: digital_interface
+  source_type: public_solved_case
+  expected_lesson: "configuration mode is not the first explanation when JTAG IDCODE cannot be read; physical path, power, TDO, and damage branches come first"
+  status: queued_blind
+- id: INTEL-FPGA-018
+  title: "Intel FPGA Download Cable II Quartus 19.1 enumeration issue"
+  url: "https://www.intel.com/content/www/us/en/support/programmable/articles/000074130.html"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "tool-version-specific download-cable issues should be isolated before board rework"
+  status: queued_blind
+- id: INTEL-FPGA-019
+  title: "Quartus jtagconfig debugging tool"
+  url: "https://docs.altera.com/r/docs/683039/25.3.1/quartus-prime-pro-edition-user-guide-programmer/the-jtagconfig-debugging-tool"
+  domain: digital_interface
+  source_type: official_source_prior
+  expected_lesson: "jtagconfig is the command-line equivalent of Auto Detect and should be used to separate GUI state from chain state"
+  status: queued_blind
+- id: INTEL-FPGA-020
+  title: "On-chip debugging resource center"
+  url: "https://www.altera.com/design/guidance/software/debugging"
+  domain: other
+  source_type: official_source_prior
+  expected_lesson: "Signal Tap, System Console, Transceiver Toolkit, and JTAG chain tools map to different layers of FPGA debug evidence"
+  status: queued_blind
