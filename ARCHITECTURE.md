@@ -1,13 +1,15 @@
 # Project Architecture
 
 ```text
-routing -> context acquisition -> assets -> reasoning -> output contracts -> safety -> lifecycle -> training feedback
+natural-language intake -> input cleaning -> safety -> routing -> assets -> reasoning -> output contracts -> lifecycle -> training feedback
 ```
 
 ## Layer Responsibilities
 
 | Layer | Responsibility |
 |---|---|
+| natural-language intake | accept terse user bug reports, issue notes, waveform descriptions, and chat extracts without requiring a form |
+| input cleaning | preserve raw facts while separating observations, judgments, actions tried, proposed methods, revisions, and missing data |
 | routing/ | choose debug mode |
 | prompts/ | user-facing invocation |
 | forms/ | structured input |
@@ -28,3 +30,11 @@ routing -> context acquisition -> assets -> reasoning -> output contracts -> saf
 3. The skill generates a probability/time-cost ranked debug tree.
 4. The actual resolution is revealed and scored as `hit`, `near_hit`, `miss`, or `blocked`.
 5. Stable learning is promoted into assets or regression tests.
+
+## Natural-Language Delivery Loop
+
+1. User provides any bug report or issue-sync note.
+2. The skill creates an Input Cleaning Record and Router-Ready Case Brief.
+3. Safety and routing select the strongest mode.
+4. The output includes link model, fact/assumption split, hypothesis probabilities, and action decision tree.
+5. New evidence updates the probabilities and demotes stale branches before new actions are proposed.

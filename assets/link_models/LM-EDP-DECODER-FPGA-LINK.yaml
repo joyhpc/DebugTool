@@ -1,0 +1,173 @@
+asset_type: link_model
+id: LM-EDP-DECODER-FPGA-LINK
+title: eDP Decoder to FPGA Receiver Link Debug Model
+version: 0.99.6
+domain: high_speed
+applicability: general
+use_when:
+- condition: eDP or DisplayPort-derived video path has intermittent no-image behavior while control communication appears normal
+  weight: high
+- condition: AUX or I2C access works but FPGA SerDes CDR, comma alignment, PCS lock, or video-valid status fails
+  weight: high
+- condition: front/rear, left/right, or lane-group comparison shows one receiver branch works while another branch fails
+  weight: high
+- condition: resetting the FPGA receiver does not restore CDR or comma alignment
+  weight: medium
+- condition: video source switching causes one decoder or receiver path to lose valid data
+  weight: medium
+do_not_use_when:
+- failure is already isolated to a downstream framebuffer, scaler, panel timing, or backlight path with clean receiver CDR/comma/video-valid evidence
+- AUX or I2C control access is failing completely; use a control-bus or power/reset model first
+required_evidence:
+- kind: user_input
+  must_be: present
+  description: symptom, affected lane group or receiver side, and whether failure is intermittent or deterministic
+- kind: measurement
+  must_be: preferred
+  description: receiver CDR/lock/comma/PCS/video-valid status or equivalent FPGA/SerDes status
+- kind: log
+  must_be: preferred
+  description: decoder register readback, AUX/I2C transaction result, or MCU configuration log
+causal_order:
+- system command / video-source switching
+- host or MCU control sequence
+- AUX sideband communication
+- I2C or SPI decoder/redriver configuration
+- decoder power, reset, reference clock, PLL, and stream-enable state
+- decoder eDP/DP input receiver
+- decoder output formatter or lane transmitter
+- redriver, mux, AC coupling, polarity, lane mapping, and physical path
+- FPGA reference clock, reset, and SerDes configuration
+- FPGA CDR lock and comma alignment
+- FPGA PCS/video framing and downstream video-valid path
+stage_model:
+- stage: system command / video-source switching
+  measurement_points:
+  - host command timestamp
+  - stream on/off sequence
+  - per-branch control ownership
+  strong_indicators:
+  - fault appears only after repeated source switching
+  - branch behavior depends on control-core ownership or command order
+  actions:
+  - log the exact command order, delays, and per-branch ownership before changing PHY parameters
+- stage: AUX sideband communication
+  measurement_points:
+  - AUX transaction pass/fail
+  - DPCD or equivalent status readback
+  - link-training status
+  strong_indicators:
+  - AUX succeeds while pixel data remains absent or invalid
+  - old assumption blamed AUX but later evidence confirms AUX handshake
+  actions:
+  - use successful AUX as a boundary marker; do not keep AUX as the dominant branch unless new evidence shows retries, NACKs, or stale status
+- stage: I2C or SPI decoder/redriver configuration
+  measurement_points:
+  - bus waveform
+  - write/readback compare
+  - decoder mode registers
+  - redriver enable and EQ settings
+  strong_indicators:
+  - register writes are not acknowledged or readback differs
+  - two branches receive different configuration despite similar intended commands
+  actions:
+  - prove configuration reaches the intended device and persists after reset/source switching
+- stage: decoder power, reset, reference clock, PLL, and stream-enable state
+  measurement_points:
+  - rail ramp and reset release
+  - reference clock presence
+  - decoder PLL lock
+  - stream-enable/status bits
+  strong_indicators:
+  - receiver reset does not recover CDR
+  - failing branch lacks output activity even with control path alive
+  actions:
+  - capture power/reset/clock timing and status readback in the failing state before tuning FPGA SerDes
+- stage: decoder output formatter or lane transmitter
+  measurement_points:
+  - output lane activity
+  - output mode/lane count/rate
+  - test pattern output
+  - lane polarity and mapping registers
+  strong_indicators:
+  - FPGA CDR cannot lock because there is no valid high-speed data at its input
+  - internal decoder test pattern works or fails differently from live input
+  actions:
+  - test whether the decoder can generate a known-good output independent of the upstream source
+- stage: redriver, mux, AC coupling, polarity, lane mapping, and physical path
+  measurement_points:
+  - redriver enable/PWDN level
+  - redriver output activity
+  - lane polarity/order
+  - AC-coupling and termination state
+  strong_indicators:
+  - control configuration matches but physical output is missing or degraded
+  - one-lane or two-lane selection changes failure rate
+  actions:
+  - compare failing and passing branches at the same boundary points under the same source-switch event
+- stage: FPGA reference clock, reset, and SerDes configuration
+  measurement_points:
+  - FPGA refclk frequency/jitter
+  - SerDes reset sequence
+  - equalization and rate config
+  - known-good demo or loopback comparison
+  strong_indicators:
+  - manual SerDes reset restores lock on demo hardware but not on the failing system
+  - CDR lock failure follows FPGA configuration rather than decoder output evidence
+  actions:
+  - keep FPGA SerDes as a competing hypothesis until decoder output validity is directly proven
+- stage: FPGA CDR lock and comma alignment
+  measurement_points:
+  - CDR lock
+  - comma align
+  - PCS block lock
+  - per-lane error counters
+  strong_indicators:
+  - CDR and comma both fail after receiver reset
+  - periodic abnormality suggests missing, invalid, or unstable input data
+  actions:
+  - treat CDR/comma as receiver symptoms, not root cause, until upstream data validity is measured
+- stage: FPGA PCS/video framing and downstream video-valid path
+  measurement_points:
+  - PCS lock
+  - frame/line counters
+  - video valid
+  - downstream FIFO/status
+  strong_indicators:
+  - CDR/comma are clean but no image appears
+  - downstream path differs between branches
+  actions:
+  - move downstream only after receiver lock and framing evidence are healthy
+debug_rules:
+- Successful AUX or I2C control does not prove pixel-data output is valid.
+- If receiver CDR and comma fail and receiver reset does not help, prioritize proving decoder output activity, power/reset/clock state, and redriver/path enable before deep FPGA logic changes.
+- Treat CDR lock failure as a symptom unless the input data eye/activity and receiver refclk/config have both been bounded.
+- A passing front/rear or branch A/B comparison is useful only when command order, power/reset timing, lane rate, mapping, and measurement point are aligned.
+- When new evidence confirms a control path is alive, explicitly demote stale control-path hypotheses.
+references:
+- id: LM-VIDEO-LINK
+  relation: refines
+- id: LM-CLOCK-RESET-TREE
+  relation: depends_on
+- id: LM-I2C-BUS
+  relation: supports
+- id: DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING
+  relation: supports
+- id: DP-MEASUREMENT-BEFORE-DESIGN-CHANGE
+  relation: supports
+safety_level: S1
+destructive: false
+source:
+  type: hypothesis
+  citation: "Generalized from founder-pilot eDP decoder-to-FPGA receiver analysis; not yet validated as a solved case."
+confidence: medium
+counterexamples:
+- description: Receiver CDR, comma, PCS, and video-valid are stable while no image appears.
+  evidence_required: clean receiver status and frame counters; move to downstream framebuffer, scaler, timing, panel, or backlight path
+- description: AUX or I2C control access fails before stream enable.
+  evidence_required: bus NACKs, stuck line, missing device ID, or no register readback; use control-bus debug first
+- description: Known-good decoder output is present at the FPGA pins but only one FPGA build fails.
+  evidence_required: measured input activity and lane mapping are correct; compare FPGA refclk, SerDes config, constraints, reset, and PCS settings
+status: candidate
+last_validated: '2026-05-08'
+review_due: ''

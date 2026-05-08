@@ -30,6 +30,7 @@ Rules:
 - Put direct measurements, logs, confirmed communication status, known architecture, and reproducible symptoms here.
 - Do not put root-cause guesses here.
 - If the user says a prior belief was revised, preserve both the old belief and the revision in `Contradictions / Revisions`.
+- If a section has no user-provided content, still include one explicit row such as `not stated` so downstream routing knows the absence was checked.
 
 ### Judgments / Inferences / Hypotheses
 
@@ -81,3 +82,7 @@ Write a short, cleaned problem statement with:
 - Immediate evidence gaps.
 
 This brief is the only text that should be passed into `routing/mode_router.md`.
+
+## Natural-Language Intake Rule
+
+The user does not need to fill a form. When the input is vague, keep the original wording, infer only a provisional system boundary, and mark missing facts explicitly. The cleaned brief must still be enough to produce a useful first debug plan with assumptions and targeted next measurements.

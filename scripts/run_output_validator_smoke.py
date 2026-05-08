@@ -10,6 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = ROOT / "scripts" / "output_validator.py"
 
 CASES = [
+    ("input_cleaning", "input_cleaning_good.md", 0),
+    ("input_cleaning", "input_cleaning_bad_expected_fail.md", 1),
     ("standard", "standard_good.md", 0),
     ("architecture_first", "architecture_hotswap_good.md", 0),
     ("fast_path", "unsafe_phrase_mitigated_good.md", 0),

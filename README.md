@@ -1,10 +1,10 @@
-# Debug Decision Tree Skill - V0.99.5 MIPI DSI/CSI Training Branch
+# Debug Decision Tree Skill - V0.99.6 Natural-Language Agent Contract
 
 ## Status
 
 Founder-pilot candidate. Not team-wide pilot ready. Not V1.0.
 
-V0.99.5 keeps the project as a skill package and adds a focused MIPI DSI/CSI training branch on top of the 1000-unit program. The workflow separates blind prediction, actual resolution reveal, probability/time ranking, coverage scoring, and promotion into reusable assets.
+V0.99.6 keeps the project as a skill package and hardens the natural-language debug flow. A user can provide a terse bug report, issue-sync note, waveform clue, or chat extract; the skill should clean the input, route the case, build a link model, rank hypotheses, and return an action decision tree without requiring the user to know internal mode names.
 
 The package is intended for 1-2 real founder-pilot debug loops before any wider rollout.
 
@@ -20,12 +20,14 @@ debug_principle  generalized rule that applies across many hardware debug domain
 
 ## Recommended Skill Invocation
 
-1. Clean the raw user input using `output_contracts/input_cleaning.md`.
-2. Start with `prompts/context_router.md` using the cleaned router-ready brief.
-3. Select the mode from `routing/mode_router.md`.
-4. Load relevant assets from `assets/` only after checking `reasoning/asset_priority.md`.
-5. Generate output using the matching file in `output_contracts/`.
-6. Run `scripts/output_validator.py` before reusing or promoting the output.
+1. Accept the user's natural-language bug report as sufficient to start.
+2. Clean the raw user input using `output_contracts/input_cleaning.md`.
+3. Start with `prompts/context_router.md` using the cleaned router-ready brief.
+4. Map the user's wording through `routing/natural_language_intent_map.md` and select the mode from `routing/mode_router.md`.
+5. Deliver through `output_contracts/default_debug_delivery.md` plus the selected mode contract.
+6. Load relevant assets from `assets/` only after checking `reasoning/asset_priority.md`.
+7. Include probabilities, hypothesis tree, action decision tree, and first measurements whenever root cause is unknown.
+8. Run `scripts/output_validator.py` before reusing or promoting the output.
 
 Structural validation passing means the output matches the contract. It does not prove the debug reasoning is correct.
 
@@ -50,6 +52,7 @@ python -m pip install -r requirements.txt
 ## Example Commands
 
 ```bash
+python scripts/output_validator.py --mode input_cleaning --file cleaned.md
 python scripts/output_validator.py --mode standard --file output.md
 python scripts/output_validator.py --mode knowledge_linked --file output.md
 python scripts/output_validator.py --mode architecture_first --file output.md
@@ -116,6 +119,7 @@ Official vendor documents are treated as authoritative priors; public forum reco
 ## Mode Selection Order
 
 ```text
+0. Input Cleaning
 1. Safety Gate
 2. Signature-Based Fast Path
 3. Architecture-First
@@ -127,4 +131,4 @@ Official vendor documents are treated as authoritative priors; public forum reco
 
 ## Current Next Best Step
 
-Continue the MIPI branch with more solved panel, camera, bridge, production-yield, and physical-layer cases, then use real project material to calibrate which branches actually save time.
+Validate the natural-language flow on real debug prompts: terse symptom only, issue-sync note, architecture-rich case, and updated-evidence case. A pilot counts as progress only if the first two recommended actions improve or the stale branch is explicitly demoted after new evidence.

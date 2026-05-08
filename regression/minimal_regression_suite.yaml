@@ -379,3 +379,17 @@ tests:
   - enabled
   must_not_include:
   - routing failure first
+- id: REG-EDP-AUX-ALIVE-CDR-FAIL-DECODER-OUTPUT-FIRST
+  input: eDP rear lane group intermittently has no image; AUX handshake is normal, but FPGA SerDes CDR and comma do not lock and manual SerDes reset does not recover it
+  must_select: Architecture-First
+  must_include:
+  - AUX
+  - decoder output
+  - power/reset/clock
+  - CDR
+  - comma
+  - redriver
+  - hypothesis tree
+  - action decision tree
+  must_not_include:
+  - AUX-first debug

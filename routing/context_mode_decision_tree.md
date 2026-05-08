@@ -7,4 +7,6 @@
 | Current architecture provided | Architecture-First | fault-domain map |
 | Project knowledge available | Knowledge-Linked | fact table with sources |
 | Classic link model fits | Assumption-Driven | assumptions to confirm |
-| Too vague | Heuristic | 5-8 questions and provisional path |
+| Too vague | Heuristic | provisional path plus at most 3 high-value questions |
+
+Default behavior: a vague user bug report is not a blocker. Produce a bounded first-pass result with cleaned facts, assumptions, likely causes, first measurements, and the exact missing information that would change the tree.

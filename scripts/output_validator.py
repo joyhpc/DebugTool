@@ -10,6 +10,7 @@ Scope for V0.96:
 - validate Mermaid decision-tree node IDs match the node table IDs
 
 Usage:
+  python scripts/output_validator.py --mode input_cleaning --file cleaned.md
   python scripts/output_validator.py --mode standard --file output.md
   python scripts/output_validator.py --mode knowledge_linked --file output.md
   python scripts/output_validator.py --mode fast_path --file output.md
@@ -31,11 +32,21 @@ import sys
 from typing import Iterable
 
 MODE_HEADINGS = {
+    "input_cleaning": [
+        "Raw Input Boundary", "Entity / Alias Normalization",
+        "Observed / Confirmed Facts", "Judgments / Inferences / Hypotheses",
+        "Actions Already Tried And Results", "Proposed Methods / Pending Actions",
+        "Contradictions / Revisions", "Missing Information",
+        "Router-Ready Case Brief",
+    ],
     "standard": [
-        "Problem Summary", "Context Mode", "Safety Gate", "Candidate Matching Report",
-        "Adopted / Deferred / Not Applied", "Optimal Troubleshooting Path",
-        "Decision Tree", "Node Explanation Table", "Missing Information",
-        "Next 3-5 Actions", "Stop / Escalation Conditions", "Retrospective Trigger",
+        "Problem Summary", "Input Cleaning Snapshot", "Context Mode", "Safety Gate",
+        "Working Link Model / Scope", "Fact / Assumption Table",
+        "Hypothesis Ranking", "Candidate Matching Report",
+        "Adopted / Deferred / Not Applied", "Cost / Probability Ranking",
+        "Optimal Troubleshooting Path", "Decision Tree", "Node Explanation Table",
+        "Missing Information", "Next 3-5 Actions",
+        "Stop / Escalation Conditions", "Retrospective Trigger",
     ],
     "knowledge_linked": [
         "Retrieval Summary", "Fact Table", "Project Context Model",
@@ -51,11 +62,14 @@ MODE_HEADINGS = {
         "Why Full Architecture Is Not Needed Yet", "When To Switch Modes",
     ],
     "architecture_first": [
-        "Project Context Summary", "Architecture / Link Understanding",
-        "Fact / Assumption Table", "Fault-Domain Localization", "Candidate Matching Report",
-        "Adopted / Deferred / Not Applied", "Optimal Troubleshooting Path",
-        "Decision Tree", "Node Explanation Table", "Missing Architecture Information",
-        "Next 3-5 Actions", "Stop / Escalation Conditions", "Retrospective Trigger",
+        "Project Context Summary", "Input Cleaning Snapshot",
+        "Architecture / Link Understanding", "Evidence-Aware Link Model",
+        "Fact / Assumption Table", "Fault-Domain Localization",
+        "Hypothesis Tree With Probabilities", "Candidate Matching Report",
+        "Adopted / Deferred / Not Applied", "Cost / Probability Ranking",
+        "Optimal Troubleshooting Path", "Decision Tree", "Node Explanation Table",
+        "Missing Architecture Information", "Next 3-5 Actions",
+        "Stop / Escalation Conditions", "Retrospective Trigger",
     ],
     "assumption_driven": [
         "Context Mode", "Proposed Link Model / Classic Architecture",
@@ -76,6 +90,14 @@ MODES_WITH_DECISION_TREE = {
     "fast_path", "assumption_driven",
 }
 
+DECISION_TREE_SECTION_BY_MODE = {
+    "standard": "Decision Tree",
+    "knowledge_linked": "Decision Tree",
+    "architecture_first": "Decision Tree",
+    "fast_path": "Mini Decision Tree",
+    "assumption_driven": "Provisional Decision Tree",
+}
+
 REQUIRED_NODE_COLUMNS = [
     "id", "type", "action_type", "check_or_action", "tool_required",
     "expected_observation", "interpretation", "safety_level", "cost",
@@ -94,6 +116,15 @@ VALID_SAFETY_LEVEL = {"S0", "S1", "S2", "S3"}
 VALID_COST = {"low", "medium", "high"}
 VALID_REVERSIBILITY = {"reversible", "partial", "irreversible", "n/a", "na", "-", ""}
 VALID_ACTION_ONLY_REVERSIBILITY = {"reversible", "partial", "irreversible"}
+VALID_CONFIDENCE = {"high", "medium", "low"}
+
+INPUT_CLEANING_TABLES = [
+    ("Observed / Confirmed Facts", ["id", "fact", "source_in_input", "confidence", "affected_link_or_node"]),
+    ("Judgments / Inferences / Hypotheses", ["id", "statement", "based_on", "confidence", "could_be_wrong_if"]),
+    ("Actions Already Tried And Results", ["id", "action", "target", "result", "interpretation", "evidence_refs"]),
+    ("Proposed Methods / Pending Actions", ["id", "proposed_action", "owner_if_known", "target", "expected_evidence", "hypothesis_or_link_node"]),
+    ("Contradictions / Revisions", ["id", "previous_statement", "revised_statement", "why_revised", "impact_on_routing"]),
+]
 
 SAFETY_WORDS = {
     # Explicit warning / mitigation terms. Do not include bare hazard names like
@@ -187,6 +218,23 @@ def find_heading(text: str, expected: str) -> tuple[int, str] | None:
     return None
 
 
+def extract_section(text: str, expected: str) -> str:
+    """Return markdown between the expected heading and the next same/higher heading."""
+    lines = text.splitlines()
+    positions = find_heading_positions(text)
+    for idx, (line_no, level, raw) in enumerate(positions):
+        if not heading_matches(raw, expected):
+            continue
+        start_idx = line_no
+        end_idx = len(lines)
+        for next_line_no, next_level, _next_raw in positions[idx + 1 :]:
+            if next_level <= level:
+                end_idx = next_line_no - 1
+                break
+        return "\n".join(lines[start_idx:end_idx]).strip()
+    return ""
+
+
 def validate_required_headings(text: str, mode: str, errors: list[str]) -> None:
     positions: list[int] = []
     for heading in MODE_HEADINGS[mode]:
@@ -198,6 +246,14 @@ def validate_required_headings(text: str, mode: str, errors: list[str]) -> None:
 
     if len(positions) == len(MODE_HEADINGS[mode]) and positions != sorted(positions):
         errors.append("required headings are present but out of contract order")
+
+
+def find_table_with_columns(text: str, required_columns: list[str]) -> MarkdownTable | None:
+    required = {normalize_col(c) for c in required_columns}
+    for table in find_tables(text):
+        if required.issubset(set(table.columns)):
+            return table
+    return None
 
 
 def find_tables(text: str) -> list[MarkdownTable]:
@@ -375,9 +431,11 @@ def validate_mermaid_consistency(text: str, mode: str, node_ids: set[str], error
     if mode not in MODES_WITH_DECISION_TREE:
         return
 
-    blocks = fenced_code_blocks(text, "mermaid")
+    section_name = DECISION_TREE_SECTION_BY_MODE.get(mode)
+    tree_text = extract_section(text, section_name) if section_name else text
+    blocks = fenced_code_blocks(tree_text, "mermaid")
     if not blocks:
-        errors.append("decision tree section requires a fenced ```mermaid block")
+        errors.append(f"{section_name or 'decision tree'} section requires a fenced ```mermaid block")
         return
 
     tree_ids: set[str] = set()
@@ -412,6 +470,42 @@ def validate_case_record_draft(text: str, mode: str, errors: list[str]) -> None:
             errors.append(f"case record draft missing token: {token}")
 
 
+def validate_input_cleaning_contract(text: str, mode: str, errors: list[str]) -> None:
+    if mode != "input_cleaning":
+        return
+
+    for heading, required_columns in INPUT_CLEANING_TABLES:
+        section = extract_section(text, heading)
+        table = find_table_with_columns(section, required_columns)
+        if not table:
+            errors.append(f"input cleaning section '{heading}' missing required table columns: {required_columns}")
+            continue
+        if not table.rows:
+            errors.append(f"input cleaning section '{heading}' table must contain at least one explicit row")
+            continue
+
+        for idx, row in enumerate(table.rows, start=1):
+            row_id = normalize_text(row.get("id", ""))
+            if is_blank_like(row_id):
+                errors.append(f"input cleaning section '{heading}' row {idx}: id is required")
+            if "confidence" in table.columns:
+                confidence = normalize_text(row.get("confidence", "")).lower()
+                if confidence not in VALID_CONFIDENCE:
+                    errors.append(
+                        f"input cleaning section '{heading}' row {row_id or idx}: "
+                        f"invalid confidence '{row.get('confidence', '')}'"
+                    )
+
+            for column in required_columns:
+                if is_blank_like(row.get(normalize_col(column), "")):
+                    errors.append(f"input cleaning section '{heading}' row {row_id or idx}: {column} is required")
+
+    for heading in ["Raw Input Boundary", "Entity / Alias Normalization", "Missing Information", "Router-Ready Case Brief"]:
+        section = extract_section(text, heading)
+        if len(re.sub(r"\s+", " ", section).strip()) < 20:
+            errors.append(f"input cleaning section '{heading}' must contain useful content")
+
+
 def validate_forbidden_unsafe_patterns(text: str, errors: list[str]) -> None:
     for pattern, description in FORBIDDEN_UNSAFE_PATTERNS:
         for match in pattern.finditer(text):
@@ -430,6 +524,7 @@ def validate_text(text: str, mode: str) -> ValidationResult:
     warnings: list[str] = []
 
     validate_required_headings(text, mode, errors)
+    validate_input_cleaning_contract(text, mode, errors)
     node_ids, _node_table = validate_node_table(text, mode, errors, warnings)
     validate_mermaid_consistency(text, mode, node_ids, errors, warnings)
     validate_case_record_draft(text, mode, errors)

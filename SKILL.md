@@ -1,34 +1,53 @@
-# Debug Decision Tree Skill - V0.99.5 MIPI DSI/CSI Training Branch
+---
+name: debug-decision-tree
+description: Hardware debug reasoning skill for natural-language bug reports, link-model analysis, hypothesis trees, action decision trees, probability/time-cost ranked troubleshooting, input cleaning, safety gating, and retrospective asset promotion. Use when Codex needs to analyze a hardware, FPGA, embedded, power, high-speed interface, video, I2C, SPI, MIPI, eDP, PCIe, USB, JTAG, or system bring-up/debug issue; when the user asks for possible causes, probabilities, measurements, debug plan, decision tree, link model, or reusable case learning; or when a terse user bug report needs a complete first-pass debug deliverable.
+---
+
+# Debug Decision Tree Skill - V0.99.6 Natural-Language Agent Contract
 
 ## Purpose
 
-Generate efficient, context-aware debug decision trees under explicit safety, evidence, and output constraints.
+Generate complete hardware debug deliverables from ordinary user language. The user does not need to know the internal modes, asset types, or forms.
 
-V0.99.5 is a founder-pilot candidate. It is ready for tightly controlled real pilot runs, article-based seed intake, authoritative-source training, public solved-case training, real-project case intake, Intel/Altera FPGA JTAG/configuration training, MIPI DSI/CSI training, and cost-aware closed-loop debug records, but it is not team-wide pilot ready, not V1.0, and not a formally validated operations system.
+This package is still a founder-pilot candidate, not V1.0 and not a formally validated operations system. Treat its probabilities as decision priors unless calibrated by solved-case regression.
+
+## Default User Experience
+
+When the user gives any debug symptom, issue note, waveform description, chat excerpt, or "help me debug this" request:
+
+1. Run Input Cleaning using `output_contracts/input_cleaning.md`.
+2. Run Safety Gate before recommending actions.
+3. Route using `routing/mode_router.md`.
+4. Load only relevant assets after checking `reasoning/asset_priority.md`.
+5. Deliver through `output_contracts/default_debug_delivery.md` and the selected mode contract.
+6. Include a link model or influence map whenever the failure spans more than one component, interface, power domain, clock/reset path, or software-control boundary.
+7. Include possible causes with probability estimates whenever root cause is not confirmed.
+8. Include a hypothesis tree and an action decision tree in full debug outputs.
+9. If details are missing, make assumptions explicit and ask at most three high-value questions after giving the first safe evidence-gathering actions.
+
+Do not respond with only a questionnaire unless any action would be unsafe.
 
 ## Mandatory Rules
 
-0. Run Input Cleaning before Safety Gate, mode routing, candidate matching, or debug-tree generation. Use `output_contracts/input_cleaning.md` and preserve facts, judgments, actions tried, proposed methods, revisions, and missing information separately.
-1. Run Safety Gate before any debug action.
-2. Do not repeat destructive reproduction without a changed hypothesis and a documented safety envelope.
-3. Use current observations over generic experience.
-4. Use link models when experience is absent.
-5. Do not adopt narrow assets without required evidence.
-6. Always list Adopted / Deferred / Not Applied for full-tree modes.
-7. Always put the optimal path before the full tree.
-8. Every action node must use `output_contracts/node_table_schema.md`.
-9. Every action node must include `action_type`, `tool_required`, `safety_level`, `cost`, and `reversibility`.
-10. S2/S3 nodes must include explicit safety warning or mitigation language.
-11. Mermaid decision-tree node IDs must match Node Explanation Table IDs.
-12. Every knowledge-linked claim must include fact source and confidence.
-13. Solved cases must produce a case_record draft and regression candidate.
-14. Before promoting or saving an output, run `scripts/output_validator.py` with the correct mode.
-15. Article/forum/app-note experience bundles must enter as `pattern_bundle` assets before they can influence case_record promotion.
-16. Public debug records used for training must preserve blind input, predicted tree, actual resolution, coverage score, and meta-reflection.
-17. Full debug trees should rank early actions by probability, time cost, safety risk, and exclusion value.
-18. Real project cases must be anonymized and processed through `training/real_project_cases/` before promotion into reusable assets.
-19. FPGA JTAG/configuration failures must separate host cable visibility, target VREF, physical JTAG path, configuration-status pins, and internal debug-node visibility before bitstream or IDE changes.
-20. MIPI DSI/CSI failures must separate control path, LP11/stopstate, HS clock, HS data, packet counters, VC/data type/ECC/CRC, host graph binding, and downstream display/capture pipeline before blind timing or driver changes.
+0. Run Input Cleaning before Safety Gate, mode routing, candidate matching, or debug-tree generation.
+1. Preserve facts, judgments, actions tried, proposed methods, revisions, and missing information separately.
+2. Run Safety Gate before any debug action.
+3. Do not repeat destructive reproduction without a changed hypothesis and a documented safety envelope.
+4. Use current observations over generic experience.
+5. Use link models when experience is absent.
+6. Do not adopt narrow assets without required evidence.
+7. Always list Adopted / Deferred / Not Applied for full-tree modes.
+8. Always put the optimal path before the full tree.
+9. Every action node must use `output_contracts/node_table_schema.md`.
+10. Every action node must include `action_type`, `tool_required`, `safety_level`, `cost`, `reversibility`, and `evidence_refs`.
+11. S2/S3 nodes must include explicit safety warning or mitigation language.
+12. Mermaid decision-tree node IDs must match Node Explanation Table IDs.
+13. Every knowledge-linked claim must include fact source and confidence.
+14. Solved cases must produce a case_record draft and regression candidate.
+15. Before promoting or saving an output, run `scripts/output_validator.py` with the correct mode.
+16. Full debug trees must rank early actions by probability, time cost, safety risk, and exclusion value.
+17. MIPI/eDP/video failures must separate control path, power/reset/clock, source/decoder output, redriver/PHY path, receiver CDR/comma/packet/video pipeline, and downstream display/capture before blind tuning.
+18. FPGA JTAG/configuration failures must separate host cable visibility, target VREF, physical JTAG path, configuration-status pins, and internal debug-node visibility before bitstream or IDE changes.
 
 ## Mode Selection Order
 
@@ -43,33 +62,43 @@ V0.99.5 is a founder-pilot candidate. It is ready for tightly controlled real pi
 7. Retrospective after solution
 ```
 
-## Asset Priority
+Use `prompts/context_router.md` for general natural-language requests. Use `prompts/architecture_first.md` when the user provides a chain, module list, register state, waveform relationship, or updated debug conclusion.
 
-Use `reasoning/asset_priority.md` as the single source of truth for asset priority.
+Use `routing/natural_language_intent_map.md` to translate ordinary user wording into internal behavior without exposing mode names.
 
-## Founder-Pilot Rule
+## Asset Types
 
-Use `lifecycle/founder_pilot_playbook.md` and `forms/founder_pilot_result_form.md` for real runs. A seed asset can be promoted only when measured evidence changes the actual troubleshooting order and creates a regression candidate.
+```text
+link_model       causal / architecture / dependency model
+signature        strong symptom -> fast-path action cluster
+case_record      solved retrospective / validated experience
+pattern_bundle   article/forum/app-note pitfall or debug-pattern bundle
+debug_principle  generalized cross-domain debug rule
+```
 
-## Seed Intake Rule
+## Output Expectations
 
-Use `pattern_bundle` for user-provided articles, public forum threads, vendor app notes, or pitfall lists. Promote only single, evidence-backed solved runs into `case_record`.
+Full debug outputs must distinguish:
 
-## Closed-Loop Training Rule
+- symptom: what failed
+- root cause: only after evidence proves it
+- measurement: what was observed and where
+- hypothesis: plausible explanation with probability and falsifier
+- action: next measurement/change with expected evidence
 
-Use `training/closed_loop/` for public debug records. A source is not "learned" until the predicted tree has been compared against the actual resolution and the miss/near-hit/hit has been recorded.
+For unclear user input, produce a provisional result instead of blocking:
 
-## Real Project Case Rule
-
-Use `forms/real_project_case_intake_form.md` and `training/real_project_cases/` for private project cases. Do not promote a real case into `assets/case_records/` unless it is anonymized, evidence-backed, and reviewed.
-
-## Cost-Aware Debug Rule
-
-Use `reasoning/probability_time_cost_model.md` when ordering actions. The fastest theoretical path is the safe dependency-respecting path with the highest expected information per unit time.
+- cleaned understanding
+- assumptions
+- top possible causes with probabilities
+- first safe measurements
+- action decision tree
+- missing information that would change the plan
 
 ## Validator Commands
 
 ```bash
+python scripts/output_validator.py --mode input_cleaning --file cleaned.md
 python scripts/output_validator.py --mode standard --file output.md
 python scripts/output_validator.py --mode knowledge_linked --file output.md
 python scripts/output_validator.py --mode architecture_first --file output.md
@@ -77,3 +106,5 @@ python scripts/output_validator.py --mode fast_path --file output.md
 python scripts/output_validator.py --mode assumption_driven --file output.md
 python scripts/output_validator.py --mode retrospective --file retrospective.md
 ```
+
+Structural validation means the output matches the contract. It does not prove the reasoning is correct.

@@ -1,0 +1,3 @@
+display_name: Debug Decision Tree
+short_description: Turn hardware bug reports into link models, hypotheses, probabilities, and action decision trees.
+default_prompt: Analyze this hardware debug issue. Clean the input, build the link model, estimate possible causes, and give an action decision tree with the next measurements and expected evidence.

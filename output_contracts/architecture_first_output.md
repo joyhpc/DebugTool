@@ -4,16 +4,49 @@
 # Architecture-First Debug Decision Tree
 
 ## 1. Project Context Summary
-## 2. Architecture / Link Understanding
-## 3. Fact / Assumption Table
-## 4. Fault-Domain Localization
-## 5. Candidate Matching Report
-## 6. Adopted / Deferred / Not Applied
-## 7. Optimal Troubleshooting Path
-## 8. Decision Tree
-## 9. Node Explanation Table
-## 10. Missing Architecture Information
-## 11. Next 3-5 Actions
-## 12. Stop / Escalation Conditions
-## 13. Retrospective Trigger
+## 2. Input Cleaning Snapshot
+## 3. Architecture / Link Understanding
+## 4. Evidence-Aware Link Model
+## 5. Fact / Assumption Table
+## 6. Fault-Domain Localization
+## 7. Hypothesis Tree With Probabilities
+## 8. Candidate Matching Report
+## 9. Adopted / Deferred / Not Applied
+## 10. Cost / Probability Ranking
+## 11. Optimal Troubleshooting Path
+## 12. Decision Tree
+## 13. Node Explanation Table
+## 14. Missing Architecture Information
+## 15. Next 3-5 Actions
+## 16. Stop / Escalation Conditions
+## 17. Retrospective Trigger
 ```
+
+## Evidence-Aware Link Model Requirements
+
+Include a graph or structured table that separates at least these layers when applicable:
+
+- control/configuration path
+- power/reset/clock prerequisites
+- data path
+- receiver/consumer pipeline
+- observation and measurement points
+
+Each link node must state what is known, what is inferred, what is unknown, and what evidence would move the debug boundary.
+
+## Hypothesis Requirements
+
+Include a hypothesis tree or table with:
+
+- root symptom
+- competing fault domains
+- probability estimate
+- evidence that raises the hypothesis
+- evidence that lowers or falsifies it
+- first action that can distinguish it from neighbors
+
+Probabilities are decision priors, not truth claims. Mark them as subjective unless calibrated by regression or solved-case statistics.
+
+## Action Decision Requirements
+
+The `Decision Tree` section is the action decision tree. It must map each early action to the hypothesis or link boundary it confirms, falsifies, or excludes.
