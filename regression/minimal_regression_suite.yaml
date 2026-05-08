@@ -449,3 +449,27 @@ tests:
   - user must provide link model
   - user must provide hypothesis probability
   - cannot proceed without action decision tree
+- id: REG-SKILL-OPTIMIZATION-NOT-CASE-RERUN
+  input: 当前我们是为了优化这个skill，edp这个案子当前是停滞的，没有更多试验信息。你先专注一个目的，优化skill
+  must_select: Skill Improvement
+  must_include:
+  - skill layer
+  - target-case uncertainty
+  - skill defect
+  - routing
+  - contract
+  - regression
+  must_not_include:
+  - rerun A57 debug tree
+  - new root cause probability
+- id: REG-STALLED-CASE-USE-AS-FIXTURE
+  input: 这个硬件案子没有新数据，不要继续推断根因，用它检查 DebugTool 输出和产物管理哪里需要改
+  must_select: Skill Improvement
+  must_include:
+  - fixture
+  - artifact lifecycle
+  - evidence audit
+  - no new evidence
+  - validation
+  must_not_include:
+  - ask for more measurements before improving the skill

@@ -1,5 +1,14 @@
 # Changelog
 
+## V0.99.7 Skill Improvement Gate
+
+- Added an explicit Skill Improvement request path so critiques of DebugTool behavior optimize the skill instead of continuing an unresolved hardware debug case.
+- Added a `skill_improvement` output contract and prompt for routing, contract, validator, artifact lifecycle, and regression changes.
+- Added case artifact hygiene rules for one current entry point per case/mode and archived superseded outputs.
+- Promoted Evidence Audit from an ad hoc response into the expected publish-review gate for saved pilot/debug outputs.
+- Added regression fixtures for skill-optimization intent and stalled-case handling.
+- Updated version metadata to align `SKILL.md`, `README.md`, and `release/VERSION.md`.
+
 ## V0.99.6 Natural-Language Runtime Contract Hardening
 
 - Added natural-language evidence-update routing so users can say "有新线索", "刚测到", or "帮我更新排查策略" without internal contract terms.

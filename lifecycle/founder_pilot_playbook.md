@@ -22,6 +22,8 @@ For every founder-pilot case, capture:
 - adopted/deferred/not-applied assets
 - generated debug output
 - validator result if a node table is required
+- evidence-audit result before publishing or sharing the saved output
+- case artifact location following `lifecycle/case_artifact_hygiene.md`
 - executed actions and observations
 - final root cause, or current unresolved state
 - retrospective and asset update proposal
@@ -36,6 +38,7 @@ Before running:
 3. Record selected mode, rejected modes, and adopted/deferred/not-applied assets.
 4. Define the safety envelope before any action, including hard stop conditions.
 5. Run `scripts/output_validator.py` when the selected mode has an output contract.
+6. Save outputs using `lifecycle/case_artifact_hygiene.md` when the case produces more than one artifact.
 
 During the run:
 
@@ -50,6 +53,7 @@ After the run:
 2. Write the retrospective before editing any asset.
 3. Promote only evidence-backed learning; keep weak learning as a retrospective note.
 4. Add or update a regression only when the expected behavior can be stated as assertions.
+5. Run Evidence Audit before treating a generated output as publish-ready or as reusable reference material.
 
 ## Initial Target Pilots
 
@@ -74,6 +78,7 @@ Stop or downgrade a founder-pilot case when:
 - user-provided facts conflict with the selected link model
 - the decision tree drifts into generic checklist behavior
 - output validator fails and the failure is not intentionally waived
+- no new evidence exists and the current work is really skill optimization, not case execution
 
 ## Promotion Rule
 

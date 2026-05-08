@@ -1,10 +1,10 @@
-# Debug Decision Tree Skill - V0.99.6 Natural-Language Assistant Contract
+# Debug Decision Tree Skill - V0.99.7 Skill Improvement Gate
 
 ## Status
 
 Early-internal-pilot candidate. Not team-wide pilot ready. Not V1.0.
 
-V0.99.6 keeps the project as a skill package and hardens the natural-language debug flow. A user can provide a terse bug report, issue-sync note, waveform clue, or chat extract; the skill should clean the input, route the case, build a link model, rank hypotheses, and return an action decision tree without requiring the user to know internal mode names.
+V0.99.7 keeps the project as a skill package and adds a clearer maintenance path for improving the skill itself. A user can provide a terse bug report, issue-sync note, waveform clue, chat extract, or critique of DebugTool behavior; the skill should either run the debug flow or, when the target is skill quality, treat the case as a fixture and improve routing, contracts, audit gates, lifecycle rules, or regression coverage.
 
 The package is intended for 1-2 real early-internal-pilot debug loops before any wider rollout.
 
@@ -29,7 +29,7 @@ debug_principle  generalized rule that applies across many hardware debug domain
 7. Deliver through `output_contracts/default_debug_delivery.md` plus the selected mode contract.
 8. Load relevant assets from `assets/` only after checking `reasoning/asset_priority.md`.
 9. Include probabilities, hypothesis tree, action decision tree, and first measurements whenever root cause is unknown.
-10. Run `scripts/output_validator.py` before reusing or promoting the output.
+10. Run `scripts/output_validator.py` before reusing or promoting the output, then run Evidence Audit before publishing saved pilot/debug artifacts.
 
 Structural validation passing means the output matches the contract. It does not prove the debug reasoning is correct.
 

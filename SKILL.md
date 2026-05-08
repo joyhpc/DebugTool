@@ -1,11 +1,11 @@
 ---
 name: debug-decision-tree
-version: "0.99.6"
+version: "0.99.7"
 api_version: "1"
 description: Hardware debug reasoning skill for natural-language bug reports, link-model analysis, hypothesis trees, action decision trees, probability/time-cost ranked troubleshooting, input cleaning, safety gating, and retrospective asset promotion. Use when the assistant needs to analyze a hardware, FPGA, embedded, power, high-speed interface, video, I2C, SPI, MIPI, eDP, PCIe, USB, JTAG, or system bring-up/debug issue; when the user asks for possible causes, probabilities, measurements, debug plan, decision tree, link model, or reusable case learning; or when a terse user bug report needs a complete first-pass debug deliverable.
 ---
 
-# Debug Decision Tree Skill - V0.99.6 Natural-Language Agent Contract
+# Debug Decision Tree Skill - V0.99.7 Natural-Language Agent Contract
 
 ## Purpose
 
@@ -56,6 +56,18 @@ For these requests, run the same internal update flow:
 5. Re-rank hypotheses using engineering priors; do not pretend precision.
 6. Output the next 1-3 actions in plain language before any full tree detail.
 
+## Skill Improvement Requests
+
+When the user is discussing DebugTool behavior, output quality, routing, contracts, validators, pilot artifacts, or how to improve this skill, do not continue debugging the underlying hardware case unless explicitly asked.
+
+Treat the referenced case as a test fixture:
+
+1. Identify which skill layer failed or needs improvement: intake, routing, link-model contract, output contract, evidence audit, artifact lifecycle, validator, regression, or asset coverage.
+2. Separate target-case uncertainty from skill-design defects.
+3. Patch skill contracts, prompts, routing, lifecycle rules, validators, or regression fixtures when the improvement is actionable.
+4. Do not generate another same-case debug output just to demonstrate progress unless the user asks for a before/after example.
+5. Keep artifact directories clean: one current entry point per case/mode; archive superseded outputs.
+
 ## Mandatory Rules
 
 0. Run Input Cleaning before Safety Gate, mode routing, candidate matching, or debug-tree generation.
@@ -81,6 +93,8 @@ For these requests, run the same internal update flow:
 20. Multi-link failures must load and apply the relevant domain link model from `assets/link_models/` before blind tuning or component replacement.
 21. Domain-specific stage requirements belong in link-model assets, not in the top-level skill contract.
 22. When the user asks whether an output, conclusion, or probability ranking is reliable, run Evidence Audit using `output_contracts/evidence_audit.md`; structural validation is not enough.
+23. When saving or publishing a pilot/debug output, apply the artifact hygiene rules in `lifecycle/case_artifact_hygiene.md`.
+24. When optimizing this skill, use `output_contracts/skill_improvement.md` and prefer contract/routing/regression changes over re-running the same unresolved debug case.
 
 ## Mode Selection Order
 
@@ -98,6 +112,8 @@ For these requests, run the same internal update flow:
 Use `prompts/context_router.md` for general natural-language requests. Use `prompts/architecture_first.md` when the user provides a chain, module list, register state, waveform relationship, or updated debug conclusion.
 
 Use `routing/natural_language_intent_map.md` to translate ordinary user wording into internal behavior without exposing mode names.
+
+Use `prompts/skill_improvement.md` when the user asks to improve DebugTool itself or critiques how the skill behaved.
 
 ## Optional External Knowledge Escalation
 

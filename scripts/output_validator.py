@@ -16,6 +16,8 @@ Usage:
   python scripts/output_validator.py --mode fast_path --file output.md
   python scripts/output_validator.py --mode architecture_first --file output.md
   python scripts/output_validator.py --mode assumption_driven --file output.md
+  python scripts/output_validator.py --mode evidence_audit --file audit.md
+  python scripts/output_validator.py --mode skill_improvement --file review.md
   python scripts/output_validator.py --mode retrospective --file output.md
 
 This is a structural validator, not an LLM quality judge. It cannot determine
@@ -76,6 +78,20 @@ MODE_HEADINGS = {
         "Assumptions To Confirm", "Fault Domains If Assumptions Hold",
         "Provisional Optimal Path", "Provisional Decision Tree",
         "What Would Change The Tree", "Next User Confirmation",
+    ],
+    "evidence_audit": [
+        "Artifact Under Review", "Review Verdict", "Contract Compliance",
+        "Evidence Integrity Findings", "Link Model Findings",
+        "Probability And Ranking Findings", "Action Tree Findings",
+        "Missing Or Overclaimed Information", "Required Fixes Before Publish",
+        "Reviewer Decision",
+    ],
+    "skill_improvement": [
+        "Improvement Objective", "Triggering Example Or Failure",
+        "Skill Layer Diagnosis", "Target-Case Uncertainty vs Skill Defect",
+        "Required Contract / Routing / Lifecycle Changes",
+        "Regression Coverage To Add Or Update", "Changes Made",
+        "Validation", "Residual Risks", "Next Skill Backlog",
     ],
     "retrospective": [
         "Root Cause Summary", "Effective Fix", "Strong Indicators",
