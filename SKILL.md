@@ -8,6 +8,7 @@ V0.99.5 is a founder-pilot candidate. It is ready for tightly controlled real pi
 
 ## Mandatory Rules
 
+0. Run Input Cleaning before Safety Gate, mode routing, candidate matching, or debug-tree generation. Use `output_contracts/input_cleaning.md` and preserve facts, judgments, actions tried, proposed methods, revisions, and missing information separately.
 1. Run Safety Gate before any debug action.
 2. Do not repeat destructive reproduction without a changed hypothesis and a documented safety envelope.
 3. Use current observations over generic experience.
@@ -32,6 +33,7 @@ V0.99.5 is a founder-pilot candidate. It is ready for tightly controlled real pi
 ## Mode Selection Order
 
 ```text
+0. Input Cleaning
 1. Safety Gate
 2. Signature-Based Fast Path
 3. Architecture-First

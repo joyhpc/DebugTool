@@ -8,6 +8,92 @@ Current confirmed boundary: rear-lane AUX communication and command handshake co
 
 This output starts from a detailed link model and then derives the hypothesis tree and action decision tree. It does not treat any root cause as concluded before the required evidence gates are passed.
 
+### Input Cleaning Record
+
+#### Raw Input Boundary
+
+The raw input is a project issue-sync note plus later user direction. It includes current architecture, observed symptoms, confirmed updates, suspected causes, completed experiments, and proposed next actions. It is not a final root-cause report.
+
+#### Entity / Alias Normalization
+
+| Alias | Normalized Meaning | Notes |
+|---|---|---|
+| front two lanes | eDP lanes received by FPGA-A | Stable comparison group |
+| rear two lanes | eDP lanes received by FPGA-B | Failing path |
+| FPGA-A | KU3P-side receiver | Receives eDP0/1 in the user description |
+| FPGA-B | AU15P-side receiver | Receives eDP2/3 in the user description |
+| decoder | front-end eDP decoder for rear-lane path | Exact part number not provided |
+| redriver | high-speed conditioning path after decoder | Presence and readback details need schematic confirmation |
+| AUX | eDP AUX control/handshake path | Confirmed to complete normally in current discussion |
+| IIC | MCU control/configuration path to decoder or redriver | Must be proven with transaction and readback evidence |
+
+#### Observed / Confirmed Facts
+
+| id | fact | source_in_input | confidence | affected_link_or_node |
+|---|---|---|---|---|
+| IC-F1 | Four-lane eDP is split across two FPGA receivers | user issue-sync text | high | architecture |
+| IC-F2 | Front two lanes are received by FPGA-A and show better display behavior | user issue-sync text | high | comparison path |
+| IC-F3 | Rear two lanes are received by FPGA-B and intermittently fail to display after video switching | user issue-sync text | high | D_SRC to R_VIDEO |
+| IC-F4 | Rear-lane AUX communication and command handshake can complete normally | latest confirmed discussion | high | C_AUX |
+| IC-F5 | FPGA-B SerDes CDR cannot lock in the fault state | user issue-sync text | high | R_CDR |
+| IC-F6 | Comma alignment fails or shows periodic abnormality in the fault state | user issue-sync text | high | R_COMMA |
+| IC-F7 | Manual SerDes reset does not improve the failing state | user issue-sync text | high | C_FPGA_CTRL, R_CDR |
+| IC-F8 | Demo board behavior suggests SerDes reset can recover similar receive symptoms when input source is valid | user issue-sync text | medium | R_CDR with valid input |
+| IC-F9 | Single DEV3 selection is worse, while DEV3 plus DEV4 improves receive behavior | user issue-sync text | medium | D_DEC_OUT, D_RED, D_ROUTE |
+| IC-F10 | FPGA-side aux_in initial levels differed across channels in earlier captures | earlier investigation note | medium | C_AUX |
+| IC-F11 | Weak pull-down on FPGA-side aux_in did not solve the issue | earlier investigation note | medium | C_AUX |
+
+#### Judgments / Inferences / Hypotheses
+
+| id | statement | based_on | confidence | could_be_wrong_if |
+|---|---|---|---|---|
+| IC-J1 | AUX is not the primary current blocker | IC-F4,IC-F10,IC-F11 | high | a new capture shows AUX completes only in good state but not fault state |
+| IC-J2 | The fault is probably before or at the decoder output, not inside downstream display pipeline | IC-F5,IC-F6,IC-F7 | medium | decoder output and FPGA-B input are proven valid during the same fault interval |
+| IC-J3 | Decoder configuration, power sequence, or physical output state is a high-priority suspect | IC-F4,IC-F5,IC-F7 | medium | decoder readback, output-valid, and measured output are all correct in fault state |
+| IC-J4 | Pure FPGA-B SerDes reset-state failure is lower priority than source/output validity | IC-F7,IC-F8 | medium | valid input reaches FPGA-B and CDR still fails |
+| IC-J5 | DEV3/DEV4 behavior may indicate lane coupling, lane enable, mode, or redriver path effects | IC-F9 | low-medium | per-lane output and lane mapping are proven identical good vs fault |
+
+#### Actions Already Tried And Results
+
+| id | action | target | result | interpretation | evidence_refs |
+|---|---|---|---|---|---|
+| IC-M1 | Verified rear-lane AUX command flow | C_AUX | handshake can complete | Demotes AUX-blocked branch but does not prove high-speed data output | IC-F4 |
+| IC-M2 | Manually reset FPGA-B SerDes | C_FPGA_CTRL, R_CDR | no improvement | SerDes reset alone is not sufficient; invalid input remains plausible | IC-F7 |
+| IC-M3 | Applied weak pull-down to normalize aux_in initial level | C_AUX | no improvement | Initial aux_in level difference is not sufficient as primary explanation | IC-F10,IC-F11 |
+| IC-M4 | Compared against demo board reset behavior | R_CDR | demo board can recover with valid input | Raises value of proving decoder output validity before more SerDes work | IC-F8 |
+
+#### Proposed Methods / Pending Actions
+
+| id | proposed_action | owner_if_known | target | expected_evidence | hypothesis_or_link_node |
+|---|---|---|---|---|---|
+| IC-P1 | Scope decoder power, reset, enable, and reference clock during the failing switch | hardware owner | P_RAILS, P_SEQ, P_DEC_CLK | timing pass/fail against datasheet | H2 |
+| IC-P2 | Measure whether decoder has high-speed output in the fault state | hardware owner | D_DEC_OUT | output present/absent or output-valid status | H1,H2,H4 |
+| IC-P3 | Capture MCU IIC writes and readback to decoder and redriver | MCU/software owner | C_MCU, C_IIC, C_DEC_CFG, C_RED_CFG | address/data/ACK/readback/time order | H1,H3,H5 |
+| IC-P4 | Test dual-core ownership variable by swapping or serializing control ownership | MCU/software owner | C_MCU | failure rate or readback changes | H3 |
+| IC-P5 | Compare redriver output and FPGA-B input only after decoder output is valid | hardware/FPGA owner | D_RED, D_ROUTE, D_FPGA_IN | signal preserved or lost across lane path | H5,H6 |
+
+#### Contradictions / Revisions
+
+| id | previous_statement | revised_statement | why_revised | impact_on_routing |
+|---|---|---|---|---|
+| IC-R1 | Rear-lane problem may be caused by AUX communication being stuck | Rear-lane AUX handshake completes normally | IC-F4 | Move from AUX/control-blocked focus to decoder/data-output evidence gates |
+| IC-R2 | aux_in initial level difference may block protocol handshake | aux_in difference did not prevent command flow and pull-down did not solve issue | IC-F4,IC-F10,IC-F11 | Keep aux_in as context, not primary branch |
+| IC-R3 | SerDes reset should recover if receiver logic is stuck | SerDes reset does not recover on target board | IC-F7,IC-F8 | Prove input/output validity before further SerDes reset experiments |
+
+#### Missing Information
+
+| id | missing_information | why_it_matters |
+|---|---|---|
+| IC-G1 | Decoder part number, register map, and status bits | Required to define valid output and PLL/stream states |
+| IC-G2 | Good-state and fault-state decoder/redriver register dumps | Separates wrong configuration from valid configuration with bad physical output |
+| IC-G3 | Time-aligned waveforms for rails, reset, enable, refclk, IIC, and FPGA status | Separates sequence, race, and measurement-correlation branches |
+| IC-G4 | Lane mapping and redriver topology | Required before interpreting DEV3/DEV4 coupling |
+| IC-G5 | FPGA-B SerDes parameter and reference-clock comparison | Required only after valid input is proven |
+
+#### Router-Ready Case Brief
+
+The cleaned case is an architecture-first eDP rear-lane no-display debug problem. The confirmed facts are: the rear-lane AUX handshake completes, but FPGA-B SerDes CDR and comma alignment fail in the fault state, and SerDes reset does not recover. Earlier aux_in level differences did not block AUX command flow. The current competing hypotheses are decoder configuration/readback failure, decoder power-reset-clock sequence failure, MCU dual-core IIC ordering race, decoder stream/output invalidity, redriver or lane-path loss, and only after valid FPGA-B input is proven, FPGA-B SerDes configuration or margin.
+
 ## 2. Architecture / Link Understanding
 
 The system must be modeled as multiple coupled links, not a single data pipeline:

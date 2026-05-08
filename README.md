@@ -20,22 +20,24 @@ debug_principle  generalized rule that applies across many hardware debug domain
 
 ## Recommended Skill Invocation
 
-1. Start with `prompts/context_router.md`.
-2. Select the mode from `routing/mode_router.md`.
-3. Load relevant assets from `assets/` only after checking `reasoning/asset_priority.md`.
-4. Generate output using the matching file in `output_contracts/`.
-5. Run `scripts/output_validator.py` before reusing or promoting the output.
+1. Clean the raw user input using `output_contracts/input_cleaning.md`.
+2. Start with `prompts/context_router.md` using the cleaned router-ready brief.
+3. Select the mode from `routing/mode_router.md`.
+4. Load relevant assets from `assets/` only after checking `reasoning/asset_priority.md`.
+5. Generate output using the matching file in `output_contracts/`.
+6. Run `scripts/output_validator.py` before reusing or promoting the output.
 
 Structural validation passing means the output matches the contract. It does not prove the debug reasoning is correct.
 
 ## Recommended Founder-Pilot Flow
 
-1. Use `prompts/context_router.md` to choose mode.
-2. Generate a debug output using the selected output contract.
-3. Run `scripts/output_validator.py` on the generated markdown.
-4. Execute only the actions inside the documented safety envelope.
-5. Record results in `forms/founder_pilot_result_form.md`.
-6. Run retrospective and propose a case_record/regression update only when evidence supports it.
+1. Clean and normalize the raw user case using `output_contracts/input_cleaning.md`.
+2. Use `prompts/context_router.md` to choose mode from the cleaned brief.
+3. Generate a debug output using the selected output contract.
+4. Run `scripts/output_validator.py` on the generated markdown.
+5. Execute only the actions inside the documented safety envelope.
+6. Record results in `forms/founder_pilot_result_form.md`.
+7. Run retrospective and propose a case_record/regression update only when evidence supports it.
 
 ## Python Dependency
 
