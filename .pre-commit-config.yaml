@@ -1,0 +1,72 @@
+default_language_version:
+  python: python3
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.10
+    hooks:
+      - id: ruff
+        args: ["--fix", "--exit-non-zero-on-fix"]
+      - id: ruff-format
+  - repo: local
+    hooks:
+      - id: lint-assets
+        name: Lint assets
+        entry: python scripts/lint_assets.py
+        language: system
+        pass_filenames: false
+        files: ^assets/
+
+      - id: lint-closed-loop
+        name: Lint closed-loop training
+        entry: python scripts/lint_closed_loop.py
+        language: system
+        pass_filenames: false
+        files: ^training/closed_loop/
+
+      - id: lint-real-cases
+        name: Lint real project cases
+        entry: python scripts/lint_real_project_cases.py
+        language: system
+        pass_filenames: false
+        files: ^training/real_project_cases/
+
+      - id: lint-dataset-1000
+        name: Lint dataset 1000
+        entry: python scripts/lint_dataset_1000.py
+        language: system
+        pass_filenames: false
+        files: ^training/dataset_1000/
+
+      - id: regression-suite-linter
+        name: Regression suite linter
+        entry: python scripts/regression_suite_linter.py
+        language: system
+        pass_filenames: false
+        files: ^regression/
+
+      - id: regression-corpus-report
+        name: Regression corpus report
+        entry: python scripts/regression_run.py --fail-under 0.0
+        language: system
+        pass_filenames: false
+        files: ^training/closed_loop/records/
+
+      - id: output-validator-smoke
+        name: Output validator smoke
+        entry: python scripts/run_output_validator_smoke.py
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

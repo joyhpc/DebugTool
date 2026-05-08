@@ -1,0 +1,56 @@
+name: Lint and Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Validate assets
+        run: python scripts/lint_assets.py
+      - name: Validate regression suite structure
+        run: python scripts/regression_suite_linter.py
+      - name: Run output validator smoke cases
+        run: python scripts/run_output_validator_smoke.py
+      - name: Validate closed-loop training records
+        run: python scripts/lint_closed_loop.py
+      - name: Validate real project cases
+        run: python scripts/lint_real_project_cases.py
+      - name: Validate dataset 1000 queues
+        run: python scripts/lint_dataset_1000.py
+      - name: Generate regression corpus report
+        run: python scripts/regression_run.py --output /tmp/regression_report.md --json /tmp/regression_report.json --fail-under 0.0
+      - name: Compile validator scripts
+        run: |
+          python -m py_compile \
+            scripts/output_validator.py \
+            scripts/run_output_validator_smoke.py \
+            scripts/lint_assets.py \
+            scripts/regression_suite_linter.py \
+            scripts/regression_run.py \
+            scripts/lint_closed_loop.py \
+            scripts/lint_real_project_cases.py \
+            scripts/lint_dataset_1000.py

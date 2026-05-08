@@ -538,6 +538,7 @@ def main() -> int:
     ap.add_argument("--mode", required=True, choices=sorted(MODE_HEADINGS))
     ap.add_argument("--file", required=True, help="Markdown file to validate")
     ap.add_argument("--quiet", action="store_true", help="Only print failures")
+    ap.add_argument("--strict", action="store_true", help="Treat warnings as validation failures")
     args = ap.parse_args()
 
     path = Path(args.file)
@@ -545,8 +546,18 @@ def main() -> int:
         print(f"OUTPUT VALIDATION FAILED\n- file not found: {path}", file=sys.stderr)
         return 2
 
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        print(f"OUTPUT VALIDATION FAILED\n- could not read file: {path}: {exc}", file=sys.stderr)
+        return 2
+    except UnicodeDecodeError as exc:
+        print(f"OUTPUT VALIDATION FAILED\n- file is not valid UTF-8: {path}: {exc}", file=sys.stderr)
+        return 2
+
     result = validate_text(text, args.mode)
+    if args.strict and result.warnings:
+        result.errors.extend(f"strict warning: {w}" for w in result.warnings)
 
     if result.errors:
         print("OUTPUT VALIDATION FAILED")

@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "debug-tool-skill"
+version = "0.99.6"
+description = "Hardware debug decision-tree skill with link-model reasoning, hypothesis trees, and probability/time-cost ranked action plans."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "joyhpc" }]
+keywords = ["hardware-debug", "fpga", "mipi", "edp", "skill", "decision-tree"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+  "PyYAML>=6.0,<7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pre-commit>=3,<5",
+  "pytest>=7,<9",
+  "pytest-cov>=4,<6",
+  "ruff>=0.4,<1",
+  "mypy>=1.8,<2",
+  "types-PyYAML",
+]
+
+parsing = [
+  "markdown-it-py>=3,<4",
+]
+
+[project.urls]
+Repository = "https://github.com/joyhpc/DebugTool"
+Issues = "https://github.com/joyhpc/DebugTool/issues"
+
+[tool.setuptools]
+py-modules = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["regression"]
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+  "smoke: fast sanity tests that must pass before any push",
+  "regression: end-to-end skill regression on case_record corpus",
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_ignores = true
+warn_redundant_casts = true
+ignore_missing_imports = true
+files = ["scripts/"]

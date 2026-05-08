@@ -40,7 +40,7 @@ tests:
   - temperature
   - isolation
 - id: REG-KB-FACTS
-  input: Project KB available, 1.2V rail no output
+  input: 请查项目 KB 来分析 1.2V rail no output
   must_select: Knowledge-Linked
   must_include:
   - Fact Table
@@ -393,3 +393,59 @@ tests:
   - action decision tree
   must_not_include:
   - AUX-first debug
+- id: REG-DEFAULT-NO-EXTERNAL-KNOWLEDGE
+  input: eDP rear lane group intermittently has no image; AUX handshake is normal, FPGA SerDes CDR does not lock
+  must_not_select: Knowledge-Linked
+  must_include:
+  - link model
+  - assumptions
+  - first measurements
+  must_not_include:
+  - search online first
+  - query wiki first
+  - similar cases first
+- id: REG-EXPLICIT-WIKI-ESCALATES-KNOWLEDGE-LINKED
+  input: 用 my-wiki 和历史记录帮我重新建立这个 eDP 后两通道不出图问题的模型
+  must_select: Knowledge-Linked
+  must_include:
+  - Knowledge Request
+  - source resolution
+  - extracted claims
+  - applicability limits
+  must_not_include:
+  - copied wiki content
+- id: REG-SIMILAR-PROBLEMS-TRANSFER-TACTICS-NOT-ROOTCAUSE
+  input: 这个 eDP 后两通道不出图问题，找相似问题看看别人怎么解决，并更新 debug 策略
+  must_select: Knowledge-Linked
+  must_include:
+  - Similar Problem Candidates
+  - match_axis
+  - transferable_lesson
+  - applicability limits
+  - action_impact
+  must_not_include:
+  - similar case proves root cause
+- id: REG-WEB-LEARNING-OFFICIAL-SOURCES-FIRST
+  input: 联网学习 eDP DisplayPort AUX CDR 相关资料，然后帮我建立模型
+  must_select: Knowledge-Linked
+  must_include:
+  - source plan
+  - official
+  - vendor
+  - standards
+  - cited claims
+  - documented evidence
+  must_not_include:
+  - web article is target fact
+- id: REG-NATURAL-EVIDENCE-UPDATE-NO-INTERNAL-TERMS
+  input: A57 这个案子有新线索，刚用示波器看到后两通道 PWDN 是低电平，帮我更新一下排查策略，下一步怎么查
+  must_include:
+  - what changed
+  - old assumptions
+  - revised priority
+  - next actions
+  - plain language
+  must_not_include:
+  - user must provide link model
+  - user must provide hypothesis probability
+  - cannot proceed without action decision tree

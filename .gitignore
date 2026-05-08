@@ -9,3 +9,4 @@ venv/
 *.tmp
 *.bak
 *.zip
+knowledge_sources.yaml

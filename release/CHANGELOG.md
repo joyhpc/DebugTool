@@ -1,5 +1,20 @@
 # Changelog
 
+## V0.99.6 Natural-Language Runtime Contract Hardening
+
+- Added natural-language evidence-update routing so users can say "有新线索", "刚测到", or "帮我更新排查策略" without internal contract terms.
+- Added optional external knowledge escalation with targeted, interactive, broad, and similar-problem exploration modes.
+- Added portable knowledge-source resolution, knowledge request, external claim extraction, and high-value source registry contracts.
+- Defined existing training queues as runtime source-registry seeds for broad and similar-problem exploration.
+- Added regression prompts for default no-retrieval behavior, explicit wiki escalation, similar-case transfer limits, web-learning source priority, and natural evidence updates.
+- Added machine-readable `version` and `api_version` to `SKILL.md`.
+- Added V1.0 promotion criteria, `pyproject.toml`, dependency upper bound, pre-commit config, and CI validation workflow.
+- Added MIT `LICENSE` and package license metadata for an explicit open-source posture.
+- Reworked mode routing so available KB/docs do not automatically select Knowledge-Linked mode.
+- Added `scripts/regression_run.py` as a closed-loop corpus baseline reporter and first step toward LLM-backed semantic regression.
+- Added `release/OUTPUT_VALIDATOR_REVIEW.md` with validator coverage and known gaps.
+- Hardened `scripts/output_validator.py` with `--strict` and read/UTF-8 error handling.
+
 ## V0.99.5 MIPI DSI/CSI Training Branch
 
 - Added `training/dataset_1000/mipi_debug_queue.yaml` with 20 MIPI DSI/CSI debug candidates.

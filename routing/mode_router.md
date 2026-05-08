@@ -12,7 +12,7 @@ A0 --> D1
 D1 -- Yes --> M1[Signature-Based Fast Path]
 D1 -- No --> D2{Current architecture provided?}
 D2 -- Yes --> M2[Architecture-First Mode]
-D2 -- No --> D3{Project KB/docs/repo available?}
+D2 -- No --> D3{External knowledge escalation triggered?}
 D3 -- Yes --> M3[Knowledge-Linked Mode]
 D3 -- No --> D4{Classic link model can be assumed?}
 D4 -- Yes --> M4[Assumption-Driven Mode]
@@ -20,6 +20,20 @@ D4 -- No --> M5[Heuristic Context Mode with provisional plan]
 ```
 
 Current user-provided architecture takes priority over potentially stale KB.
+
+## Explicit Routing Rules
+
+| condition | selected_mode | rationale |
+|---|---|---|
+| safety trigger exists | Safety Gate before selected debug mode | safety overrides routing emphasis |
+| strong validated signature matches and architecture is not needed for first action | Signature-Based Fast Path | fastest safe evidence-gathering path |
+| user provides module chain, register relationship, waveform relationship, or updated architecture conclusion | Architecture-First | current structure is stronger than generic priors |
+| user explicitly asks for wiki/KB/repo/schematic/datasheet/prior records, online learning, similar cases, or broad exploration | Knowledge-Linked | external knowledge was requested |
+| a high-impact missing project fact changes the first two actions, safety envelope, link boundary, or top hypothesis ranking | Knowledge-Linked | model is unstable without external/project knowledge |
+| a classic domain link model applies and no external escalation is needed | Assumption-Driven | useful provisional plan without retrieval |
+| none of the above applies | Heuristic Context | minimal provisional plan with explicit assumptions |
+
+Project KB/docs/repo merely being available is not enough to select Knowledge-Linked. Knowledge retrieval is an escalation path, not the default path.
 
 ## Natural-Language Default
 

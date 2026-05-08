@@ -1,0 +1,33 @@
+# Copy to knowledge_sources.yaml for local use.
+# Do not commit machine-specific absolute paths or private credentials.
+
+sources:
+  - id: my-wiki
+    type: local_wiki
+    path: ../my-wiki
+    priority: 1
+    include:
+      - wiki
+      - raw
+      - personal/sources
+    exclude:
+      - .git
+      - raw/assets
+
+  - id: hw-knowledge-base
+    type: local_wiki
+    path: ../HW-knowledge-base
+    priority: 2
+    include:
+      - .
+    exclude:
+      - .git
+
+  - id: project-docs
+    type: local_docs
+    path: ../docs
+    priority: 3
+    include:
+      - .
+    exclude:
+      - .git
