@@ -8,7 +8,7 @@ Users should be able to access every debug function by ordinary language. Do not
 | "可能原因有哪些" / "what could cause this" | Emphasize hypothesis generation | probability-ranked causes with evidence for/against and falsifiers |
 | "给我决策树" / "decision tree" | Emphasize action planning | Mermaid decision tree plus node table with expected observations |
 | "给我链路模型/影响因素图" / "link model" | Use architecture-first or assumption-driven | evidence-aware link model graph and node table |
-| "这个结论靠谱吗" / "review this conclusion" | Run evidence audit | fact vs inference split, stale branches, missing evidence, confidence limits |
+| "这个结论靠谱吗" / "review this conclusion" / "你满意这个生成物吗" | Run evidence audit using `output_contracts/evidence_audit.md` | verdict, fact vs inference split, stale branches, missing evidence, confidence limits, required fixes |
 | "这是新证据" / "update with this evidence" | Re-run input cleaning and probability update | changed facts, demoted hypotheses, updated first actions |
 | "有新线索" / "补充一下现场情况" | Treat as evidence update | what changed, what stays uncertain, updated next checks |
 | "帮我更新一下排查策略" / "下一步怎么查" | Update current debug plan from new information | revised priority, stale branches, next 1-3 actions |

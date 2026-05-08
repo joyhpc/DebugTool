@@ -80,6 +80,7 @@ For these requests, run the same internal update flow:
 19. Full debug trees must rank early actions by probability, time cost, safety risk, and exclusion value.
 20. Multi-link failures must load and apply the relevant domain link model from `assets/link_models/` before blind tuning or component replacement.
 21. Domain-specific stage requirements belong in link-model assets, not in the top-level skill contract.
+22. When the user asks whether an output, conclusion, or probability ranking is reliable, run Evidence Audit using `output_contracts/evidence_audit.md`; structural validation is not enough.
 
 ## Mode Selection Order
 

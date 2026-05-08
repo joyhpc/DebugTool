@@ -1,0 +1,91 @@
+# Evidence Audit Output Contract
+
+Use this contract when the user asks whether a generated debug output, conclusion, probability ranking, or action plan is reliable.
+
+This is a semantic review layer. It does not replace `scripts/output_validator.py`; it runs after structural validation or when the user challenges output quality.
+
+```md
+# Evidence Audit
+
+## 1. Artifact Under Review
+## 2. Review Verdict
+## 3. Contract Compliance
+## 4. Evidence Integrity Findings
+## 5. Link Model Findings
+## 6. Probability And Ranking Findings
+## 7. Action Tree Findings
+## 8. Missing Or Overclaimed Information
+## 9. Required Fixes Before Publish
+## 10. Reviewer Decision
+```
+
+## Review Verdict
+
+Use one of:
+
+- `pass` - suitable to publish or execute with no material edits.
+- `pass_with_minor_fixes` - usable after local wording, ordering, or traceability fixes.
+- `needs_revision` - structure may pass, but evidence, model, ranking, or action mapping has material issues.
+- `reject` - unsafe, misleading, unsupported, or not actionable.
+
+## Evidence Integrity Checks
+
+Check every material claim against one of these labels:
+
+- fact from user input
+- measured evidence
+- documented claim
+- assumption
+- inference
+- missing information
+
+Flag:
+
+- inference written as fact;
+- source-free adopted assets or knowledge claims;
+- stale evidence used as if it were same-interval evidence;
+- single-board evidence written as common issue;
+- normal control-path evidence used to prove data-path validity;
+- root cause language before a falsifying measurement exists.
+
+## Link Model Checks
+
+Verify that the model:
+
+- represents all material control, power/reset/clock, main data, and receiver/downstream paths;
+- includes comparison/reference paths when the case depends on front-vs-rear or good-vs-fault asymmetry;
+- states known, inferred, unknown, and boundary-moving evidence for each material node;
+- preserves weak but relevant clues, even if they are not top probability branches.
+
+## Probability And Ranking Checks
+
+Verify that:
+
+- probabilities are marked as engineering priors, not measured truth;
+- overlapping hypotheses are called out when probabilities are normalized;
+- every probability has evidence that raises and lowers it;
+- action ranking is consistent with stated score or explicitly explains exceptions;
+- high-cost actions are gated behind cheaper split measurements unless safety or schedule requires otherwise.
+
+## Action Tree Checks
+
+Verify that:
+
+- early actions split competing hypotheses rather than repeat known checks;
+- node table IDs match the Mermaid action tree;
+- every action has expected observation and interpretation;
+- stop/escalation conditions prevent stale or destructive loops;
+- owners are assigned only where the source discussion or project context supports assignment.
+
+## Reviewer Decision
+
+The reviewer must end with:
+
+```text
+decision: pass | pass_with_minor_fixes | needs_revision | reject
+publish_ready: yes | no
+required_fixes:
+  - ...
+residual_risk:
+  - ...
+```
