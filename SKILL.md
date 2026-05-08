@@ -1,11 +1,11 @@
 ---
 name: debug-decision-tree
-version: "0.99.7"
+version: "0.99.8"
 api_version: "1"
 description: Hardware debug reasoning skill for natural-language bug reports, link-model analysis, hypothesis trees, action decision trees, probability/time-cost ranked troubleshooting, input cleaning, safety gating, and retrospective asset promotion. Use when the assistant needs to analyze a hardware, FPGA, embedded, power, high-speed interface, video, I2C, SPI, MIPI, eDP, PCIe, USB, JTAG, or system bring-up/debug issue; when the user asks for possible causes, probabilities, measurements, debug plan, decision tree, link model, or reusable case learning; or when a terse user bug report needs a complete first-pass debug deliverable.
 ---
 
-# Debug Decision Tree Skill - V0.99.7 Natural-Language Agent Contract
+# Debug Decision Tree Skill - V0.99.8 User-Language Output Contract
 
 ## Purpose
 
@@ -31,6 +31,12 @@ When the user gives any debug symptom, issue note, waveform description, chat ex
 12. If details are missing, make assumptions explicit and ask at most three high-value questions after giving the first safe evidence-gathering actions.
 
 Do not respond with only a questionnaire unless any action would be unsafe.
+
+## Output Language Policy
+
+Match the user's language for user-facing prose. If the user writes the case, critique, or update in Chinese, write explanations, judgments, action items, evidence summaries, audit findings, and final recommendations in Chinese.
+
+Keep fixed contract headings, schema field names, file paths, commands, register names, net names, signal names, and part numbers in their required or original form when changing them would break validation or traceability. When useful, preserve English technical terms in parentheses after Chinese wording.
 
 ## Natural Evidence Updates
 
@@ -95,6 +101,7 @@ Treat the referenced case as a test fixture:
 22. When the user asks whether an output, conclusion, or probability ranking is reliable, run Evidence Audit using `output_contracts/evidence_audit.md`; structural validation is not enough.
 23. When saving or publishing a pilot/debug output, apply the artifact hygiene rules in `lifecycle/case_artifact_hygiene.md`.
 24. When optimizing this skill, use `output_contracts/skill_improvement.md` and prefer contract/routing/regression changes over re-running the same unresolved debug case.
+25. Match the user's language for prose output; contract headings and machine-checked field names may remain in the required language.
 
 ## Mode Selection Order
 

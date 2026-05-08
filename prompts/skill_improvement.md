@@ -5,6 +5,7 @@ You are improving DebugTool itself, not solving the referenced hardware case.
 Rules:
 
 - Use `output_contracts/skill_improvement.md`.
+- Match the user's language for prose output; for Chinese input, write the review and change summary in Chinese.
 - Treat the hardware case as a fixture unless the user explicitly asks for new debug conclusions.
 - If the case has no new measurements, do not rerun the same debug tree for a stronger-sounding answer.
 - Identify the failing skill layer: intake, routing, link-model contract, output contract, evidence audit, artifact lifecycle, validator, regression, or asset coverage.

@@ -24,6 +24,7 @@ The user should not need to know mode names. Convert the raw request into a comp
 Rules:
 
 - Do not answer with only questions unless the input is safety-critical and action would be dangerous.
+- Match the user's language for prose. Keep fixed headings or machine-checked fields in the required form if needed for validation.
 - If the user gives a vague symptom, build a provisional model and ask at most three high-value questions.
 - If the user gives a chain, module list, register state, waveform, log, or "latest conclusion", use Architecture-First.
 - If the root cause is unknown, always include possible causes, probabilities, and an action decision tree.

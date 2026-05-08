@@ -1,10 +1,10 @@
-# Debug Decision Tree Skill - V0.99.7 Skill Improvement Gate
+# Debug Decision Tree Skill - V0.99.8 User-Language Output Contract
 
 ## Status
 
 Early-internal-pilot candidate. Not team-wide pilot ready. Not V1.0.
 
-V0.99.7 keeps the project as a skill package and adds a clearer maintenance path for improving the skill itself. A user can provide a terse bug report, issue-sync note, waveform clue, chat extract, or critique of DebugTool behavior; the skill should either run the debug flow or, when the target is skill quality, treat the case as a fixture and improve routing, contracts, audit gates, lifecycle rules, or regression coverage.
+V0.99.8 keeps the project as a skill package and makes user-language output explicit. A user can provide a terse bug report, issue-sync note, waveform clue, chat extract, or critique of DebugTool behavior; the skill should either run the debug flow or, when the target is skill quality, treat the case as a fixture and improve routing, contracts, audit gates, lifecycle rules, or regression coverage. User-facing prose should follow the user's language, while fixed contract headings and machine-checked fields may remain in their required form.
 
 The package is intended for 1-2 real early-internal-pilot debug loops before any wider rollout.
 
@@ -30,6 +30,7 @@ debug_principle  generalized rule that applies across many hardware debug domain
 8. Load relevant assets from `assets/` only after checking `reasoning/asset_priority.md`.
 9. Include probabilities, hypothesis tree, action decision tree, and first measurements whenever root cause is unknown.
 10. Run `scripts/output_validator.py` before reusing or promoting the output, then run Evidence Audit before publishing saved pilot/debug artifacts.
+11. Match the user's language for prose. For Chinese user input, write summaries, judgments, action items, and audit findings in Chinese while preserving validator-required headings and technical identifiers.
 
 Structural validation passing means the output matches the contract. It does not prove the debug reasoning is correct.
 

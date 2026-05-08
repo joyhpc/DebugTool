@@ -473,3 +473,14 @@ tests:
   - validation
   must_not_include:
   - ask for more measurements before improving the skill
+- id: REG-CHINESE-INPUT-CHINESE-PROSE
+  input: A57 eDP 后两通道不出图，AUX 正常，CDR 不锁。请用 DebugTool 输出排查策略，文本要用中文方便阅读
+  must_include:
+  - 中文
+  - 已确认事实
+  - 当前判断
+  - 下一步动作
+  - 不要直接下结论
+  must_not_include:
+  - English-only prose
+  - user must read English contract terms

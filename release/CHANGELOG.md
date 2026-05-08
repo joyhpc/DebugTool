@@ -1,5 +1,11 @@
 # Changelog
 
+## V0.99.8 User-Language Output Contract
+
+- Added an explicit output-language policy: user-facing prose follows the user's language, while fixed contract headings, schema fields, commands, paths, signals, and part numbers may stay in their required or original form.
+- Added a regression fixture to keep Chinese user requests from producing English-heavy debug prose.
+- Updated version metadata to align `SKILL.md`, `README.md`, and `release/VERSION.md`.
+
 ## V0.99.7 Skill Improvement Gate
 
 - Added an explicit Skill Improvement request path so critiques of DebugTool behavior optimize the skill instead of continuing an unresolved hardware debug case.
