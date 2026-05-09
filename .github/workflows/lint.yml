@@ -35,6 +35,8 @@ jobs:
         run: python scripts/regression_suite_linter.py
       - name: Run output validator smoke cases
         run: python scripts/run_output_validator_smoke.py
+      - name: Run end-to-end replay cases
+        run: python scripts/run_end_to_end_replay.py
       - name: Validate closed-loop training records
         run: python scripts/lint_closed_loop.py
       - name: Validate real project cases
@@ -48,6 +50,7 @@ jobs:
           python -m py_compile \
             scripts/output_validator.py \
             scripts/run_output_validator_smoke.py \
+            scripts/run_end_to_end_replay.py \
             scripts/lint_assets.py \
             scripts/regression_suite_linter.py \
             scripts/regression_run.py \

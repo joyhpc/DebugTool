@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "debug-tool-skill"
-version = "0.99.6"
+version = "0.99.13"
 description = "Hardware debug decision-tree skill with link-model reasoning, hypothesis trees, and probability/time-cost ranked action plans."
 readme = "README.md"
 requires-python = ">=3.10"

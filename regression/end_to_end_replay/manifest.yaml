@@ -1,0 +1,68 @@
+version: 0.99.13
+description: End-to-end replay cases for raw-input-to-generated-output stability.
+cases:
+  - id: E2E-A57-ISSUE4
+    raw_input: regression/end_to_end_replay/raw_inputs/a57_issue4.md
+    outputs:
+      - mode: input_cleaning
+        file: pilot_runs/a57_edp/latest-input-cleaning.md
+        must_include:
+          - provenance
+          - requires_re_verification
+          - Contradictions / Revisions
+        must_not_include:
+          - root cause confirmed
+      - mode: architecture_first
+        file: pilot_runs/a57_edp/latest-architecture-first.md
+        must_include:
+          - Boundary Distribution
+          - Mechanism Prior
+          - Coverage Matrix
+          - Evidence Ledger
+          - co_acq_group_id
+          - CO-A57-EDP-FAILWIN-1
+          - gates_boundaries
+          - gates_mechanisms
+        must_not_include:
+          - Root Cause Hypothesis Probability Table
+
+  - id: E2E-HOTSWAP-SOA
+    raw_input: regression/end_to_end_replay/raw_inputs/hotswap_soa.md
+    outputs:
+      - mode: architecture_first
+        file: regression/output_validator_smoke_cases/architecture_hotswap_good.md
+        must_include:
+          - current-limited
+          - SOA
+          - Boundary Distribution
+          - Evidence Ledger
+          - co_acq_group_id
+          - standalone
+          - "Not Applied: repeat full-power hot-plug"
+        must_not_include:
+          - repeat full-power hot-plug until
+
+  - id: E2E-STALE-EVIDENCE
+    raw_input: regression/end_to_end_replay/raw_inputs/stale_evidence_edp.md
+    outputs:
+      - mode: input_cleaning
+        file: regression/end_to_end_replay/generated/stale_evidence_input_cleaning.md
+        must_include:
+          - provenance
+          - requires_re_verification
+          - stale context
+          - Missing Information
+        must_not_include:
+          - stale evidence lowers AUX probability
+      - mode: architecture_first
+        file: regression/end_to_end_replay/generated/stale_evidence_architecture_first.md
+        must_include:
+          - Boundary Distribution
+          - Mechanism Prior
+          - Evidence Ledger
+          - requires_re_verification
+          - must not directly change probabilities
+          - co_acq_group_id
+          - "Not Applied: stale evidence lowers AUX probability"
+        must_not_include:
+          - stale evidence lowers AUX probability and should change current probability
