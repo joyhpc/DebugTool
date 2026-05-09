@@ -72,6 +72,19 @@ Verify that:
 - the simplest physical interpretation of the direct symptom is not buried below more remote control/config hypotheses without evidence;
 - high-cost actions are gated behind cheaper split measurements unless safety or schedule requires otherwise.
 
+## Required Semantic Checklist
+
+The audit must explicitly state whether these checks pass, fail, or are not applicable:
+
+- fact vs inference split;
+- stale or non-same-interval evidence handling;
+- direct-symptom simplest-interpretation top-two rule;
+- `unknown / model gap` branch presence;
+- `reasoning/cost_priors.yaml` usage or a stated local override;
+- candidate owner wording vs confirmed assignment.
+
+These phrases are intentionally stable because `scripts/output_validator.py --mode evidence_audit` checks for them mechanically.
+
 ## Action Tree Checks
 
 Verify that:

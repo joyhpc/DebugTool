@@ -133,6 +133,16 @@ VALID_COST = {"low", "medium", "high"}
 VALID_REVERSIBILITY = {"reversible", "partial", "irreversible", "n/a", "na", "-", ""}
 VALID_ACTION_ONLY_REVERSIBILITY = {"reversible", "partial", "irreversible"}
 VALID_CONFIDENCE = {"high", "medium", "low"}
+VALID_STALENESS = {"fresh", "requires_re_verification", "archived"}
+VALID_EVIDENCE_AUDIT_VERDICTS = {"pass", "pass_with_minor_fixes", "needs_revision", "reject"}
+VALID_PUBLISH_READY = {"yes", "no"}
+
+SKILL_LAYER_KEYWORDS = {
+    "intake", "routing", "route", "link_model_contract", "link model",
+    "output_contract", "output contract", "evidence_audit", "evidence audit",
+    "artifact_lifecycle", "artifact lifecycle", "lifecycle", "validator",
+    "regression", "asset_coverage", "asset coverage",
+}
 
 INPUT_CLEANING_TABLES = [
     ("Observed / Confirmed Facts", ["id", "fact", "source_in_input", "confidence", "staleness", "affected_link_or_node"]),
@@ -190,6 +200,11 @@ def normalize_text(value: str) -> str:
     value = value.strip().strip("`").strip()
     value = value.replace("\u2013", "-").replace("\u2014", "-").replace("\u2212", "-")
     return value
+
+
+def contains_any(text: str, needles: Iterable[str]) -> bool:
+    haystack = text.lower()
+    return any(needle.lower() in haystack for needle in needles)
 
 
 def normalize_col(value: str) -> str:
@@ -511,6 +526,14 @@ def validate_input_cleaning_contract(text: str, mode: str, errors: list[str]) ->
                         f"input cleaning section '{heading}' row {row_id or idx}: "
                         f"invalid confidence '{row.get('confidence', '')}'"
                     )
+            if heading == "Observed / Confirmed Facts" and "staleness" in table.columns:
+                staleness = normalize_text(row.get("staleness", "")).lower()
+                if staleness not in VALID_STALENESS:
+                    errors.append(
+                        f"input cleaning section '{heading}' row {row_id or idx}: "
+                        f"invalid staleness '{row.get('staleness', '')}', "
+                        f"allowed={sorted(VALID_STALENESS)}"
+                    )
 
             for column in required_columns:
                 if is_blank_like(row.get(normalize_col(column), "")):
@@ -535,6 +558,112 @@ def validate_forbidden_unsafe_patterns(text: str, errors: list[str]) -> None:
                 errors.append(f"unsafe instruction appears without local mitigation: {description}")
 
 
+def validate_architecture_first_semantics(text: str, mode: str, errors: list[str]) -> None:
+    if mode != "architecture_first":
+        return
+
+    hypothesis_text = "\n".join(
+        [
+            extract_section(text, "Fault-Domain Localization"),
+            extract_section(text, "Hypothesis Tree With Probabilities"),
+        ]
+    )
+    if not contains_any(hypothesis_text, ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"]):
+        errors.append("architecture_first output must include an explicit unknown / model gap hypothesis")
+
+    if not contains_any(hypothesis_text, ["direct symptom", "simplest physical", "直接物理症状", "最简解释"]):
+        errors.append("architecture_first output must explicitly justify direct-symptom simplest-interpretation ranking")
+    if not contains_any(hypothesis_text, ["top two", "top-2", "top 2", "前二", "前两"]):
+        errors.append("architecture_first output must state that the direct-symptom explanation is in the top two or explain demotion")
+
+    cost_text = extract_section(text, "Cost / Probability Ranking")
+    if not contains_any(cost_text, ["cost_priors.yaml", "cost prior", "local override", "成本先验", "本地覆盖"]):
+        errors.append("Cost / Probability Ranking must cite cost_priors.yaml or a stated local override")
+    if not find_table_with_columns(cost_text, ["p_hit", "p_exclude", "time_min"]):
+        errors.append("Cost / Probability Ranking must include a table with p_hit, p_exclude, and time_min columns")
+
+    for table in find_tables(text):
+        columns = set(table.columns)
+        if "owner" in columns and "candidate_owner" not in columns:
+            errors.append("owner action tables must use candidate_owner instead of confirmed owner unless explicit assignment exists")
+        if "candidate_owner" in columns and not contains_any(
+            text,
+            ["PM", "project lead", "项目负责人", "正式", "confirm", "确认"],
+        ):
+            errors.append("candidate_owner tables must state that PM/project lead confirmation is required")
+
+
+def parse_key_value(section: str, key: str) -> str | None:
+    pattern = re.compile(rf"(?im)^\s*{re.escape(key)}\s*:\s*([A-Za-z0-9_\-]+)\s*$")
+    match = pattern.search(section)
+    if not match:
+        return None
+    return normalize_text(match.group(1)).lower()
+
+
+def validate_evidence_audit_contract(text: str, mode: str, errors: list[str]) -> None:
+    if mode != "evidence_audit":
+        return
+
+    verdict_text = extract_section(text, "Review Verdict")
+    if not contains_any(verdict_text, VALID_EVIDENCE_AUDIT_VERDICTS):
+        errors.append(f"Review Verdict must include one of {sorted(VALID_EVIDENCE_AUDIT_VERDICTS)}")
+
+    reviewer_decision = extract_section(text, "Reviewer Decision")
+    decision = parse_key_value(reviewer_decision, "decision")
+    publish_ready = parse_key_value(reviewer_decision, "publish_ready")
+    if decision is None:
+        errors.append("Reviewer Decision must include 'decision: ...'")
+    elif decision not in VALID_EVIDENCE_AUDIT_VERDICTS:
+        errors.append(f"Reviewer Decision has invalid decision '{decision}', allowed={sorted(VALID_EVIDENCE_AUDIT_VERDICTS)}")
+    if publish_ready is None:
+        errors.append("Reviewer Decision must include 'publish_ready: yes|no'")
+    elif publish_ready not in VALID_PUBLISH_READY:
+        errors.append(f"Reviewer Decision has invalid publish_ready '{publish_ready}', allowed={sorted(VALID_PUBLISH_READY)}")
+    for required_key in ["required_fixes", "residual_risk"]:
+        if not re.search(rf"(?im)^\s*{required_key}\s*:", reviewer_decision):
+            errors.append(f"Reviewer Decision must include '{required_key}: ...'")
+
+    semantic_checks = [
+        ("fact vs inference split", ["fact", "inference", "事实", "推断"]),
+        ("stale or non-same-interval evidence", ["stale", "staleness", "requires_re_verification", "非同故障窗口", "过期证据"]),
+        ("direct symptom top-two ranking", ["direct symptom", "simplest physical", "top two", "top-2", "直接物理症状", "最简解释"]),
+        ("unknown / model gap branch", ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"]),
+        ("cost prior calibration", ["cost_priors.yaml", "cost prior", "成本先验", "local override"]),
+        ("candidate owner vs assignment", ["candidate owner", "candidate_owner", "候选 owner", "正式分配", "PM"]),
+    ]
+    for label, tokens in semantic_checks:
+        if not contains_any(text, tokens):
+            errors.append(f"Evidence Audit must explicitly cover semantic check: {label}")
+
+
+def validate_skill_improvement_contract(text: str, mode: str, errors: list[str]) -> None:
+    if mode != "skill_improvement":
+        return
+
+    diagnosis = extract_section(text, "Skill Layer Diagnosis")
+    if not contains_any(diagnosis, SKILL_LAYER_KEYWORDS):
+        errors.append("Skill Layer Diagnosis must name at least one recognized skill layer")
+
+    uncertainty_vs_defect = extract_section(text, "Target-Case Uncertainty vs Skill Defect")
+    if not contains_any(uncertainty_vs_defect, ["target-case uncertainty", "target case uncertainty", "目标 case", "目标案例", "目标案"]):
+        errors.append("Target-Case Uncertainty vs Skill Defect must explicitly state target-case uncertainty")
+    if not contains_any(uncertainty_vs_defect, ["skill defect", "skill-design defect", "skill 缺陷", "工具缺陷", "机制缺陷"]):
+        errors.append("Target-Case Uncertainty vs Skill Defect must explicitly state the skill defect")
+
+    durable_change_text = "\n".join(
+        [
+            extract_section(text, "Required Contract / Routing / Lifecycle Changes"),
+            extract_section(text, "Changes Made"),
+        ]
+    )
+    if not contains_any(
+        durable_change_text,
+        ["routing", "route", "contract", "prompt", "lifecycle", "validator", "regression", "fixture", "asset"],
+    ):
+        errors.append("Skill Improvement review must identify at least one durable artifact class or explain why none changed")
+
+
 def validate_text(text: str, mode: str) -> ValidationResult:
     errors: list[str] = []
     warnings: list[str] = []
@@ -544,6 +673,9 @@ def validate_text(text: str, mode: str) -> ValidationResult:
     node_ids, _node_table = validate_node_table(text, mode, errors, warnings)
     validate_mermaid_consistency(text, mode, node_ids, errors, warnings)
     validate_case_record_draft(text, mode, errors)
+    validate_architecture_first_semantics(text, mode, errors)
+    validate_evidence_audit_contract(text, mode, errors)
+    validate_skill_improvement_contract(text, mode, errors)
     validate_forbidden_unsafe_patterns(text, errors)
 
     return ValidationResult(errors=errors, warnings=warnings)

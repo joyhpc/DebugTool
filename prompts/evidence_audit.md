@@ -12,6 +12,7 @@ Rules:
 - If the artifact is locally available, inspect it directly before judging.
 - If the artifact has not been structurally validated and a validator exists, run the validator first.
 - If the review finds fixable issues in a local artifact, patch the artifact and rerun validation when appropriate.
+- Always include the Required Semantic Checklist terms from the contract: fact vs inference, stale/non-same-interval evidence, direct symptom top-two, unknown / model gap, cost_priors.yaml or local override, and candidate owner vs confirmed assignment.
 
 Artifact:
 [PASTE OR PATH]

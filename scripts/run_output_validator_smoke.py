@@ -15,6 +15,7 @@ CASES = [
     ("standard", "standard_good.md", 0),
     ("architecture_first", "architecture_hotswap_good.md", 0),
     ("evidence_audit", "evidence_audit_good.md", 0),
+    ("evidence_audit", "evidence_audit_semantic_bad_expected_fail.md", 1),
     ("skill_improvement", "skill_improvement_good.md", 0),
     ("fast_path", "unsafe_phrase_mitigated_good.md", 0),
     ("standard", "standard_bad_expected_fail.md", 1),

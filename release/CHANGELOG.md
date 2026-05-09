@@ -1,5 +1,12 @@
 # Changelog
 
+## V0.99.10 Semantic Validator Gate
+
+- Hardened `scripts/output_validator.py` with mechanically checkable semantic gates for Architecture-First, Evidence Audit, Skill Improvement, and Input Cleaning staleness.
+- Architecture-First validation now requires explicit direct-symptom top-two reasoning, an `unknown / model gap` hypothesis, `cost_priors.yaml` or local override citation, and a `p_hit` / `p_exclude` / `time_min` cost table.
+- Evidence Audit validation now requires a parseable reviewer decision block and explicit coverage of fact-vs-inference, stale evidence, direct symptom ranking, model gap, cost priors, and candidate-owner assignment risk.
+- Added a negative Evidence Audit smoke fixture so a heading-complete but semantically empty audit fails validation.
+
 ## V0.99.9 Semantic Prior Calibration
 
 - Added mandatory rules for direct-symptom simplest-interpretation priority, stale-evidence quarantine, unknown/model-gap probability, candidate-owner wording, and cost-prior usage.

@@ -16,6 +16,9 @@ The artifact has the required Architecture-First sections and passed structural 
 
 - No measured root cause is claimed.
 - Decoder-output absence remains a hypothesis, not a fact.
+- Fact vs inference split is visible in the reviewed artifact.
+- Stale / non-same-interval evidence is marked as requires_re_verification and does not change probability directly.
+- Candidate owner rows are labeled as candidate_owner and require PM confirmation before formal assignment.
 
 ## 5. Link Model Findings
 
@@ -24,6 +27,10 @@ The model separates control, power/reset/clock, data path, and receiver pipeline
 ## 6. Probability And Ranking Findings
 
 Probabilities are engineering priors and include raise/lower evidence.
+
+- The direct symptom's simplest physical interpretation is kept in the top two.
+- The hypothesis table includes an `unknown / model gap` branch.
+- Cost estimates cite `reasoning/cost_priors.yaml`; no local override is used.
 
 ## 7. Action Tree Findings
 

@@ -48,22 +48,26 @@ L3 --> L6[Gate control and clamp]
 | Downstream capacitance/load | inrush source and active-load timing must be separated | F2,F3 | P1 |
 | Steady-state thermal | still possible but less likely if failure occurs at plug-in | F1 | P2 |
 
+The direct symptom's simplest physical interpretation is startup MOSFET stress or its immediate inrush/gate-control neighbors, so those branches are kept in the top two before remote explanations.
+
 ## 7. Hypothesis Tree With Probabilities
 
 ```mermaid
 flowchart TD
-H0[Startup MOSFET failure] --> H1[Transient SOA overstress 45 percent]
-H0 --> H2[Gate ramp or clamp problem 25 percent]
-H0 --> H3[Downstream capacitance or active-load inrush 20 percent]
+H0[Startup MOSFET failure] --> H1[Transient SOA overstress 43 percent]
+H0 --> H2[Gate ramp or clamp problem 24 percent]
+H0 --> H3[Downstream capacitance or active-load inrush 18 percent]
 H0 --> H4[Assembly or downstream short 10 percent]
+H0 --> H5[unknown model gap 5 percent]
 ```
 
 | id | hypothesis | probability | confirm_by | falsify_by |
 |---|---|---:|---|---|
-| H1 | transient SOA overstress | 0.45 | VDS and ID overlap exceeds SOA | safe capture shows low stress |
-| H2 | gate ramp or clamp problem | 0.25 | abnormal VGS/Miller plateau | normal gate profile |
-| H3 | capacitance or active load inrush | 0.20 | failure changes with isolated load | failure unchanged |
+| H1 | transient SOA overstress | 0.43 | VDS and ID overlap exceeds SOA | safe capture shows low stress |
+| H2 | gate ramp or clamp problem | 0.24 | abnormal VGS/Miller plateau | normal gate profile |
+| H3 | capacitance or active load inrush | 0.18 | failure changes with isolated load | failure unchanged |
 | H4 | assembly or downstream short | 0.10 | DMM/thermal inspection finds short | clean static checks |
+| H5 | unknown / model gap | 0.05 | H1-H4 are excluded but failure remains | new evidence maps to H1-H4 |
 
 ## 8. Candidate Matching Report
 
@@ -81,6 +85,8 @@ Deferred: exact MOSFET replacement choice until SOA and waveform evidence exist.
 Not Applied: repeat full-power hot-plug, software-first debugging, lower-RDS(on)-only replacement.
 
 ## 10. Cost / Probability Ranking
+
+This table uses `reasoning/cost_priors.yaml`; no local override is applied.
 
 | node | action | p_hit | p_exclude | time_min | priority_reason |
 |---|---|---:|---:|---:|---|

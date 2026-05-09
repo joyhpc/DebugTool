@@ -1,11 +1,11 @@
 ---
 name: debug-decision-tree
-version: "0.99.9"
+version: "0.99.10"
 api_version: "1"
 description: Hardware debug reasoning skill for natural-language bug reports, link-model analysis, hypothesis trees, action decision trees, probability/time-cost ranked troubleshooting, input cleaning, safety gating, and retrospective asset promotion. Use when the assistant needs to analyze a hardware, FPGA, embedded, power, high-speed interface, video, I2C, SPI, MIPI, eDP, PCIe, USB, JTAG, or system bring-up/debug issue; when the user asks for possible causes, probabilities, measurements, debug plan, decision tree, link model, or reusable case learning; or when a terse user bug report needs a complete first-pass debug deliverable.
 ---
 
-# Debug Decision Tree Skill - V0.99.9 Semantic Prior Calibration
+# Debug Decision Tree Skill - V0.99.10 Semantic Validator Gate
 
 ## Purpose
 
@@ -107,6 +107,7 @@ Treat the referenced case as a test fixture:
 28. Include a small `unknown / model gap` hypothesis when the link model could be incomplete.
 29. Treat people named in chat as candidate owners only unless the input explicitly assigns responsibility.
 30. Use `reasoning/cost_priors.yaml` and `reasoning/probability_time_cost_model.md` for time-cost estimates; do not invent optimistic lab times for multi-instrument captures.
+31. Evidence Audit and Architecture-First outputs must make mechanically checkable semantic guardrails explicit: stale-evidence handling, direct-symptom top-two reasoning, model-gap branch, cost-prior source, and candidate-owner wording when applicable.
 
 ## Mode Selection Order
 
@@ -209,6 +210,8 @@ python scripts/output_validator.py --mode architecture_first --file output.md
 python scripts/output_validator.py --mode fast_path --file output.md
 python scripts/output_validator.py --mode assumption_driven --file output.md
 python scripts/output_validator.py --mode retrospective --file retrospective.md
+python scripts/output_validator.py --mode evidence_audit --file audit.md
+python scripts/output_validator.py --mode skill_improvement --file review.md
 ```
 
 Structural validation means the output matches the contract. It does not prove the reasoning is correct.

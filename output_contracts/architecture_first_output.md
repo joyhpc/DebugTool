@@ -53,6 +53,7 @@ Probability rules:
 - Do not let "not yet measured" alone outrank the closest physical boundary indicated by the symptom.
 - Stale facts or non-same-interval facts may appear as context, but must not directly raise or lower probabilities until re-verified.
 - Include a small `unknown / model gap` hypothesis when the model may be incomplete.
+- State the direct-symptom top-two reasoning explicitly so structural validation can catch silent drift.
 
 ## Action Decision Requirements
 
@@ -64,3 +65,4 @@ The `Decision Tree` section is the action decision tree. It must map each early 
 - Show cumulative path cost for the optimal path when more than three actions are chained.
 - If owner names are inferred from chat participation, label them as candidate owners and state that PM/project lead confirmation is required.
 - Distinguish broad knowledge retrieval from low-cost point checks such as datasheet polarity verification.
+- `Cost / Probability Ranking` must include `p_hit`, `p_exclude`, and `time_min` columns.

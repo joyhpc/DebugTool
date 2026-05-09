@@ -33,6 +33,8 @@ Classify each issue into one or more layers:
 - regression: missing fixture that would catch the behavior
 - asset_coverage: missing link model, signature, case record, pattern bundle, or principle
 
+Use these layer names or clear equivalents in `Skill Layer Diagnosis`; `scripts/output_validator.py --mode skill_improvement` checks that at least one recognized layer is named.
+
 ## Target-Case Uncertainty vs Skill Defect
 
 Always separate:
