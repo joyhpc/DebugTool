@@ -22,15 +22,17 @@ The goal is not to summarize aggressively. The goal is to preserve all user-prov
 
 ### Observed / Confirmed Facts
 
-| id | fact | source_in_input | confidence | staleness | affected_link_or_node |
-|---|---|---|---|---|---|
-| F1 | directly observed or confirmed statement | user / log / waveform / doc | high/medium/low | fresh/requires_re_verification/archived | link node or domain |
+| id | fact | source_in_input | provenance | confidence | staleness | affected_link_or_node |
+|---|---|---|---|---|---|---|
+| F1 | directly observed or confirmed statement | user / log / waveform / doc | raw_artifact / instrument_log / team_attestation_unverified / datasheet / derived | high/medium/low | fresh/requires_re_verification/archived | link node or domain |
 
 Rules:
 - Put direct measurements, logs, confirmed communication status, known architecture, and reproducible symptoms here.
 - Do not put root-cause guesses here.
 - Mark facts as `fresh` only when they are current enough to affect probabilities. Mark older, context-shifted, or non-same-interval observations as `requires_re_verification`; stale facts may guide missing-information lists but must not directly raise or lower hypothesis probabilities.
 - When a fact is marked `requires_re_verification`, add a matching Missing Information item that states what same-window evidence would refresh or retire it.
+- Every fact must state `provenance`. Use `team_attestation_unverified` for fresh but non-artifact-backed claims from a person or project discussion. `team_attestation_unverified` has a confidence ceiling of `medium` until backed by a raw artifact, instrument log, waveform, register dump, or direct same-window measurement.
+- Downstream Architecture-First outputs must not close or eliminate a branch using a fact whose confidence is below `high`; such facts may only lower priority or create a missing-information item.
 - If the user says a prior belief was revised, preserve both the old belief and the revision in `Contradictions / Revisions`.
 - If a section has no user-provided content, still include one explicit row such as `not stated` so downstream routing knows the absence was checked.
 

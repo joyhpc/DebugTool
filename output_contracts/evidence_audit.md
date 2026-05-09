@@ -44,6 +44,8 @@ Flag:
 - inference written as fact;
 - source-free adopted assets or knowledge claims;
 - stale evidence used as if it were same-interval evidence;
+- unverified team/person attestation treated as raw measured evidence;
+- `team_attestation_unverified` facts carrying `high` confidence before artifact or instrument confirmation;
 - single-board evidence written as common issue;
 - normal control-path evidence used to prove data-path validity;
 - root cause language before a falsifying measurement exists.
@@ -78,6 +80,7 @@ Verify that:
 The audit must explicitly state whether these checks pass, fail, or are not applicable:
 
 - fact vs inference split;
+- fact provenance and confidence ceiling;
 - stale or non-same-interval evidence handling;
 - direct-symptom simplest-interpretation top-two rule;
 - boundary vs mechanism vs observability-gap separation;

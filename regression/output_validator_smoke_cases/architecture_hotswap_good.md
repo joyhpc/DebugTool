@@ -56,7 +56,7 @@ The direct symptom's simplest physical interpretation is startup MOSFET stress o
 
 | id | type | mechanism | p_active | affects_boundaries |
 |---|---|---|---:|---|
-| M1 | mechanism | transient SOA overstress | 0.55 | B1 |
+| M1 | mechanism | transient SOA overstress | 0.50 | B1 |
 | M2 | mechanism | gate ramp, Miller plateau, or clamp problem | 0.35 | B1,B2 |
 | M3 | mechanism | downstream capacitance or active-load inrush | 0.30 | B1,B3 |
 | M4 | mechanism | assembly or downstream short | 0.10 | B4 |
@@ -73,12 +73,12 @@ The direct symptom's simplest physical interpretation is startup MOSFET stress o
 
 ### Evidence Ledger
 
-| evidence | status | affects | probability_effect |
-|---|---|---|---|
-| current-limited startup envelope | missing | B0,M5 | destructive reproduction remains blocked |
-| aligned VIN/VOUT/VGS/VDS/ID waveform | missing | B1,B2,M1,M2 | MOSFET stress boundary cannot be confirmed |
-| downstream capacitance/load isolation | missing | B3,M3 | load mechanism cannot be separated |
-| static DMM/visual short inspection | missing | B4,M4 | cheap exclusion path remains open |
+| id | evidence | status | criticality | gates_boundaries | gates_mechanisms | probability_effect | local_override |
+|---|---|---|---|---|---|---|---|
+| EV1 | current-limited startup envelope | missing | critical | B0 | M5 | destructive reproduction remains blocked | none |
+| EV2 | aligned VIN/VOUT/VGS/VDS/ID waveform | missing | critical | B1,B2 | M1,M2 | MOSFET stress boundary cannot be confirmed | none |
+| EV3 | downstream capacitance/load isolation | missing | critical | B3 | M3 | load mechanism cannot be separated | none |
+| EV4 | static DMM/visual short inspection | missing | supporting | B4 | M4 | cheap exclusion path remains open | none |
 
 ## 7. Hypothesis Tree With Probabilities
 
@@ -89,7 +89,7 @@ H0 --> B2[B2 gate-control boundary 20 percent]
 H0 --> B3[B3 downstream load boundary 15 percent]
 H0 --> B4[B4 short boundary 5 percent]
 H0 --> B0[B0 unknown model gap 10 percent]
-M1[M1 transient SOA active 55 percent] -.-> B1
+M1[M1 transient SOA active 50 percent] -.-> B1
 M2[M2 gate clamp active 35 percent] -.-> B1
 M2 -.-> B2
 M3[M3 downstream load active 30 percent] -.-> B3
@@ -120,11 +120,11 @@ Not Applied: repeat full-power hot-plug, software-first debugging, lower-RDS(on)
 
 This table uses `reasoning/cost_priors.yaml`; no local override is applied.
 
-| node | tier | co_acquisition | action | boundary_subset | mechanism_subset | p_hit | p_exclude | time_min | priority_reason |
-|---|---|---|---|---|---|---:|---:|---:|---|
-| A1 | P0 | false | Set safe current limit and thermal monitoring | B0 | M5 | 0.20 | 0.70 | 10 | prerequisite for safe evidence |
-| A2 | P0 | true | Capture VIN VOUT VGS VDS and ID | B1,B2 | M1,M2 | 0.45 | 0.50 | 30 | highest root-cause evidence value |
-| A5 | P1 | false | Inspect polarity clamp TVS and downstream short | B4 | M4 | 0.10 | 0.40 | 20 | cheap exclusion path |
+| node | tier | co_acq_group_id | same_failure_window | capture_channel | action | boundary_subset | mechanism_subset | p_hit | p_exclude | time_min | priority_reason |
+|---|---|---|---|---|---|---|---|---:|---:|---:|---|
+| A1 | P0 | CO-HS-SAFE-SETUP | false | bench_supply_thermal | Set safe current limit and thermal monitoring | B0 | M5 | 0.20 | 0.70 | 10 | standalone prerequisite for safe evidence |
+| A2 | P0 | CO-HS-STARTUP-CAPTURE-1 | true | scope_vin_vout_vgs_vds_id | Capture VIN VOUT VGS VDS and ID | B1,B2 | M1,M2 | 0.45 | 0.50 | 30 | highest root-cause evidence value |
+| A5 | P1 | none | false | dmm_visual_inspection | Inspect polarity clamp TVS and downstream short | B4 | M4 | 0.10 | 0.40 | 20 | cheap exclusion path |
 
 ## 11. Optimal Troubleshooting Path
 

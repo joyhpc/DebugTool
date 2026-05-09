@@ -1,11 +1,11 @@
 ---
 name: debug-decision-tree
-version: "0.99.11"
+version: "0.99.12"
 api_version: "1"
 description: Hardware debug reasoning skill for natural-language bug reports, link-model analysis, hypothesis trees, action decision trees, probability/time-cost ranked troubleshooting, input cleaning, safety gating, and retrospective asset promotion. Use when the assistant needs to analyze a hardware, FPGA, embedded, power, high-speed interface, video, I2C, SPI, MIPI, eDP, PCIe, USB, JTAG, or system bring-up/debug issue; when the user asks for possible causes, probabilities, measurements, debug plan, decision tree, link model, or reusable case learning; or when a terse user bug report needs a complete first-pass debug deliverable.
 ---
 
-# Debug Decision Tree Skill - V0.99.11 Boundary / Mechanism Separation
+# Debug Decision Tree Skill - V0.99.12 System Hardening
 
 ## Purpose
 
@@ -110,10 +110,12 @@ Treat the referenced case as a test fixture:
 31. Evidence Audit and Architecture-First outputs must make mechanically checkable semantic guardrails explicit: stale-evidence handling, direct-symptom top-two reasoning, model-gap branch, cost-prior source, and candidate-owner wording when applicable.
 32. Major case-shape changes must appear in Input Cleaning `Contradictions / Revisions`, not only in narrative summary. Examples: symptom scope changes, architecture mapping changes, a former baseline channel fails, or an old repeated-test variable becomes invariant.
 33. When a case involves repeated tests, Input Cleaning must separately list repeated variables, invariants, and unknown invariants before routing.
-34. Architecture-First outputs must not mix `boundary`, `mechanism`, and `observability_gap` rows in one mutually exclusive probability table. Use boundary distribution, mechanism prior, coverage matrix, and evidence ledger when the case is unresolved.
+34. Architecture-First outputs must not mix `boundary`, `mechanism`, and `observability_gap` rows in one mutually exclusive probability table. Use boundary distribution, mechanism prior, coverage matrix, and evidence ledger when the case is unresolved; validators must reject legacy flat root-cause probability tables.
 35. Observability gaps such as missing fault-state readback are diagnostic gaps, not physical root causes; their actions improve measurement quality rather than changing hardware.
 36. If an Architecture-First hypothesis bundles multiple physical mechanisms because data is insufficient, add the evidence trigger that will split it into separate branches.
-37. `Cost / Probability Ranking` must expose priority tiers (`P0/P1/P2`) and co-acquisition grouping in addition to score, because execution owners scan tiers faster than scores.
+37. `Cost / Probability Ranking` must expose priority tiers (`P0/P1/P2`) and explicit co-acquisition grouping through `co_acq_group_id`, `same_failure_window`, and `capture_channel`, because execution owners scan tiers faster than scores and same-window actions must be auditable.
+38. Input Cleaning facts must carry `provenance`; `team_attestation_unverified` facts are capped at `medium` confidence until backed by a raw artifact, instrument log, waveform, register dump, or same-window measurement.
+39. Architecture-First evidence ledgers must be mechanically linked: each evidence row states `criticality`, `gates_boundaries`, and `gates_mechanisms`; missing critical evidence caps gated boundary/mechanism probabilities at `0.50` unless a local override explains the cap, new value, and reason.
 
 ## Mode Selection Order
 

@@ -27,29 +27,29 @@
 
 ## 3. Observed / Confirmed Facts
 
-| id | fact | source_in_input | confidence | staleness | affected_link_or_node |
-|---|---|---|---|---|---|
-| F1 | A57 eDP 出图异常是当前 Issue4 的目标 case | user update | high | fresh | case scope |
-| F2 | eDP1、eDP2 对应解码板上的一颗 DS90UB984 解码芯片 | user update | high | fresh | decoder mapping |
-| F3 | eDP3、eDP4 对应解码板上的另一颗 DS90UB984 解码芯片 | user update | high | fresh | decoder mapping |
-| F4 | eDP1、eDP2、eDP3、eDP4 都有概率出现问题 | user update | high | fresh | symptom distribution |
-| F5 | 一共测试了 4 块解码板，板间表现出差异 | user update | high | fresh | multi-board matrix |
-| F6 | 有一块板表现为 eDP3、eDP4 出图异常概率较高 | user update | high | fresh | board-to-board variation |
-| F7 | 另外三块板表现为 eDP1、eDP2 出图异常概率较高 | user update | high | fresh | board-to-board variation |
-| F8 | 同一颗 DS90UB984 对应的 eDP1/eDP2 没有严格一致性，出现一个好、一个不好的情况 | user update | high | fresh | per-channel variation |
-| F9 | eDP3/eDP4 同样没有严格一致性，也会出现同芯片下一个好、一个不好 | user update | high | fresh | per-channel variation |
-| F10 | eDP mainstream 中间有 Redriver | user update | high | fresh | Redriver / data path |
-| F11 | Redriver 在设备上电后已经配置好，后续重复测试中并未重新配置 | user update | high | fresh | Redriver config boundary |
-| F12 | 当前重复测试方式是对 DS90UB984 解码芯片重新上下电和重新配置 | user update | high | fresh | decoder power/reconfig loop |
-| F13 | eDP 上电时序测量需要包含 SerDes 参考时钟，当前计划责任人为吴峰，日期 2026/5/9 | project action table | high | fresh | power/reset/clock |
-| F14 | 前后 2 通道 eDP SerDes 电路差异已确认无差异 | project action table | high | fresh | circuit comparison |
-| F15 | Redriver 4 通道上电 PWDN 信号及 I2C/出图 PWDN 信号仍待确认 | project action table | high | fresh | Redriver PWDN/control |
-| F16 | 项目表写有“多测试几块 984 解码板【6块】”，但本次补充明确已经测试 4 块 | project action table + user update | medium | fresh | sample count |
-| F17 | 多板测试现象包括“单独勾选无法出图”，且目前没有一块可以稳定 4 通道出图 | project action table | high | fresh | reproduction matrix |
-| F18 | 前 2 通道 eDP DS90UB984 IIC 指令与后 2 通道 IIC 指令对比已完成，指令和 ini/-参数下发未发现问题 | project action table | high | fresh | IIC/config intent |
-| F19 | 读 eDP 解码芯片相关寄存器，以及模拟出图输出相关寄存器是否存在，需要和厂家确认 | project action table | high | fresh | decoder status/readback |
-| F20 | DS90UB984 关键管脚测量仍待硬件确认 | project action table | high | fresh | pin/power/reset/clock |
-| F21 | 旧版 A57 context 中曾有 AUX 正常、AU15P CDR/comma 异常、SerDes reset 无改善等信息 | previous A57 latest | medium | requires_re_verification | prior receiver symptom |
+| id | fact | source_in_input | provenance | confidence | staleness | affected_link_or_node |
+|---|---|---|---|---|---|---|
+| F1 | A57 eDP 出图异常是当前 Issue4 的目标 case | user update | raw_artifact | high | fresh | case scope |
+| F2 | eDP1、eDP2 对应解码板上的一颗 DS90UB984 解码芯片 | user update | raw_artifact | high | fresh | decoder mapping |
+| F3 | eDP3、eDP4 对应解码板上的另一颗 DS90UB984 解码芯片 | user update | raw_artifact | high | fresh | decoder mapping |
+| F4 | eDP1、eDP2、eDP3、eDP4 都有概率出现问题 | user update | raw_artifact | high | fresh | symptom distribution |
+| F5 | 一共测试了 4 块解码板，板间表现出差异 | user update | raw_artifact | high | fresh | multi-board matrix |
+| F6 | 有一块板表现为 eDP3、eDP4 出图异常概率较高 | user update | raw_artifact | high | fresh | board-to-board variation |
+| F7 | 另外三块板表现为 eDP1、eDP2 出图异常概率较高 | user update | raw_artifact | high | fresh | board-to-board variation |
+| F8 | 同一颗 DS90UB984 对应的 eDP1/eDP2 没有严格一致性，出现一个好、一个不好的情况 | user update | raw_artifact | high | fresh | per-channel variation |
+| F9 | eDP3/eDP4 同样没有严格一致性，也会出现同芯片下一个好、一个不好 | user update | raw_artifact | high | fresh | per-channel variation |
+| F10 | eDP mainstream 中间有 Redriver | user update | raw_artifact | high | fresh | Redriver / data path |
+| F11 | Redriver 在设备上电后已经配置好，后续重复测试中并未重新配置 | user update | raw_artifact | high | fresh | Redriver config boundary |
+| F12 | 当前重复测试方式是对 DS90UB984 解码芯片重新上下电和重新配置 | user update | raw_artifact | high | fresh | decoder power/reconfig loop |
+| F13 | eDP 上电时序测量需要包含 SerDes 参考时钟，当前计划责任人为吴峰，日期 2026/5/9 | project action table | raw_artifact | high | fresh | power/reset/clock |
+| F14 | 前后 2 通道 eDP SerDes 电路差异已确认无差异 | project action table | raw_artifact | high | fresh | circuit comparison |
+| F15 | Redriver 4 通道上电 PWDN 信号及 I2C/出图 PWDN 信号仍待确认 | project action table | raw_artifact | high | fresh | Redriver PWDN/control |
+| F16 | 项目表写有“多测试几块 984 解码板【6块】”，但本次补充明确已经测试 4 块 | project action table + user update | raw_artifact | medium | fresh | sample count |
+| F17 | 多板测试现象包括“单独勾选无法出图”，且目前没有一块可以稳定 4 通道出图 | project action table | raw_artifact | high | fresh | reproduction matrix |
+| F18 | 前 2 通道 eDP DS90UB984 IIC 指令与后 2 通道 IIC 指令对比已完成，指令和 ini/-参数下发未发现问题 | project action table | raw_artifact | high | fresh | IIC/config intent |
+| F19 | 读 eDP 解码芯片相关寄存器，以及模拟出图输出相关寄存器是否存在，需要和厂家确认 | project action table | raw_artifact | high | fresh | decoder status/readback |
+| F20 | DS90UB984 关键管脚测量仍待硬件确认 | project action table | raw_artifact | high | fresh | pin/power/reset/clock |
+| F21 | 旧版 A57 context 中曾有 AUX 正常、AU15P CDR/comma 异常、SerDes reset 无改善等信息 | previous A57 latest | derived | medium | requires_re_verification | prior receiver symptom |
 
 ## 4. Judgments / Inferences / Hypotheses
 

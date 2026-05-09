@@ -41,7 +41,7 @@ For unresolved multi-link cases, do not force every likely item into one flat ro
 - `Boundary Distribution`: where the signal or state first leaves spec. Rows must be `type=boundary`; probabilities are mutually exclusive and must sum to about 1.00.
 - `Mechanism Prior`: mechanisms that could cause one or more boundaries. Rows must use `type=mechanism` or `type=observability_gap`; `p_active` values are independent and must not be forced to sum to 1.00.
 - `Coverage Matrix`: each mechanism must state which boundaries it can explain using a compact scale such as `H/M/L/-`.
-- `Evidence Ledger`: same-window evidence status for each key measurement, using statuses such as present / missing / partial, and the probability impact of missing evidence.
+- `Evidence Ledger`: same-window evidence status for each key measurement. Required columns: `id`, `evidence`, `status`, `criticality`, `gates_boundaries`, `gates_mechanisms`, `probability_effect`, and `local_override`.
 
 Probabilities are decision priors, not truth claims. Mark them as subjective unless calibrated by regression or solved-case statistics.
 
@@ -55,7 +55,14 @@ Probability rules:
 - If a hypothesis intentionally bundles multiple physical mechanisms because data is insufficient, name the split trigger that will force it to become separate branches.
 - Do not put `boundary`, `mechanism`, and `observability_gap` rows into the same mutually exclusive probability table.
 - Observability gaps are measurement/diagnostic gaps. Their actions should improve evidence quality, not change hardware.
-- If critical same-window evidence is missing, relevant boundary or mechanism probabilities must not exceed 0.50 unless the output explicitly states a local override and why.
+- If critical same-window evidence is missing, relevant boundary or mechanism probabilities must not exceed 0.50 unless the output explicitly states a local override and why. This must be mechanically joinable through `gates_boundaries` and `gates_mechanisms`, not only described in prose.
+
+Evidence ledger rules:
+
+- `status` must be one of `present`, `missing`, or `partial`.
+- `criticality` must be one of `critical` or `supporting`.
+- Each row must gate at least one boundary or mechanism.
+- `local_override` may be `none`; if it raises a gated probability above 0.50, it must state the previous cap, new value, and reason.
 
 ## Action Decision Requirements
 
@@ -68,7 +75,8 @@ The `Decision Tree` section is the action decision tree. It must map each early 
 - Show cumulative path cost for the optimal path when more than three actions are chained.
 - If owner names are inferred from chat participation, label them as candidate owners and state that PM/project lead confirmation is required.
 - Distinguish broad knowledge retrieval from low-cost point checks such as datasheet polarity verification.
-- `Cost / Probability Ranking` must include `tier`, `co_acquisition`, `boundary_subset`, `mechanism_subset`, `p_hit`, `p_exclude`, and `time_min` columns.
+- `Cost / Probability Ranking` must include `tier`, `co_acq_group_id`, `same_failure_window`, `capture_channel`, `boundary_subset`, `mechanism_subset`, `p_hit`, `p_exclude`, and `time_min` columns.
+- P0 rows must have a non-empty `co_acq_group_id`. Multi-row co-acquisition groups must set `same_failure_window=true` on every member. Single-row P0 groups are allowed only when the row explains why it is a standalone prerequisite or matrix-normalization action.
 
 ## Retrospective Trigger Requirements
 

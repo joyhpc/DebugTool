@@ -135,6 +135,9 @@ VALID_REVERSIBILITY = {"reversible", "partial", "irreversible", "n/a", "na", "-"
 VALID_ACTION_ONLY_REVERSIBILITY = {"reversible", "partial", "irreversible"}
 VALID_CONFIDENCE = {"high", "medium", "low"}
 VALID_STALENESS = {"fresh", "requires_re_verification", "archived"}
+VALID_PROVENANCE = {"raw_artifact", "instrument_log", "team_attestation_unverified", "datasheet", "derived"}
+VALID_EVIDENCE_STATUS = {"present", "missing", "partial"}
+VALID_EVIDENCE_CRITICALITY = {"critical", "supporting"}
 VALID_EVIDENCE_AUDIT_VERDICTS = {"pass", "pass_with_minor_fixes", "needs_revision", "reject"}
 VALID_PUBLISH_READY = {"yes", "no"}
 
@@ -146,7 +149,7 @@ SKILL_LAYER_KEYWORDS = {
 }
 
 INPUT_CLEANING_TABLES = [
-    ("Observed / Confirmed Facts", ["id", "fact", "source_in_input", "confidence", "staleness", "affected_link_or_node"]),
+    ("Observed / Confirmed Facts", ["id", "fact", "source_in_input", "provenance", "confidence", "staleness", "affected_link_or_node"]),
     ("Judgments / Inferences / Hypotheses", ["id", "statement", "based_on", "confidence", "could_be_wrong_if"]),
     ("Actions Already Tried And Results", ["id", "action", "target", "result", "interpretation", "evidence_refs"]),
     ("Proposed Methods / Pending Actions", ["id", "proposed_action", "owner_if_known", "target", "expected_evidence", "hypothesis_or_link_node"]),
@@ -535,6 +538,20 @@ def validate_input_cleaning_contract(text: str, mode: str, errors: list[str]) ->
                         f"invalid staleness '{row.get('staleness', '')}', "
                         f"allowed={sorted(VALID_STALENESS)}"
                     )
+            if heading == "Observed / Confirmed Facts" and "provenance" in table.columns:
+                provenance = normalize_text(row.get("provenance", "")).lower()
+                confidence = normalize_text(row.get("confidence", "")).lower()
+                if provenance not in VALID_PROVENANCE:
+                    errors.append(
+                        f"input cleaning section '{heading}' row {row_id or idx}: "
+                        f"invalid provenance '{row.get('provenance', '')}', "
+                        f"allowed={sorted(VALID_PROVENANCE)}"
+                    )
+                if provenance == "team_attestation_unverified" and confidence == "high":
+                    errors.append(
+                        f"input cleaning section '{heading}' row {row_id or idx}: "
+                        "team_attestation_unverified facts cannot have high confidence before artifact or instrument confirmation"
+                    )
 
             for column in required_columns:
                 if is_blank_like(row.get(normalize_col(column), "")):
@@ -589,7 +606,161 @@ def find_model_gap_probability(text: str) -> float | None:
     return None
 
 
+def parse_id_refs(raw: str, prefix: str | None = None) -> set[str]:
+    refs = set(re.findall(r"\b[A-Z][A-Za-z0-9_-]*\b", normalize_text(raw)))
+    if prefix is not None:
+        refs = {ref for ref in refs if ref.startswith(prefix)}
+    return refs
+
+
+def bool_value(raw: str) -> bool | None:
+    cleaned = normalize_text(raw).lower()
+    if cleaned in {"true", "yes", "y", "1"}:
+        return True
+    if cleaned in {"false", "no", "n", "0"}:
+        return False
+    return None
+
+
+def validate_no_flat_rootcause_table(text: str, errors: list[str]) -> None:
+    for table in find_tables(text):
+        columns = set(table.columns)
+        if "p_hit" in columns or "p_exclude" in columns or "p_active" in columns:
+            continue
+        if {"type", "first_fail_boundary", "p"}.issubset(columns):
+            continue
+        probability_columns = [c for c in table.columns if c in {"p", "prob", "probability"}]
+        if not probability_columns:
+            continue
+        probability_column = probability_columns[0]
+        values = [
+            parsed
+            for row in table.rows
+            if (parsed := parse_probability_value(row.get(probability_column, ""))) is not None
+        ]
+        if len(values) < 2 or abs(sum(values) - 1.0) > 0.05:
+            continue
+        row_types = {normalize_text(row.get("type", "")).lower() for row in table.rows if not is_blank_like(row.get("type", ""))}
+        if "type" not in columns or len(row_types) != 1:
+            errors.append(
+                f"V-NO-FLAT-ROOTCAUSE: table at line {table.start_line} looks like a normalized "
+                "mixed/untagged root-cause probability table; use Boundary Distribution, "
+                "Mechanism Prior, Coverage Matrix, and Evidence Ledger instead"
+            )
+
+
+def validate_coverage_matrix(
+    hypothesis_text: str,
+    boundary_ids: set[str],
+    mechanism_types: dict[str, str],
+    errors: list[str],
+) -> None:
+    section = extract_section(hypothesis_text, "Coverage Matrix")
+    table = find_table_with_columns(section, ["mechanism_id"])
+    if not table:
+        errors.append("architecture_first output must include a Coverage Matrix table with a mechanism_id column")
+        return
+
+    physical_boundaries = sorted(boundary_id for boundary_id in boundary_ids if boundary_id != "B0")
+    for boundary_id in physical_boundaries:
+        if not any(column.startswith(boundary_id.lower()) for column in table.columns):
+            errors.append(f"V-COVERAGE-COMPLETE: Coverage Matrix missing column for boundary {boundary_id}")
+
+    row_by_mechanism: dict[str, dict[str, str]] = {}
+    for row in table.rows:
+        refs = parse_id_refs(row.get("mechanism_id", ""), "M")
+        if refs:
+            row_by_mechanism[sorted(refs)[0]] = row
+
+    coverage_values = {"h", "m", "l", "-", "\u2014"}
+    for mechanism_id, mechanism_type in mechanism_types.items():
+        if mechanism_type != "mechanism":
+            continue
+        row = row_by_mechanism.get(mechanism_id)
+        if row is None:
+            errors.append(f"V-COVERAGE-COMPLETE: mechanism {mechanism_id} has no Coverage Matrix row")
+            continue
+        meaningful = False
+        for column in table.columns:
+            if column == "mechanism_id":
+                continue
+            value = normalize_text(row.get(column, "")).lower()
+            if value not in coverage_values:
+                errors.append(
+                    f"V-COVERAGE-COMPLETE: mechanism {mechanism_id} coverage cell '{column}' "
+                    f"must be one of H/M/L/-"
+                )
+            if value in {"h", "m", "l"}:
+                meaningful = True
+        if not meaningful:
+            errors.append(f"V-COVERAGE-COMPLETE: mechanism {mechanism_id} has no non-empty coverage cell")
+
+
+def validate_evidence_ledger(
+    hypothesis_text: str,
+    boundary_probabilities: dict[str, float],
+    mechanism_probabilities: dict[str, float],
+    errors: list[str],
+) -> None:
+    required = [
+        "id", "evidence", "status", "criticality", "gates_boundaries",
+        "gates_mechanisms", "probability_effect", "local_override",
+    ]
+    table = find_table_with_columns(extract_section(hypothesis_text, "Evidence Ledger"), required)
+    if not table:
+        errors.append(
+            "architecture_first output must include an Evidence Ledger table with id, evidence, status, "
+            "criticality, gates_boundaries, gates_mechanisms, probability_effect, and local_override columns"
+        )
+        return
+
+    for idx, row in enumerate(table.rows, start=1):
+        row_id = normalize_text(row.get("id", "")) or f"row#{idx}"
+        status = normalize_text(row.get("status", "")).lower()
+        criticality = normalize_text(row.get("criticality", "")).lower()
+        if status not in VALID_EVIDENCE_STATUS:
+            errors.append(f"evidence row {row_id}: status must be one of {sorted(VALID_EVIDENCE_STATUS)}")
+        if criticality not in VALID_EVIDENCE_CRITICALITY:
+            errors.append(f"evidence row {row_id}: criticality must be one of {sorted(VALID_EVIDENCE_CRITICALITY)}")
+
+        gated_boundaries = parse_id_refs(row.get("gates_boundaries", ""), "B")
+        gated_mechanisms = parse_id_refs(row.get("gates_mechanisms", ""), "M")
+        if not gated_boundaries and not gated_mechanisms:
+            errors.append(f"V-EVIDENCE-LEDGER-LINKED: evidence row {row_id} must gate at least one boundary or mechanism")
+
+        for boundary_id in sorted(gated_boundaries):
+            if boundary_id not in boundary_probabilities:
+                errors.append(f"evidence row {row_id}: unknown gated boundary id {boundary_id}")
+        for mechanism_id in sorted(gated_mechanisms):
+            if mechanism_id not in mechanism_probabilities:
+                errors.append(f"evidence row {row_id}: unknown gated mechanism id {mechanism_id}")
+
+        local_override = normalize_text(row.get("local_override", ""))
+        has_override = not is_blank_like(local_override) and local_override.lower() != "none"
+        if status == "missing" and criticality == "critical":
+            for boundary_id in sorted(gated_boundaries):
+                probability = boundary_probabilities.get(boundary_id)
+                if probability is not None and probability > 0.50 and not has_override:
+                    errors.append(
+                        f"V-EVIDENCE-CAP: missing critical evidence {row_id} gates boundary {boundary_id} "
+                        f"with p={probability:.2f} > 0.50 and no local_override"
+                    )
+            for mechanism_id in sorted(gated_mechanisms):
+                probability = mechanism_probabilities.get(mechanism_id)
+                if probability is not None and probability > 0.50 and not has_override:
+                    errors.append(
+                        f"V-EVIDENCE-CAP: missing critical evidence {row_id} gates mechanism {mechanism_id} "
+                        f"with p_active={probability:.2f} > 0.50 and no local_override"
+                    )
+            if has_override and len(local_override) < 20:
+                errors.append(f"V-EVIDENCE-CAP: evidence row {row_id} local_override must include a substantive reason")
+
+
 def validate_boundary_mechanism_tables(hypothesis_text: str, errors: list[str]) -> None:
+    boundary_probabilities: dict[str, float] = {}
+    mechanism_probabilities: dict[str, float] = {}
+    mechanism_types: dict[str, str] = {}
+
     boundary_table = find_table_with_columns(hypothesis_text, ["id", "type", "first_fail_boundary", "p"])
     if not boundary_table:
         errors.append("architecture_first output must include a Boundary Distribution table with id, type, first_fail_boundary, and p columns")
@@ -606,50 +777,112 @@ def validate_boundary_mechanism_tables(hypothesis_text: str, errors: list[str]) 
                 errors.append(f"boundary row {row_id}: p must be a probability")
             else:
                 found_probability = True
+                boundary_probabilities[row_id] = probability
                 total += probability
         if found_probability and abs(total - 1.0) > 0.02:
             errors.append(f"Boundary Distribution probabilities must sum to 1.00 ± 0.02, got {total:.3f}")
+        if not any(
+            row_id == "B0" or contains_any(" ".join(row.values()), ["unknown / model gap", "unknown/model gap", "model gap"])
+            for row_id, row in ((normalize_text(r.get("id", "")), r) for r in boundary_table.rows)
+        ):
+            errors.append("V-BOUNDARY-SUM: Boundary Distribution must include B0 unknown / model gap")
 
     mechanism_table = find_table_with_columns(hypothesis_text, ["id", "type", "mechanism", "p_active", "affects_boundaries"])
     if not mechanism_table:
         errors.append("architecture_first output must include a Mechanism Prior table with id, type, mechanism, p_active, and affects_boundaries columns")
     else:
         valid_types = {"mechanism", "observability_gap"}
+        mechanism_total = 0.0
+        found_probability = False
         for idx, row in enumerate(mechanism_table.rows, start=1):
             row_id = normalize_text(row.get("id", "")) or f"row#{idx}"
             row_type = normalize_text(row.get("type", "")).lower()
             if row_type not in valid_types:
                 errors.append(f"mechanism row {row_id}: type must be one of {sorted(valid_types)}")
-            if parse_probability_value(row.get("p_active", "")) is None:
+            else:
+                mechanism_types[row_id] = row_type
+            probability = parse_probability_value(row.get("p_active", ""))
+            if probability is None:
                 errors.append(f"mechanism row {row_id}: p_active must be a probability")
+            else:
+                found_probability = True
+                mechanism_probabilities[row_id] = probability
+                mechanism_total += probability
+        if found_probability and 0.95 <= mechanism_total <= 1.05 and "intentionally_normalized: true" not in hypothesis_text:
+            errors.append(
+                f"V-MECH-NO-FORCED-SUM: Mechanism Prior p_active values look normalized "
+                f"(sum={mechanism_total:.3f}); mechanism priors must be independent unless intentionally_normalized: true is stated"
+            )
 
     if not contains_any(hypothesis_text, ["Coverage Matrix", "coverage matrix", "覆盖矩阵"]):
         errors.append("architecture_first output must include a Coverage Matrix for mechanism-to-boundary likelihood")
+    else:
+        validate_coverage_matrix(hypothesis_text, set(boundary_probabilities), mechanism_types, errors)
 
-    if not find_table_with_columns(hypothesis_text, ["evidence", "status", "affects"]):
-        errors.append("architecture_first output must include an Evidence Ledger table with evidence, status, and affects columns")
+    validate_evidence_ledger(hypothesis_text, boundary_probabilities, mechanism_probabilities, errors)
 
 
 def validate_cost_ranking_table(cost_text: str, errors: list[str]) -> None:
-    required_columns = ["tier", "co_acquisition", "boundary_subset", "mechanism_subset", "p_hit", "p_exclude", "time_min"]
+    required_columns = [
+        "tier", "co_acq_group_id", "same_failure_window", "capture_channel",
+        "boundary_subset", "mechanism_subset", "p_hit", "p_exclude", "time_min",
+    ]
     cost_table = find_table_with_columns(cost_text, required_columns)
     if not cost_table:
         errors.append(
-            "Cost / Probability Ranking must include a table with tier, co_acquisition, "
-            "boundary_subset, mechanism_subset, p_hit, p_exclude, and time_min columns"
+            "Cost / Probability Ranking must include a table with tier, co_acq_group_id, "
+            "same_failure_window, capture_channel, boundary_subset, mechanism_subset, p_hit, p_exclude, and time_min columns"
         )
         return
 
+    groups: dict[str, list[tuple[str, dict[str, str]]]] = {}
     for idx, row in enumerate(cost_table.rows, start=1):
         row_id = normalize_text(row.get("action_id", "") or row.get("node", "")) or f"row#{idx}"
-        co_acquisition = normalize_text(row.get("co_acquisition", "")).lower()
-        if co_acquisition not in {"true", "false", "yes", "no"}:
-            errors.append(f"cost row {row_id}: co_acquisition must be true/false or yes/no")
+        same_failure_window = bool_value(row.get("same_failure_window", ""))
+        if same_failure_window is None:
+            errors.append(f"cost row {row_id}: same_failure_window must be true/false or yes/no")
+
+        tier = normalize_text(row.get("tier", "")).upper()
+        group_id = normalize_text(row.get("co_acq_group_id", ""))
+        if tier == "P0":
+            if is_blank_like(group_id) or group_id.lower() == "none":
+                errors.append(f"V-P0-CO-ACQ-GROUP: P0 cost row {row_id} requires a non-empty co_acq_group_id")
+            else:
+                groups.setdefault(group_id, []).append((row_id, row))
+        for column in ["capture_channel", "boundary_subset", "mechanism_subset", "p_hit", "p_exclude", "time_min"]:
+            if is_blank_like(row.get(column, "")):
+                errors.append(f"cost row {row_id}: {column} is required")
+
+    for group_id, members in groups.items():
+        if len(members) == 1:
+            row_id, row = members[0]
+            same_failure_window = bool_value(row.get("same_failure_window", ""))
+            combined = " ".join(row.values()).lower()
+            if same_failure_window is False and not contains_any(
+                combined,
+                ["standalone", "prerequisite", "matrix", "not same-window", "不要求同窗口", "前置"],
+            ):
+                errors.append(
+                    f"V-P0-CO-ACQ-GROUP: single-row P0 group {group_id} on {row_id} "
+                    "must explain why it is standalone"
+                )
+            continue
+        seen_channels: set[str] = set()
+        for row_id, row in members:
+            same_failure_window = bool_value(row.get("same_failure_window", ""))
+            if same_failure_window is not True:
+                errors.append(f"V-P0-CO-ACQ-GROUP: multi-row group {group_id} member {row_id} must set same_failure_window=true")
+            channel = normalize_text(row.get("capture_channel", "")).lower()
+            if channel in seen_channels:
+                errors.append(f"V-P0-CO-ACQ-GROUP: group {group_id} has duplicate capture_channel '{channel}'")
+            seen_channels.add(channel)
 
 
 def validate_architecture_first_semantics(text: str, mode: str, errors: list[str]) -> None:
     if mode != "architecture_first":
         return
+
+    validate_no_flat_rootcause_table(text, errors)
 
     hypothesis_text = "\n".join(
         [
@@ -722,6 +955,7 @@ def validate_evidence_audit_contract(text: str, mode: str, errors: list[str]) ->
 
     semantic_checks = [
         ("fact vs inference split", ["fact", "inference", "事实", "推断"]),
+        ("fact provenance and confidence ceiling", ["provenance", "team_attestation_unverified", "口头", "转述", "confidence ceiling"]),
         ("stale or non-same-interval evidence", ["stale", "staleness", "requires_re_verification", "非同故障窗口", "过期证据"]),
         ("direct symptom top-two ranking", ["direct symptom", "simplest physical", "top two", "top-2", "直接物理症状", "最简解释"]),
         ("boundary vs mechanism separation", ["boundary", "mechanism", "observability_gap", "边界", "机制", "观测缺口"]),

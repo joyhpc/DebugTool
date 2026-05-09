@@ -172,17 +172,17 @@ flowchart LR
 
 ### Evidence Ledger
 
-当状态为“缺”时，相关 boundary/mechanism 不允许被写得过尖；本输出采用 `P <= 0.50` 的 evidence-gated ceiling。
+当 `status=missing` 且 `criticality=critical` 时，`gates_boundaries` / `gates_mechanisms` 指向的概率不允许超过 `P <= 0.50`，除非 `local_override` 明确说明从哪个 cap 覆盖到哪个值以及原因。
 
-| evidence | status | affects | probability effect |
-|---|---|---|---|
-| eDP/DS90UB984 上电时序 scope capture | 缺 | B1,B2,M1 | M1 不可压缩，但不能超过 0.50 |
-| SerDes refclk 频率/稳定性/抖动或 lock proxy | 缺 | B1,B5,M1 | M1 和 B5 保留 |
-| Redriver PWDN/I2C/EQ/static state in failing window | 缺 | B3,M4 | B3/M4 不可排除 |
-| DS90UB984 fault-state/per-channel status raw 同窗口 | 缺 | B1,B2,B0,M2,M3 | B0 和 M3 保留；B1/B2 不能被确认 |
-| AU15P input/CDR/comma status 同窗口 | 缺 | B4,B5,M6 | B4/B5/M6 不可排除 |
-| 前后 DS90UB984 IIC 指令、ini、参数对比 | 有 | M2 | 压低显式 intent 错误，但不压低 fault-state retention/output enable |
-| 前后 SerDes 电路差异确认 | 有 | M5 | 压低 schematic-level 前后差异，但不排除板级 SI/装配/lane mapping |
+| id | evidence | status | criticality | gates_boundaries | gates_mechanisms | probability_effect | local_override |
+|---|---|---|---|---|---|---|---|
+| EV1 | eDP/DS90UB984 上电时序 scope capture | missing | critical | B1,B2 | M1 | M1 不可压缩，但不能超过 0.50 | none |
+| EV2 | SerDes refclk 频率/稳定性/抖动或 lock proxy | missing | critical | B1,B5 | M1 | M1 和 B5 保留 | none |
+| EV3 | Redriver PWDN/I2C/EQ/static state in failing window | missing | critical | B3 | M4 | B3/M4 不可排除 | none |
+| EV4 | DS90UB984 fault-state/per-channel status raw 同窗口 | missing | critical | B1,B2,B0 | M2,M3 | B0 和 M3 保留；B1/B2 不能被确认 | none |
+| EV5 | AU15P input/CDR/comma status 同窗口 | missing | critical | B4,B5 | M6 | B4/B5/M6 不可排除 | none |
+| EV6 | 前后 DS90UB984 IIC 指令、ini、参数对比 | present | supporting | - | M2 | 压低显式 intent 错误，但不压低 fault-state retention/output enable | none |
+| EV7 | 前后 SerDes 电路差异确认 | present | supporting | - | M5 | 压低 schematic-level 前后差异，但不排除板级 SI/装配/lane mapping | none |
 
 ## 7. Hypothesis Tree With Probabilities
 
@@ -258,17 +258,17 @@ Not Applied：
 
 ## 10. Cost / Probability Ranking
 
-本表使用 `reasoning/cost_priors.yaml` 的经验中位数，并按 Architecture-First 模式的 `exclude_weight = 0.7` 计算。局部覆盖：A_P0m 的 `time_min=60` 是因为 4 块板已有部分测试，当前动作是补齐标准化矩阵，不是从零开始搭建 multi-board reproduction matrix。P0a-P0d 是同一次失败复现窗口的 co-acquisition batch，不是互斥排序。
+本表使用 `reasoning/cost_priors.yaml` 的经验中位数，并按 Architecture-First 模式的 `exclude_weight = 0.7` 计算。局部覆盖：A_P0m 的 `time_min=60` 是因为 4 块板已有部分测试，当前动作是补齐标准化矩阵，不是从零开始搭建 multi-board reproduction matrix。A_P0a/A_P0b/A_P0c/A_P0d 共享 `CO-A57-EDP-FAILWIN-1`，必须在同一次失败复现窗口采集；A_P0m 是 standalone matrix-normalization action，不要求同窗口。
 
-| action_id | tier | co_acquisition | action | boundary_subset | mechanism_subset | p_hit | p_exclude | time_min | safety | priority_score | reason |
-|---|---|---|---|---|---|---:|---:|---:|---|---:|---|
-| A_P0a | P0 | true | DS90UB984 per-channel fault-state/status raw readback，厂家寄存器语义并行点查 | B1,B2,B0 | M2,M3 | 0.22 | 0.65 | 45 | S0 | 0.015 | 低成本同时压缩 observability gap 和 DS90UB984 boundary |
-| A_P0m | P0 | false | 补齐 board/chip/channel/test_count/fail_count/operation 标准矩阵 | B0,B2,B3,B4 | M5 | 0.12 | 0.65 | 60 | S0 | 0.010 | 防止继续用混乱样本描述做概率判断 |
-| A_P0b | P0 | true | DS90UB984 rails、reset、refclk/PLL、SerDes reference failing-vs-passing scope capture | B1,B2,B5 | M1 | 0.25 | 0.55 | 90 | S1 | 0.007 | 直接验证“上电时序/参考时钟”机制，但不和 boundary 项竞争 |
-| A_P0d | P0 | true | Redriver PWDN/I2C/EQ/static state 与每通道 input/output activity | B3,B4 | M4,M5 | 0.18 | 0.55 | 90 | S1 | 0.007 | 切 Redriver/static path、lane path 与 AU15P input 前边界 |
-| A_P0c | P0 | true | AU15P input activity、CDR、comma、lane status 按 eDP1-4 同窗口记录 | B4,B5 | M6,M5 | 0.15 | 0.50 | 90 | S1 | 0.006 | 切 AU15P input 前后边界，刷新旧 CDR/comma context |
-| A_P1a | P1 | false | 只有 AU15P input 有效后，检查 AU15P SerDes refclk/config/rate/polarity/comma 设置 | B5 | M6 | 0.07 | 0.45 | 75 | S0 | 0.005 | receiver mechanism 的前置条件是 input 有效 |
-| A_P1b | P1 | false | 复核单独勾选、decoder reconfig 顺序和串行化/固定顺序测试 | B1,B2 | M2 | 0.12 | 0.45 | 120 | S0 | 0.004 | 验证 operation/selection coupling，但应在 P0 batch 后解释 |
+| action_id | tier | co_acq_group_id | same_failure_window | capture_channel | action | boundary_subset | mechanism_subset | p_hit | p_exclude | time_min | safety | priority_score | reason |
+|---|---|---|---|---|---|---|---|---:|---:|---:|---|---:|---|
+| A_P0a | P0 | CO-A57-EDP-FAILWIN-1 | true | register_dump + vendor_point_check | DS90UB984 per-channel fault-state/status raw readback，厂家寄存器语义并行点查 | B1,B2,B0 | M2,M3 | 0.22 | 0.65 | 45 | S0 | 0.015 | 低成本同时压缩 observability gap 和 DS90UB984 boundary |
+| A_P0m | P0 | CO-A57-MATRIX-STANDALONE | false | test_matrix_spreadsheet | 补齐 board/chip/channel/test_count/fail_count/operation 标准矩阵 | B0,B2,B3,B4 | M5 | 0.12 | 0.65 | 60 | S0 | 0.010 | standalone prerequisite：防止继续用混乱样本描述做概率判断，不要求同窗口 |
+| A_P0b | P0 | CO-A57-EDP-FAILWIN-1 | true | scope_rails_reset_refclk | DS90UB984 rails、reset、refclk/PLL、SerDes reference failing-vs-passing scope capture | B1,B2,B5 | M1 | 0.25 | 0.55 | 90 | S1 | 0.007 | 直接验证“上电时序/参考时钟”机制，但不和 boundary 项竞争 |
+| A_P0d | P0 | CO-A57-EDP-FAILWIN-1 | true | redriver_status_and_io | Redriver PWDN/I2C/EQ/static state 与每通道 input/output activity | B3,B4 | M4,M5 | 0.18 | 0.55 | 90 | S1 | 0.007 | 切 Redriver/static path、lane path 与 AU15P input 前边界 |
+| A_P0c | P0 | CO-A57-EDP-FAILWIN-1 | true | fpga_status_cdr_comma | AU15P input activity、CDR、comma、lane status 按 eDP1-4 同窗口记录 | B4,B5 | M6,M5 | 0.15 | 0.50 | 90 | S1 | 0.006 | 切 AU15P input 前后边界，刷新旧 CDR/comma context |
+| A_P1a | P1 | none | false | fpga_register_review | 只有 AU15P input 有效后，检查 AU15P SerDes refclk/config/rate/polarity/comma 设置 | B5 | M6 | 0.07 | 0.45 | 75 | S0 | 0.005 | receiver mechanism 的前置条件是 input 有效 |
+| A_P1b | P1 | none | false | operation_sequence_log | 复核单独勾选、decoder reconfig 顺序和串行化/固定顺序测试 | B1,B2 | M2 | 0.12 | 0.45 | 120 | S0 | 0.004 | 验证 operation/selection coupling，但应在 P0 batch 后解释 |
 
 ## 11. Optimal Troubleshooting Path
 

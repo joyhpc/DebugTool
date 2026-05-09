@@ -17,6 +17,7 @@ The artifact has the required Architecture-First sections and passed structural 
 - No measured root cause is claimed.
 - Decoder-output absence remains a hypothesis, not a fact.
 - Fact vs inference split is visible in the reviewed artifact.
+- Fact provenance is reviewed; no `team_attestation_unverified` claim is allowed to exceed the confidence ceiling without raw artifact or instrument confirmation.
 - Stale / non-same-interval evidence is marked as requires_re_verification and does not change probability directly.
 - Candidate owner rows are labeled as candidate_owner and require PM confirmation before formal assignment.
 
