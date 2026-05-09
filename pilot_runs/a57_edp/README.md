@@ -1,10 +1,11 @@
 # A57 eDP Pilot Run
 
-本目录是 A57 eDP 后两通道 debug case 的规范工作区。
+本目录是 A57 eDP / DS90UB984 出图异常 debug case 的规范工作区。
 
 当前入口：
 
-- `latest-architecture-first.md` - 当前 Architecture-First 输出，正文已按 V0.99.8 用户语言规则改为中文。
+- `latest-input-cleaning.md` - 当前 Issue4 输入清洗记录。
+- `latest-architecture-first.md` - 当前 Architecture-First 输出，已按 Issue4 补充重跑。
 - `REVIEW.md` - 对当前 latest 的语义审核记录，以及已转化为 skill 规则的问题清单。
 
 历史归档：
@@ -12,6 +13,7 @@
 - `archive/input-cleaning-2026-05-08.md` - 较早的 input-cleaning-only 记录。
 - `archive/architecture-first-initial-link-model.md` - 较早的 Architecture-First link-model 记录。
 - `archive/architecture-first-english-before-cn-2026-05-08.md` - V0.99.8 中文输出规则生效前的英文 latest 版本。
+- `archive/architecture-first-before-issue4-2026-05-09.md` - Issue4 补充前的中文 latest 版本。
 
 维护规则：
 

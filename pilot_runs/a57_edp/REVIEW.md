@@ -40,3 +40,24 @@
 - A1/A4/A6/A7/A2 使用更现实的 cost prior。
 - §11 增加累计路径成本。
 - §15 owner 改成 candidate owner。
+
+## Issue4 补充后审核记录
+
+审核对象：`pilot_runs/a57_edp/latest-input-cleaning.md` 与 `pilot_runs/a57_edp/latest-architecture-first.md`
+
+审核结论：Issue4 补充改变了 case 边界，latest 已从“后两通道概率性不出图”改为“四个 eDP 通道都可能概率性出图，概率随板和通道变化”。当前输出仍不能下 root cause 结论，但已经把下一步动作收敛到更可执行的边界切分。
+
+关键修订：
+
+- 新增 current input-cleaning 入口，保留 Issue4 的架构映射、多板测试、Redriver 配置边界和重复测试方式。
+- 将旧 latest 归档到 `archive/architecture-first-before-issue4-2026-05-09.md`。
+- 将 eDP1/2 与 eDP3/4 映射到两颗 DS90UB984，并明确同芯片两个通道不严格一致。
+- 降级“后两通道专属”“Redriver 动态重配置”“前后 IIC intent 差异”分支。
+- 上调 DS90UB984 per-channel output/status、Redriver static path、board/channel/SI matrix 的排查优先级。
+- 保留旧 AUX/CDR/comma 证据为 `requires_re_verification` context，避免 stale evidence 直接更新概率。
+
+残余风险：
+
+- 当前多板数据仍缺标准化 `board_id / chip_id / channel_id / test_count / fail_count` 矩阵。
+- DS90UB984 output/status 寄存器和 Redriver PWDN/I2C/static config 仍未闭合。
+- AU15P CDR/comma 旧证据需要按新的 eDP1-4 四通道矩阵重新对齐。
