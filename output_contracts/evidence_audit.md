@@ -47,6 +47,8 @@ Flag:
 - single-board evidence written as common issue;
 - normal control-path evidence used to prove data-path validity;
 - root cause language before a falsifying measurement exists.
+- stale or non-same-interval evidence changing probabilities.
+- chat participants being converted into confirmed owners without explicit assignment.
 
 ## Link Model Checks
 
@@ -56,6 +58,7 @@ Verify that the model:
 - includes comparison/reference paths when the case depends on front-vs-rear or good-vs-fault asymmetry;
 - states known, inferred, unknown, and boundary-moving evidence for each material node;
 - preserves weak but relevant clues, even if they are not top probability branches.
+- gives model-gap uncertainty a small explicit branch when the architecture could be incomplete.
 
 ## Probability And Ranking Checks
 
@@ -65,6 +68,8 @@ Verify that:
 - overlapping hypotheses are called out when probabilities are normalized;
 - every probability has evidence that raises and lowers it;
 - action ranking is consistent with stated score or explicitly explains exceptions;
+- cost estimates are calibrated against `reasoning/cost_priors.yaml` or a stated local override;
+- the simplest physical interpretation of the direct symptom is not buried below more remote control/config hypotheses without evidence;
 - high-cost actions are gated behind cheaper split measurements unless safety or schedule requires otherwise.
 
 ## Action Tree Checks

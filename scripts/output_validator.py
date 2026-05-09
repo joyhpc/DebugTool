@@ -135,7 +135,7 @@ VALID_ACTION_ONLY_REVERSIBILITY = {"reversible", "partial", "irreversible"}
 VALID_CONFIDENCE = {"high", "medium", "low"}
 
 INPUT_CLEANING_TABLES = [
-    ("Observed / Confirmed Facts", ["id", "fact", "source_in_input", "confidence", "affected_link_or_node"]),
+    ("Observed / Confirmed Facts", ["id", "fact", "source_in_input", "confidence", "staleness", "affected_link_or_node"]),
     ("Judgments / Inferences / Hypotheses", ["id", "statement", "based_on", "confidence", "could_be_wrong_if"]),
     ("Actions Already Tried And Results", ["id", "action", "target", "result", "interpretation", "evidence_refs"]),
     ("Proposed Methods / Pending Actions", ["id", "proposed_action", "owner_if_known", "target", "expected_evidence", "hypothesis_or_link_node"]),

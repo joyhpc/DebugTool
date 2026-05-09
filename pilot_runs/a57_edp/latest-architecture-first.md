@@ -34,14 +34,14 @@
 | F12 | 最新讨论称 AU15P SerDes CDR 在故障态不能锁定 | 最新 issue 同步信息 | high | FPGA 接收侧 |
 | F13 | 最新讨论称 comma 对齐失败或周期性异常 | 最新 issue 同步信息 | high | FPGA 接收侧 |
 | F14 | 最新讨论称手动复位 AU15P SerDes 无改善 | 最新 issue 同步信息 | high | FPGA 接收复位 |
-| F15 | 之前发现 aux_in 初始电平差异，尝试弱下拉未解决 | 前期 issue context | medium | stale AUX/电平分支 |
+| F15 | 之前发现 aux_in 初始电平差异，尝试弱下拉未解决 | 前期 issue context | medium; requires_re_verification | stale AUX/电平分支 |
 | F16 | DEV3 单独勾选时更差，DEV3+DEV4 同时勾选时接收有所改善 | 前期 issue context | medium | 后通道 lane/path 行为 |
 
 ### 判断，不是事实
 
 | id | judgment | basis | confidence | could change if |
 |---|---|---|---|---|
-| J1 | AUX 已不应作为当前主攻分支 | F11,F15 | high | 同一故障窗口发现 AUX retry、NACK、stale read 或链路训练状态失败 |
+| J1 | AUX 已不应作为当前主攻分支 | F11; F15 仅作为待复核背景 | high | 同一故障窗口发现 AUX retry、NACK、stale read 或链路训练状态失败 |
 | J2 | CDR/comma failure 是接收侧症状，不等于 FPGA root cause 已确认 | F12,F13,F14 | high | 已证明 AU15P input 有有效高速数据但 CDR/comma 仍失败 |
 | J3 | decoder 配置、power/reset/clock、decoder 输出、Redriver/PWDN、lane path 是更高价值边界 | F11,F12,F13,F14 | medium-high | decoder output 与 AU15P input 在故障态都被证明有效 |
 | J4 | Redriver 控制波形一致不能完全排除 Redriver，因为 PWDN 与输入/输出活动仍未闭合 | F7,F8,F10 | high | 故障态实测 PWDN 正确，Redriver input/output 均正确 |
@@ -121,7 +121,7 @@ flowchart LR
 
 | node | known | inferred | unknown | evidence that moves boundary |
 |---|---|---|---|---|
-| F0 前 KU3P 对照路径 | 前 1/2 通道 1000 次开关测试通过 | 前通道是有价值对照基线 | 前后 config、power timing、Redriver path、FPGA receive setup 是否真正对称 | 前后 command、waveform、circuit、receiver-status 对比 |
+| F0 前 KU3P 对照路径 | 前 1/2 通道 1000 次开关测试通过；这是 reference_axis 虚拟节点，不是失效链路节点 | 前通道是有价值对照基线 | 前后 config、power timing、Redriver path、FPGA receive setup 是否真正对称 | 前后 command、waveform、circuit、receiver-status 对比 |
 | C1 视频流开关命令 | switch-flow 是触发场景 | 开关顺序可能暴露 transient state | 后通道准确失败次数和触发时刻 | 带 pass/fail 标记的 aligned command log |
 | C2 MCU 控制归属与顺序 | 双核控制变量被提出验证 | order/ownership 会影响 IIC、reset、enable state | 前后通道 core ownership 是否不同 | timestamped MCU log 或 serialized-control experiment |
 | C3 AUX 握手与状态 | 后通道 AUX 报告正常 | AUX 不能证明 pixel data 有效 | AUX status 是否来自同一故障窗口 | same-interval AUX log 与 status readback |
@@ -163,44 +163,47 @@ flowchart LR
 
 ### Root Cause Hypothesis Probability Table
 
-以下概率是证据不完整时的工程先验，不是精确统计。这里为行动排序做了归一化；真实系统中多个机制可能重叠。
+以下概率是证据不完整时的工程先验，不是精确统计。这里为行动排序做了归一化；真实系统中多个机制可能重叠。修订后的排序遵循“直接物理症状最简解释优先”：AU15P CDR/comma 失败且 SerDes reset 无效，首先指向 AU15P input 之前没有有效高速数据，因此 H3/H4 进入 top two。
 
 | id | root-cause hypothesis | probability | why it is plausible now | evidence that raises it | evidence that lowers it |
 |---|---:|---|---|---|---|
-| H1 | 后通道 decoder 或 Redriver 配置未正确下发，或开关后未保持 | 0.22 | AUX 可正常，但 output mode 或 lane config 仍可能错误 | fault readback 不同、output enable 缺失、串行化写入后恢复 | good/fault readback 均符合预期 |
-| H2 | 后通道 decoder power/reset/clock/enable 时序导致 output path 无效 | 0.18 | control path 可活着，但 output PLL/core 未 ready | rail/reset/refclk/PWDN timing 违反规格或不同于前通道 | aligned timing 与 PLL status 干净 |
-| H3 | Redriver PWDN、enable、EQ、mux、lane selection 或物理路径阻断有效数据 | 0.14 | PWDN 实测缺失，DEV3-only vs DEV3+DEV4 暗示 selection/path dependency | D3 有效但 D5 无效、PWDN 未按要求拉低、Redriver output 缺失、DEV selection 改变边界 | PWDN 正确且 D5 在故障态有效 |
-| H4 | decoder 尽管控制看似正常，但输出缺失或无效 | 0.14 | CDR/comma 不锁且 SerDes reset 无效 | 无 decoder output activity、output-valid false、test pattern fail | 同一故障窗口 decoder output 有效 |
-| H5 | MCU 双核归属或命令顺序在开关视频流时产生竞态 | 0.12 | 间歇性 switch-flow failure 常见于 ordering | timestamped log 显示 race、serialized control 改变失败率 | good/fault ordered writes 与 readbacks 一致 |
-| H6 | 单板装配或后通道电路差异 | 0.10 | 当前结论只来自 1 块板 | 多板测试只有 1 块失败，或电路/测量发现本板差异 | 多块板稳定复现相同 signature |
-| H7 | AU15P SerDes refclk、配置、polarity、rate 或 margin 问题 | 0.07 | 直接症状是 CDR/comma fail | D5 input 有效但 CDR/comma 仍 fail，refclk/config 与前通道不同 | D5 input 缺失或无效 |
-| H8 | PCS 之后 downstream video pipeline 问题 | 0.03 | 一般显示故障中仍可能存在 | CDR/comma/PCS 全有效但无 frame/video | CDR/comma 仍失败 |
+| H3 | Redriver PWDN、enable、EQ、mux、lane selection 或物理路径阻断有效数据 | 0.22 | 最接近 AU15P input 的物理路径边界，且 F16 的 DEV3-only vs DEV3+DEV4 差异指向 selection/path dependency | D3 有效但 D5 无效、PWDN 未按要求拉低、Redriver output 缺失、DEV selection 改变边界、F16 可复现 | PWDN 正确且 D5 在故障态有效 |
+| H4 | decoder 尽管控制看似正常，但输出缺失或无效 | 0.22 | CDR/comma 不锁且 SerDes reset 无效，最简解释之一是 AU15P 前级没有有效高速数据 | 无 decoder output activity、output-valid false、test pattern fail | 同一故障窗口 decoder output 有效 |
+| H2 | 后通道 decoder power/reset/clock/enable 时序导致 output path 无效 | 0.15 | control path 可活着，但 output PLL/core 未 ready | rail/reset/refclk/PWDN timing 违反规格或不同于前通道 | aligned timing 与 PLL status 干净 |
+| H1 | 后通道 decoder 或 Redriver 配置未正确下发，或开关后未保持 | 0.10 | AUX 可正常，但 output mode 或 lane config 仍可能错误；但它比 D3/D4/D5 物理边界更远 | fault readback 不同、output enable 缺失、串行化写入后恢复 | good/fault readback 均符合预期 |
+| H5 | MCU 双核归属或命令顺序在开关视频流时产生竞态 | 0.08 | 间歇性 switch-flow failure 可能来自 ordering | timestamped log 显示 race、serialized control 改变失败率 | good/fault ordered writes 与 readbacks 一致 |
+| H6 | 单板装配或后通道电路差异 | 0.08 | 当前结论只来自 1 块板 | 多板测试只有 1 块失败，或电路/测量发现本板差异 | 多块板稳定复现相同 signature |
+| H7 | AU15P SerDes refclk、配置、polarity、rate 或 margin 问题 | 0.06 | 直接症状在 CDR/comma，但必须等 D5 input 有效后才上调 | D5 input 有效但 CDR/comma 仍 fail，refclk/config 与前通道不同 | D5 input 缺失或无效 |
+| H8 | PCS 之后 downstream video pipeline 问题 | 0.04 | 一般显示故障中仍可能存在 | CDR/comma/PCS 全有效但无 frame/video | CDR/comma 仍失败 |
+| H9 | unknown / model gap：当前 link model 漏掉某层或某个耦合机制 | 0.05 | 架构信息不完整，且存在 DEV selection 相关线索 | 前述 H1-H8 都被排除但故障仍存在，或出现未建模 thermal/SI/ownership coupling | 新证据能完整落入 H1-H8 之一 |
 
 ## 7. Hypothesis Tree With Probabilities
 
 ```mermaid
 flowchart TD
   H0[A57 后 eDP 开关后不出图]
-  H0 --> H1[H1 配置或读回未生效 22 percent]
-  H0 --> H2[H2 power reset clock enable 时序 18 percent]
-  H0 --> H3[H3 Redriver PWDN lane path 14 percent]
-  H0 --> H4[H4 decoder output 缺失或无效 14 percent]
-  H0 --> H5[H5 MCU 顺序或双核竞态 12 percent]
-  H0 --> H6[H6 单板或电路差异 10 percent]
-  H0 --> H7[H7 AU15P SerDes 问题 7 percent]
-  H0 --> H8[H8 downstream video only 3 percent]
+  H0 --> H3[H3 Redriver PWDN lane path 22 percent]
+  H0 --> H4[H4 decoder output 缺失或无效 22 percent]
+  H0 --> H2[H2 power reset clock enable 时序 15 percent]
+  H0 --> H1[H1 配置或读回未生效 10 percent]
+  H0 --> H5[H5 MCU 顺序或双核竞态 8 percent]
+  H0 --> H6[H6 单板或电路差异 8 percent]
+  H0 --> H7[H7 AU15P SerDes 问题 6 percent]
+  H0 --> H8[H8 downstream video only 4 percent]
+  H0 --> H9[H9 unknown model gap 5 percent]
 ```
 
 | branch | current state | first falsifier |
 |---|---|---|
-| H1 | 高优先级，因为 IIC/readback 对比未完成 | good/fault readbacks 均符合预期 |
+| H1 | 中优先级；需要 readback，但不是最接近 CDR/comma fail 的物理边界 | good/fault readbacks 均符合预期 |
 | H2 | 高优先级，因为 output prerequisite 未测 | rails/reset/refclk/PWDN/PLL aligned waveform 干净 |
-| H3 | 开放，因为 PWDN 实测和 output activity 未完成 | Redriver enabled 且有效信号到达 AU15P input |
-| H4 | 开放，因为 decoder output 未证明 | 故障态 decoder output/test pattern 有效 |
+| H3 | top-2；PWDN/output activity 未完成，且 F16 selection-dependent 线索支持 path 分支 | Redriver enabled 且有效信号到达 AU15P input |
+| H4 | top-2；decoder output 未证明，且最简物理解释之一是前级无有效高速数据 | 故障态 decoder output/test pattern 有效 |
 | H5 | 开放，因为双核控制变量被明确提出验证 | serialized/single-core control 不改变失败且 logs 一致 |
 | H6 | 开放，因为样本量只有 1 块板 | 多板复现同一 signature |
 | H7 | 暂缓，直到证明 AU15P input 有效 | AU15P input 缺失或无效 |
 | H8 | 低优先级，因为 CDR/comma 仍失败 | receiver lock pipeline 仍异常 |
+| H9 | 保留小概率 model-gap，避免把答案强行限制在当前 8 个分支内 | H1-H8 已覆盖新证据 |
 
 ## 8. Candidate Matching Report
 
@@ -212,7 +215,8 @@ flowchart TD
 | assets/link_models/LM-I2C-BUS.yaml | link_model | Adopted | 需要 IIC write/readback 对比，不能只相信 write intent | H1,H5 |
 | assets/debug_principles/DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING.yaml | debug_principle | Adopted | switch fault 需要 time-aligned dynamic evidence | F5,F6 |
 | assets/debug_principles/DP-MEASUREMENT-BEFORE-DESIGN-CHANGE.yaml | debug_principle | Adopted | 调 SerDes 或改 FPGA logic 前先测 output/input | H4,H7 |
-| Knowledge-Linked broad exploration | mode | Deferred | 用户未显式要求，且首轮动作不依赖 web/wiki | A5 |
+| Knowledge-Linked point check: PWDN polarity | mode | Adopted | F9 只是聊天转述的手册 claim，低成本 datasheet 点查可将 medium confidence 升到 high | F9,H3 |
+| Knowledge-Linked broad exploration | mode | Deferred | 用户未显式要求，且首轮动作不依赖广泛 web/wiki | A5 |
 | Similar-problem expansion | mode | Deferred | 若第一轮模型停滞可用，但不应早于板级测量 | A5 |
 | AUX-first debug | heuristic | Not Applied | AUX 报告正常，weak pull-down 未解决 | F4,F15 |
 | downstream-video-first debug | heuristic | Not Applied | CDR/comma failure 在 downstream video 之前 | F5 |
@@ -241,16 +245,18 @@ Not Applied：
 
 ## 10. Cost / Probability Ranking
 
+本表使用 `reasoning/cost_priors.yaml` 的经验中位数，并按 Architecture-First 模式的 `exclude_weight = 0.7` 计算。分数用于排序参考；若存在依赖关系，§11 的执行路径可以覆盖单项 score。
+
 | action_id | action | primary hypotheses | p_hit | p_exclude | time_min | safety | priority_score | reason |
 |---|---|---|---:|---:|---:|---|---:|---|
-| A1 | 抓一次受控失败的开关过程，时间对齐 command、IIC、PWDN、power、clock、decoder status、AU15P CDR/comma | H1,H2,H5,H7 | 0.18 | 0.70 | 25 | S0 | 0.021 | 防止 stale-state 和错误时序推断 |
-| A3 | 对比 good vs fault 的后通道 decoder/Redriver IIC writes 与 readbacks | H1,H5 | 0.22 | 0.55 | 30 | S0 | 0.017 | 快速区分配置保持和命令送达问题 |
-| A4 | 开关过程中测 decoder rails、reset、refclk、PLL/status、Redriver PWDN | H2,H3 | 0.24 | 0.60 | 45 | S1 | 0.012 | 高价值 prerequisite proof |
-| A5 | 证明故障态 decoder 高速输出、output-valid 或 test-pattern 行为 | H4,H1,H2 | 0.20 | 0.70 | 60 | S1 | 0.009 | 关键切分 decoder side 与 downstream path |
-| A6 | 在 decoder output 证明有效后，对比 Redriver output 与 AU15P analog input | H3,H7 | 0.14 | 0.55 | 75 | S1 | 0.006 | 受 decoder output 有效性 gating |
-| A7 | 对前后通道控制强制 serialized 或交换 MCU core control | H5 | 0.12 | 0.45 | 60 | S0 | 0.006 | 验证 proposed dual-core variable |
-| A2 | 执行多块 984 解码板 reproduction matrix | H6 | 0.10 | 0.65 | 90 | S0 | 0.005 | 判断共性必要，但比本地边界测量更慢 |
-| A8 | 检查 AU15P refclk、SerDes config、rate、polarity、reset sequence、comma settings | H7 | 0.07 | 0.45 | 60 | S0 | 0.005 | 应等待 D5 input validity 被证明 |
+| A3 | 对比 good vs fault 的后通道 decoder/Redriver IIC writes 与 readbacks | H1,H5 | 0.22 | 0.55 | 30 | S0 | 0.020 | 快速区分配置保持和命令送达问题 |
+| A5 | 证明故障态 decoder 高速输出、output-valid 或 test-pattern 行为 | H4,H1,H2 | 0.20 | 0.70 | 75 | S1 | 0.009 | 关键切分 decoder side 与 downstream path |
+| A4 | 开关过程中测 decoder rails、reset、refclk、PLL/status、Redriver PWDN | H2,H3 | 0.24 | 0.60 | 90 | S1 | 0.007 | 高价值 prerequisite proof，但多信号测量成本高 |
+| A1 | 抓一次受控失败的开关过程，时间对齐 command、IIC、PWDN、power、clock、decoder status、AU15P CDR/comma | H1,H2,H5,H7 | 0.18 | 0.70 | 120 | S0 | 0.006 | 防止 stale-state 和错误时序推断；受多仪器对齐成本影响 |
+| A6 | 在 decoder output 证明有效后，对比 Redriver output 与 AU15P analog input | H3,H7 | 0.14 | 0.55 | 90 | S1 | 0.006 | 受 decoder output 有效性 gating |
+| A8 | 检查 AU15P refclk、SerDes config、rate、polarity、reset sequence、comma settings | H7 | 0.07 | 0.45 | 75 | S0 | 0.005 | 应等待 D5 input validity 被证明 |
+| A2 | 执行多块 984 解码板 reproduction matrix | H6 | 0.10 | 0.65 | 120 | S0 | 0.005 | 判断共性必要，但比本地边界测量更慢 |
+| A7 | 对前后通道控制强制 serialized 或交换 MCU core control | H5 | 0.12 | 0.45 | 120 | S0 | 0.004 | 验证 proposed dual-core variable |
 
 ### Hypothesis To Action Mapping Table
 
@@ -264,6 +270,7 @@ Not Applied：
 | H6 single-board issue | A2 | circuit/assembly inspection | 多板复现相同 signature |
 | H7 AU15P SerDes issue | A8 | AU15P front/rear config comparison | AU15P input 缺失或无效 |
 | H8 downstream video only | receiver status/counters after lock | video pipeline check | CDR/comma/PCS 仍失败 |
+| H9 unknown/model gap | REVIEW + link model update | Knowledge-Linked point/broad check if needed | 新证据能落入 H1-H8 或补齐缺失层 |
 
 ## 11. Optimal Troubleshooting Path
 
@@ -273,6 +280,8 @@ Not Applied：
 4. 在同一故障态测 decoder output 或 output-valid/test-pattern。
 5. 只有 decoder output 有效时，才继续比较 Redriver output、lane path、AU15P input。
 6. 只有 AU15P input 有效时，才把 AU15P SerDes config/refclk/rate/polarity/comma 提升为首要分支。
+
+累计成本估算：若按依赖路径走到 AU15P SerDes 分支，A1 + A3 + A4 + A5 + A6 + A8 的标称成本约为 580 min；若 A3/A4/A2 可并行，现场日程约 6-10 小时更现实。多板矩阵 A2 可与 A1/A3 并行启动，不应阻塞同板边界测量。
 
 ## 12. Decision Tree
 
@@ -345,6 +354,7 @@ flowchart TD
 | G8 | decoder output 证明有效后 AU15P analog input activity | 主要切分 Redriver/path 与 AU15P receiver |
 | G9 | 前后 SerDes 电路差异 checklist | 量化 path/circuit asymmetry |
 | G10 | 板卡版本、decoder/Redriver 料号、手册片段 | Knowledge-Linked 或 datasheet-specific 结论前必需 |
+| G11 | F15 aux_in 弱下拉相关证据是否仍适用于当前版本和当前故障窗口 | stale evidence 需要重新确认后才能影响概率 |
 
 ## 15. Next 3-5 Actions
 
@@ -356,9 +366,11 @@ flowchart TD
 4. 在 fault interval 中测量或证明 decoder output/test-pattern/output-valid state。
 5. 若 decoder output 有效，再比较 Redriver output 和 AU15P input；若 AU15P input 有效，才进入 AU15P SerDes tuning/config。
 
-### Action Items by Owner
+### Action Items by Candidate Owner
 
-| owner | action item | expected output | priority |
+以下 owner 是基于聊天发言和被 @ 关系推断的候选执行人，不代表正式项目分工。实际责任人需 PM 或项目负责人确认后生效。
+
+| candidate_owner | action item | expected output | priority |
 |---|---|---|---|
 | 吴锋 | 用示波器抓后通道 decoder power/reset/refclk/PWDN timing，覆盖 switch 与 fault | 带 timing labels 和 pass/fail notes 的 waveform package | P0 |
 | 何鹏程 | 在可行情况下测量或确认故障态 rear decoder output、Redriver output、AU15P input activity | boundary table：decoder output valid、Redriver output valid、AU15P input valid | P0 |

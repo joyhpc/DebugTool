@@ -1,10 +1,10 @@
-# Debug Decision Tree Skill - V0.99.8 用户语言输出契约
+# Debug Decision Tree Skill - V0.99.9 语义先验校准
 
 ## 状态
 
 当前状态：早期内部 pilot 候选。还不是团队级可推广版本，也不是 V1.0。
 
-V0.99.8 将“输出语言跟随用户语言”写入正式契约。用户可以直接提供简短故障现象、Issue 同步、波形线索、聊天记录，或者对 DebugTool 行为的批评。DebugTool 应根据意图进入调试流程；如果用户目标是优化 skill 本身，则把相关硬件案子当作测试样本，改进 routing、contract、audit gate、lifecycle rule 或 regression coverage。
+V0.99.9 在“输出语言跟随用户语言”的基础上，加入语义先验校准：概率排序必须尊重直接物理症状的最简解释，stale 证据不能直接影响概率，成本估计必须参考离线 cost priors，聊天中出现的人名只能作为候选 owner。
 
 用户可读正文应跟随用户语言。对于中文输入，摘要、判断、行动项、审核意见应使用中文；固定 contract 标题、schema 字段、命令、路径、信号名、寄存器名、料号等为了校验和追溯可以保留原文。
 
@@ -33,6 +33,7 @@ debug_principle  跨硬件 debug 领域可复用的原则
 9. root cause 未确认时，必须给出概率、hypothesis tree、action decision tree 和首批测量动作。
 10. 复用或推广输出前运行 `scripts/output_validator.py`；保存或发布 pilot/debug 产物前再运行 Evidence Audit。
 11. 正文语言跟随用户。中文输入时，摘要、判断、行动项、审核意见用中文，同时保留 validator 需要的 heading 和技术标识。
+12. Architecture-First 输出应参考 `reasoning/cost_priors.yaml` 和 `reasoning/probability_time_cost_model.md`，并保留 `unknown / model gap` 概率。
 
 结构验证通过只说明输出符合 contract，不代表 debug 推理一定正确。
 

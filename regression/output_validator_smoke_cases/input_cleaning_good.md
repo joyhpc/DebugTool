@@ -13,11 +13,11 @@ The raw input is a short user bug report: "rear video path sometimes has no imag
 
 ## 3. Observed / Confirmed Facts
 
-| id | fact | source_in_input | confidence | affected_link_or_node |
-|---|---|---|---|---|
-| F1 | Rear video path sometimes has no image | user report | high | video data path |
-| F2 | AUX is confirmed alive | user report | high | control path |
-| F3 | SerDes CDR does not lock after reset | user report | high | receiver CDR |
+| id | fact | source_in_input | confidence | staleness | affected_link_or_node |
+|---|---|---|---|---|---|
+| F1 | Rear video path sometimes has no image | user report | high | fresh | video data path |
+| F2 | AUX is confirmed alive | user report | high | fresh | control path |
+| F3 | SerDes CDR does not lock after reset | user report | high | fresh | receiver CDR |
 
 ## 4. Judgments / Inferences / Hypotheses
 

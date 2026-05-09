@@ -47,6 +47,20 @@ Include a hypothesis tree or table with:
 
 Probabilities are decision priors, not truth claims. Mark them as subjective unless calibrated by regression or solved-case statistics.
 
+Probability rules:
+
+- The simplest physical interpretation of the direct symptom should be in the top two unless explicit contrary evidence demotes it.
+- Do not let "not yet measured" alone outrank the closest physical boundary indicated by the symptom.
+- Stale facts or non-same-interval facts may appear as context, but must not directly raise or lower probabilities until re-verified.
+- Include a small `unknown / model gap` hypothesis when the model may be incomplete.
+
 ## Action Decision Requirements
 
 The `Decision Tree` section is the action decision tree. It must map each early action to the hypothesis or link boundary it confirms, falsifies, or excludes.
+
+## Cost And Ownership Requirements
+
+- Use `reasoning/cost_priors.yaml` or a stated local override for `time_min` estimates.
+- Show cumulative path cost for the optimal path when more than three actions are chained.
+- If owner names are inferred from chat participation, label them as candidate owners and state that PM/project lead confirmation is required.
+- Distinguish broad knowledge retrieval from low-cost point checks such as datasheet polarity verification.

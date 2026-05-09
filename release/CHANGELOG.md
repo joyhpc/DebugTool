@@ -1,5 +1,12 @@
 # Changelog
 
+## V0.99.9 Semantic Prior Calibration
+
+- Added mandatory rules for direct-symptom simplest-interpretation priority, stale-evidence quarantine, unknown/model-gap probability, candidate-owner wording, and cost-prior usage.
+- Added `reasoning/cost_priors.yaml` with offline time estimates for lab captures, readback dumps, high-speed probing, multi-board matrices, firmware tracing, rework, and destructive reproduction.
+- Updated Architecture-First and Evidence Audit contracts to check semantic probability ordering, stale evidence, model-gap hypotheses, cumulative path cost, point knowledge checks, and inferred owner risk.
+- Added `staleness` to the Input Cleaning fact table contract and validator smoke fixture.
+
 ## V0.99.8 User-Language Output Contract
 
 - Added an explicit output-language policy: user-facing prose follows the user's language, while fixed contract headings, schema fields, commands, paths, signals, and part numbers may stay in their required or original form.

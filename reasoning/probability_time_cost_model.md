@@ -17,10 +17,19 @@ For each candidate action, estimate:
 Then compute a simple priority score:
 
 ```text
-information_value = p_hit + 0.5 * p_exclude
+information_value = p_hit + exclude_weight * p_exclude
 cost = time_min + setup_min + risk_penalty
 priority_score = information_value / max(cost, 1)
 ```
+
+Default `exclude_weight`:
+
+| mode | exclude_weight | rationale |
+|---|---:|---|
+| fast_path | 0.3 | confirmation of a strong signature is usually more valuable than broad exclusion |
+| standard | 0.5 | balanced default |
+| architecture_first | 0.7 | early architecture debug often gains more from excluding whole boundaries |
+| knowledge_linked | 0.6 | documented claims can cheaply exclude mismatched branches, but target evidence still dominates |
 
 Higher score should usually appear earlier in the troubleshooting path.
 
@@ -40,15 +49,7 @@ Do not calculate MOSFET SOA from VDS * ID until VDS and ID are captured safely.
 
 ## Typical Cost Priors
 
-| Action type | Time prior | Notes |
-|---|---:|---|
-| visual / schematic review | 5-20 min | low risk, often high exclusion value |
-| DMM static voltage / resistance check | 2-10 min | high value for power path and shorts |
-| single oscilloscope capture | 10-30 min | setup-sensitive, high value for dynamic faults |
-| logic analyzer capture | 10-40 min | high value for protocol/timing faults |
-| component substitution | 20-120 min | should follow evidence unless socketed/trivial |
-| layout rework / PCB cut | 30-240 min | partial/irreversible; require evidence |
-| destructive reproduction | high/blocked | requires explicit safety envelope |
+Use `reasoning/cost_priors.yaml` as the offline prior table. If a case-specific estimate differs, state the reason explicitly.
 
 ## Output Requirement
 

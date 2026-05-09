@@ -1,0 +1,80 @@
+version: 1
+description: Offline cost priors for DebugTool action ranking. Values are engineering priors, not guarantees.
+exclude_weight_by_mode:
+  fast_path: 0.3
+  standard: 0.5
+  architecture_first: 0.7
+  knowledge_linked: 0.6
+priors:
+  visual_schematic_review:
+    action_type: observe
+    tool_required: schematic
+    time_min_range: [5, 20]
+    median_time_min: 10
+    notes: Low risk. Often high exclusion value for wiring, ownership, and topology questions.
+  register_readback_dump:
+    action_type: observe
+    tool_required: register_dump
+    time_min_range: [15, 45]
+    median_time_min: 30
+    notes: Includes preparing scripts, capturing good/fault states, and formatting a comparison table.
+  dmm_static_check:
+    action_type: observe
+    tool_required: dmm
+    time_min_range: [2, 15]
+    median_time_min: 8
+    notes: High value for power rails, shorts, pull states, and static enables.
+  single_scope_capture:
+    action_type: observe
+    tool_required: oscilloscope
+    time_min_range: [20, 60]
+    median_time_min: 40
+    notes: One or two channels with straightforward trigger and access.
+  multi_signal_aligned_capture:
+    action_type: observe
+    tool_required: oscilloscope_logic_analyzer_fpga_log
+    time_min_range: [90, 180]
+    median_time_min: 120
+    notes: Includes scope setup, logic analyzer connection, trigger design, FPGA status export, repeated attempts, and timestamp alignment.
+  logic_analyzer_capture:
+    action_type: observe
+    tool_required: logic_analyzer
+    time_min_range: [20, 60]
+    median_time_min: 40
+    notes: Protocol setup and post-processing included.
+  high_speed_boundary_probe:
+    action_type: observe
+    tool_required: high_speed_probe
+    time_min_range: [60, 180]
+    median_time_min: 90
+    notes: Depends heavily on access, bandwidth, probing risk, and available proxies.
+  multi_board_reproduction_matrix:
+    action_type: reproduce
+    tool_required: test_bench
+    time_min_range: [60, 240]
+    median_time_min: 120
+    notes: Per-board setup, repeated switching, logging, and result table included.
+  firmware_trace_or_serialization:
+    action_type: reconfigure
+    tool_required: firmware_log
+    time_min_range: [60, 240]
+    median_time_min: 120
+    notes: Includes logging instrumentation or controlled firmware option.
+  component_substitution:
+    action_type: replace
+    tool_required: rework
+    time_min_range: [30, 180]
+    median_time_min: 90
+    notes: Should follow evidence unless the part is socketed or trivial.
+  layout_rework_or_pcb_cut:
+    action_type: perturb
+    tool_required: rework
+    time_min_range: [60, 300]
+    median_time_min: 180
+    notes: Partial or irreversible. Requires strong evidence and rollback plan.
+  destructive_reproduction:
+    action_type: reproduce
+    tool_required: lab_safety_setup
+    time_min_range: [0, 0]
+    median_time_min: null
+    notes: Blocked unless an explicit safety envelope exists.

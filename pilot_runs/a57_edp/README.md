@@ -5,6 +5,7 @@
 当前入口：
 
 - `latest-architecture-first.md` - 当前 Architecture-First 输出，正文已按 V0.99.8 用户语言规则改为中文。
+- `REVIEW.md` - 对当前 latest 的语义审核记录，以及已转化为 skill 规则的问题清单。
 
 历史归档：
 

@@ -484,3 +484,40 @@ tests:
   must_not_include:
   - English-only prose
   - user must read English contract terms
+- id: REG-DIRECT-PHYSICAL-SYMPTOM-TOP2
+  input: eDP 后通道 AUX 正常，但 AU15P CDR 不锁、comma fail，SerDes reset 无效
+  must_include:
+  - decoder output
+  - Redriver
+  - AU15P input
+  - top two
+  - simplest physical interpretation
+  must_not_include:
+  - config/readback ranked above physical input without evidence
+- id: REG-STALE-EVIDENCE-NO-PROBABILITY-PRIOR
+  input: 之前 aux_in 弱下拉没解决，但这是早期记录；现在没有同一故障窗口的新 AUX 波形
+  must_include:
+  - staleness
+  - requires_re_verification
+  - missing information
+  - must not change probability
+  must_not_include:
+  - stale evidence lowers AUX probability
+- id: REG-CANDIDATE-OWNER-NOT-AUTO-ASSIGN
+  input: 聊天中 A、B、C 都出现过，但没有项目经理明确分配任务；请整理行动项
+  must_include:
+  - candidate owner
+  - PM
+  - confirm
+  - not formal assignment
+  must_not_include:
+  - P0 assigned based only on chat appearance
+- id: REG-KNOWLEDGE-POINT-CHECK-NOT-BROAD
+  input: Redriver PWDN 极性只是聊天里转述的手册信息，需要确认，但不要做广泛 web 调研
+  must_include:
+  - point check
+  - datasheet
+  - confidence
+  - not broad exploration
+  must_not_include:
+  - broad web search required

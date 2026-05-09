@@ -22,13 +22,14 @@ The goal is not to summarize aggressively. The goal is to preserve all user-prov
 
 ### Observed / Confirmed Facts
 
-| id | fact | source_in_input | confidence | affected_link_or_node |
-|---|---|---|---|---|
-| F1 | directly observed or confirmed statement | user / log / waveform / doc | high/medium/low | link node or domain |
+| id | fact | source_in_input | confidence | staleness | affected_link_or_node |
+|---|---|---|---|---|---|
+| F1 | directly observed or confirmed statement | user / log / waveform / doc | high/medium/low | fresh/requires_re_verification/archived | link node or domain |
 
 Rules:
 - Put direct measurements, logs, confirmed communication status, known architecture, and reproducible symptoms here.
 - Do not put root-cause guesses here.
+- Mark facts as `fresh` only when they are current enough to affect probabilities. Mark older, context-shifted, or non-same-interval observations as `requires_re_verification`; stale facts may guide missing-information lists but must not directly raise or lower hypothesis probabilities.
 - If the user says a prior belief was revised, preserve both the old belief and the revision in `Contradictions / Revisions`.
 - If a section has no user-provided content, still include one explicit row such as `not stated` so downstream routing knows the absence was checked.
 

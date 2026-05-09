@@ -1,11 +1,11 @@
 ---
 name: debug-decision-tree
-version: "0.99.8"
+version: "0.99.9"
 api_version: "1"
 description: Hardware debug reasoning skill for natural-language bug reports, link-model analysis, hypothesis trees, action decision trees, probability/time-cost ranked troubleshooting, input cleaning, safety gating, and retrospective asset promotion. Use when the assistant needs to analyze a hardware, FPGA, embedded, power, high-speed interface, video, I2C, SPI, MIPI, eDP, PCIe, USB, JTAG, or system bring-up/debug issue; when the user asks for possible causes, probabilities, measurements, debug plan, decision tree, link model, or reusable case learning; or when a terse user bug report needs a complete first-pass debug deliverable.
 ---
 
-# Debug Decision Tree Skill - V0.99.8 User-Language Output Contract
+# Debug Decision Tree Skill - V0.99.9 Semantic Prior Calibration
 
 ## Purpose
 
@@ -102,6 +102,11 @@ Treat the referenced case as a test fixture:
 23. When saving or publishing a pilot/debug output, apply the artifact hygiene rules in `lifecycle/case_artifact_hygiene.md`.
 24. When optimizing this skill, use `output_contracts/skill_improvement.md` and prefer contract/routing/regression changes over re-running the same unresolved debug case.
 25. Match the user's language for prose output; contract headings and machine-checked field names may remain in the required language.
+26. When ranking hypotheses, the simplest physical interpretation of the direct symptom must appear in the top two unless explicit contrary evidence demotes it.
+27. Stale or non-same-interval facts must not lower or raise probabilities directly; list them as re-verification items until refreshed.
+28. Include a small `unknown / model gap` hypothesis when the link model could be incomplete.
+29. Treat people named in chat as candidate owners only unless the input explicitly assigns responsibility.
+30. Use `reasoning/cost_priors.yaml` and `reasoning/probability_time_cost_model.md` for time-cost estimates; do not invent optimistic lab times for multi-instrument captures.
 
 ## Mode Selection Order
 
