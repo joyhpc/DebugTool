@@ -215,7 +215,7 @@ Not Applied：
 
 | action_id | action | primary hypotheses | p_hit | p_exclude | time_min | safety | priority_score | reason |
 |---|---|---|---:|---:|---:|---|---:|---|
-| A2 | 抓故障态 DS90UB984 per-channel readback/status，并点查厂家 output-valid/stream/status 寄存器 | H4,H1 | 0.24 | 0.65 | 45 | S0 | 0.015 | 最直接验证 top-1 decoder output/status branch |
+| A2 | 先抓故障态 DS90UB984 per-channel raw readback/status，再并行点查厂家 output-valid/stream/status 寄存器语义 | H4,H1 | 0.24 | 0.65 | 45 | S0 | 0.015 | 本地 dump 不等待厂家；厂家点查只阻塞语义解释 |
 | A1 | 补齐 board/chip/channel/test_count/fail_count 标准矩阵 | H6,H9 | 0.12 | 0.65 | 60 | S0 | 0.010 | 防止继续用混乱样本描述做概率判断 |
 | A4 | 确认 Redriver 上电 PWDN/I2C/static config 和每通道 input/output activity | H3,H6 | 0.20 | 0.55 | 90 | S1 | 0.007 | 直接切 Redriver/static path 与 AU15P input 前边界 |
 | A3 | 测 DS90UB984 rails、reset、refclk/PLL、SerDes 参考时钟时序 | H2,H4 | 0.18 | 0.55 | 90 | S1 | 0.006 | 验证 decoder reinit loop 的前提条件 |
@@ -226,7 +226,7 @@ Not Applied：
 ## 11. Optimal Troubleshooting Path
 
 1. 先把 4 块已测板和后续 2 块计划板统一成一张矩阵：`board_id / DS90UB984_A_or_B / eDP_channel / test_count / fail_count / operation / decoder_reconfig_params / Redriver_static_config_id`。
-2. 对下一次失败抓 DS90UB984 per-channel readback/status：至少覆盖 stream detect、PLL/refclk、output enable、lane mode、error/status；如果寄存器定义不清，做厂家 point check。
+2. 对下一次失败先抓 DS90UB984 per-channel raw readback/status：至少覆盖 stream detect、PLL/refclk、output enable、lane mode、error/status。不要等待厂家解释才开始 dump；厂家 point check 并行用于解释这些 raw values。
 3. 同一故障窗口测 DS90UB984 上电时序：rails、reset、refclk/PLL、SerDes 参考时钟、关键管脚。
 4. 同一故障窗口确认 Redriver PWDN/I2C/static config 是否保持正确，并切 Redriver input/output。
 5. 如果 Redriver output 或 AU15P input 无效，优先修 decoder/output/path；只有 AU15P input 有效但 CDR/comma 仍失败时，才把 AU15P SerDes 分支升为主路径。
@@ -267,7 +267,7 @@ flowchart TD
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | D1 | decision | none | 检查 board/chip/channel/fail matrix 是否完整 | test log | complete or incomplete | 矩阵不完整时不能稳定判断共性、板差或通道差 | S0 | low | n/a | A1 or A2 | F2,F3,F4 |
 | A1 | action | observe | 统一整理 board_id、chip_id、channel_id、test_count、fail_count、operation 条件 | test log spreadsheet | 标准化失败率矩阵 | 把混乱样本描述变成可排序证据 | S0 | medium | reversible | D1 | F3,F4,F17 |
-| A2 | action | observe | 抓故障态 DS90UB984 per-channel readback/status，并点查厂家 output/status 寄存器 | register dump and vendor point check | good/fault per-channel status table | 直接确认或降低 decoder output/status branch | S0 | medium | reversible | D2 | F8,F11 |
+| A2 | action | observe | 先抓故障态 DS90UB984 per-channel raw readback/status，再并行点查厂家 output/status 寄存器语义 | register dump and vendor point check | good/fault raw dump plus semantic mapping | 直接确认或降低 decoder output/status branch；厂家回复不阻塞 raw dump | S0 | medium | reversible | D2 | F8,F11 |
 | D2 | decision | none | 判断 decoder per-channel output/status 是否异常 | register table | valid or invalid | invalid 支持 DS90UB984 output/status branch | S0 | low | n/a | T1 or A3 | H4,H1 |
 | T1 | terminal | none | DS90UB984 output/status 分支激活 | decoder status | per-channel output/status invalid | 聚焦 decoder reinit、output enable、stream detect、厂家建议寄存器 | S0 | medium | n/a | terminal | H4,H1 |
 | A3 | action | observe | 测 DS90UB984 rails、reset、refclk/PLL、SerDes 参考时钟时序 | oscilloscope and status dump | aligned timing and status | 验证 decoder 重上电/重配置前提是否满足 | S1 | medium | reversible | D3 | H2,H4 |
@@ -291,7 +291,7 @@ flowchart TD
 
 | id | missing information | why it changes the plan |
 |---|---|---|
-| G1 | 4 块已测板和计划 6 块之间的完整 test matrix | 决定 H6/H9 是否上调或降级 |
+| G1 | 4 块已测板和计划 6 块之间的完整 test matrix，含同芯片内具体失败 channel | 决定 H6/H9 是否上调或降级，并区分 channel-id 固定失效与板级随机失效 |
 | G2 | 每个通道每次测试的 DS90UB984 chip_id、channel_id、operation、fail_count | 防止“前后通道”粗粒度误导 |
 | G3 | DS90UB984 per-channel stream/output/status 寄存器定义和故障态 readback | 直接验证 H4/H1 |
 | G4 | DS90UB984 rails、reset、refclk/PLL、SerDes 参考时钟波形 | 直接验证 H2 |
@@ -305,7 +305,7 @@ flowchart TD
 ### First Actions
 
 1. 先把已测 4 块和计划补测的 2 块统一成标准矩阵：`board_id / chip_id / eDP / test_count / fail_count / single-selection / decoder reconfig sequence / Redriver static config id`。
-2. 在下一次失败时抓 DS90UB984 per-channel readback/status，并和厂家点查 output-valid、stream-detect、error/status 寄存器。
+2. 在下一次失败时先抓 DS90UB984 per-channel raw readback/status；厂家点查 output-valid、stream-detect、error/status 寄存器语义并行推进。
 3. 同窗口测 DS90UB984 rails、reset、refclk/PLL、SerDes 参考时钟和关键管脚。
 4. 同窗口确认 Redriver PWDN、I2C/static config、每通道 input/output activity；重点是证明它在 decoder 重上电/重配期间没有被隐式扰动。
 5. 只有证明 AU15P input 有效后，才进入 AU15P SerDes config/refclk/rate/polarity/comma 分支。
@@ -317,9 +317,10 @@ flowchart TD
 | candidate_owner | action item | expected output | priority |
 |---|---|---|---|
 | 吴志安 / 陈斌 | 统一补齐 4/6 块 DS90UB984 解码板的 board/chip/channel failure matrix | 标准矩阵和每通道失败率 | P0 |
-| 陈斌 | 读取 DS90UB984 相关寄存器，并和厂家确认模拟出图输出/stream/status 诊断位 | good/fault per-channel readback + vendor point-check result | P0 |
+| 陈斌 | 先读取 DS90UB984 故障态 raw register dump，再并行和厂家确认模拟出图输出/stream/status 诊断位 | good/fault per-channel raw dump + vendor point-check result | P0 |
 | 吴峰 | 测 eDP 上电时序，覆盖 DS90UB984 rails、reset、refclk/PLL、SerDes 参考时钟 | 带 pass/fail 标注的 aligned waveform | P0 |
 | 吴峰 | 确认 Redriver 4 通道上电 PWDN、I2C/static config、出图相关 PWDN 是否正确且保持稳定 | PWDN/I2C/static config coverage table | P0 |
+| 吴峰 / FPGA debug owner 待确认 | 组织同一故障窗口 DS90UB984 output、Redriver output、AU15P input、CDR/comma 联合捕获 | boundary table：decoder output valid、Redriver output valid、AU15P input valid、CDR/comma state | P0 |
 | 陈斌、吴峰 | 测 DS90UB984 关键管脚 | per-pin voltage/timing/status table | P1 |
 | 罗奇军、陈斌 | 保留已完成的 IIC 指令/ini 参数对比，并补充 fault-state readback 是否一致 | intent-vs-readback comparison table | P1 |
 
