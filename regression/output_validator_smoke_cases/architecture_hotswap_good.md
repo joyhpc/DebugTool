@@ -123,7 +123,7 @@ This table uses `reasoning/cost_priors.yaml`; no local override is applied.
 | node | tier | co_acq_group_id | same_failure_window | capture_channel | action | boundary_subset | mechanism_subset | p_hit | p_exclude | time_min | priority_reason |
 |---|---|---|---|---|---|---|---|---:|---:|---:|---|
 | A1 | P0 | CO-HS-SAFE-SETUP | false | bench_supply_thermal | Set safe current limit and thermal monitoring | B0 | M5 | 0.20 | 0.70 | 10 | standalone prerequisite for safe evidence |
-| A2 | P0 | CO-HS-STARTUP-CAPTURE-1 | true | scope_vin_vout_vgs_vds_id | Capture VIN VOUT VGS VDS and ID | B1,B2 | M1,M2 | 0.45 | 0.50 | 30 | highest root-cause evidence value |
+| A2 | P0 | CO-HS-STARTUP-CAPTURE-1 | true | scope_vin_vout_vgs_vds_id | Capture VIN VOUT VGS VDS and ID | B1,B2 | M1,M2 | 0.45 | 0.50 | 30 | standalone same-window multi-signal capture; no cross-owner co-acquisition needed |
 | A5 | P1 | none | false | dmm_visual_inspection | Inspect polarity clamp TVS and downstream short | B4 | M4 | 0.10 | 0.40 | 20 | cheap exclusion path |
 
 ## 11. Optimal Troubleshooting Path

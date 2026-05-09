@@ -5,6 +5,7 @@
 - Upgraded Architecture-First enforcement from prose contract to validator-backed checks: legacy flat normalized root-cause tables now fail validation, mechanism priors must not look forced to sum to 1.00, and coverage matrices must include rows for each physical mechanism.
 - Replaced boolean co-acquisition with auditable `co_acq_group_id`, `same_failure_window`, and `capture_channel` fields in cost ranking tables; P0 rows without valid grouping now fail smoke validation.
 - Made evidence ledgers mechanically joinable through `criticality`, `gates_boundaries`, and `gates_mechanisms`; missing critical evidence now caps gated boundary/mechanism probability at 0.50 unless a local override is stated.
+- Tightened local override validation so evidence-cap overrides must include the original cap, override value, and substantive reason, not only prose justification.
 - Added fact `provenance` to Input Cleaning and capped `team_attestation_unverified` facts at medium confidence until backed by raw artifacts, logs, waveforms, register dumps, or same-window measurement.
 - Added negative smoke fixtures for flat root-cause tables, missing P0 co-acquisition groups, uncapped probabilities under missing evidence, and high-confidence unverified team attestation.
 

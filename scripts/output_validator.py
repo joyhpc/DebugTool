@@ -606,6 +606,18 @@ def find_model_gap_probability(text: str) -> float | None:
     return None
 
 
+def parse_probability_values(raw: str) -> list[float]:
+    cleaned = normalize_text(raw).lower()
+    values: list[float] = []
+    for match in re.finditer(r"([0-9]+(?:\.[0-9]+)?)", cleaned):
+        value = float(match.group(1))
+        suffix = cleaned[match.end() : match.end() + 8]
+        if "%" in suffix or "percent" in suffix or value > 1:
+            value /= 100
+        values.append(value)
+    return values
+
+
 def parse_id_refs(raw: str, prefix: str | None = None) -> set[str]:
     refs = set(re.findall(r"\b[A-Z][A-Za-z0-9_-]*\b", normalize_text(raw)))
     if prefix is not None:
@@ -623,6 +635,12 @@ def bool_value(raw: str) -> bool | None:
 
 
 def validate_no_flat_rootcause_table(text: str, errors: list[str]) -> None:
+    if re.search(r"(?im)^#{1,6}\s+.*root[-_\s]?cause.*hypothesis.*probability.*table", text):
+        errors.append(
+            "V-NO-FLAT-ROOTCAUSE: Root Cause Hypothesis Probability Table heading is not allowed; "
+            "use Boundary Distribution, Mechanism Prior, Coverage Matrix, and Evidence Ledger"
+        )
+
     for table in find_tables(text):
         columns = set(table.columns)
         if "p_hit" in columns or "p_exclude" in columns or "p_active" in columns:
@@ -641,7 +659,7 @@ def validate_no_flat_rootcause_table(text: str, errors: list[str]) -> None:
         if len(values) < 2 or abs(sum(values) - 1.0) > 0.05:
             continue
         row_types = {normalize_text(row.get("type", "")).lower() for row in table.rows if not is_blank_like(row.get("type", ""))}
-        if "type" not in columns or len(row_types) != 1:
+        if "type" not in columns or len(row_types) != 1 or row_types.issubset({"boundary", "mechanism", "observability_gap"}):
             errors.append(
                 f"V-NO-FLAT-ROOTCAUSE: table at line {table.start_line} looks like a normalized "
                 "mixed/untagged root-cause probability table; use Boundary Distribution, "
@@ -752,8 +770,13 @@ def validate_evidence_ledger(
                         f"V-EVIDENCE-CAP: missing critical evidence {row_id} gates mechanism {mechanism_id} "
                         f"with p_active={probability:.2f} > 0.50 and no local_override"
                     )
-            if has_override and len(local_override) < 20:
-                errors.append(f"V-EVIDENCE-CAP: evidence row {row_id} local_override must include a substantive reason")
+            if has_override:
+                override_probabilities = parse_probability_values(local_override)
+                if len(local_override) < 20 or len(override_probabilities) < 2:
+                    errors.append(
+                        f"V-EVIDENCE-CAP: evidence row {row_id} local_override must include "
+                        "the original cap, override value, and a substantive reason"
+                    )
 
 
 def validate_boundary_mechanism_tables(hypothesis_text: str, errors: list[str]) -> None:
@@ -856,9 +879,8 @@ def validate_cost_ranking_table(cost_text: str, errors: list[str]) -> None:
     for group_id, members in groups.items():
         if len(members) == 1:
             row_id, row = members[0]
-            same_failure_window = bool_value(row.get("same_failure_window", ""))
             combined = " ".join(row.values()).lower()
-            if same_failure_window is False and not contains_any(
+            if not contains_any(
                 combined,
                 ["standalone", "prerequisite", "matrix", "not same-window", "不要求同窗口", "前置"],
             ):

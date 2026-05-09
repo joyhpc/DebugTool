@@ -18,6 +18,7 @@ CASES = [
     ("architecture_first", "architecture_flat_table_bad_expected_fail.md", 1),
     ("architecture_first", "architecture_p0_no_group_bad_expected_fail.md", 1),
     ("architecture_first", "architecture_evidence_cap_bad_expected_fail.md", 1),
+    ("architecture_first", "architecture_evidence_override_bad_expected_fail.md", 1),
     ("evidence_audit", "evidence_audit_good.md", 0),
     ("evidence_audit", "evidence_audit_semantic_bad_expected_fail.md", 1),
     ("skill_improvement", "skill_improvement_good.md", 0),
