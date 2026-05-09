@@ -78,13 +78,13 @@
 
 | id | proposed_action | owner_if_known | target | expected_evidence | hypothesis_or_link_node |
 |---|---|---|---|---|---|
-| P1 | 补齐 4/6 块解码板的 board_id、DS90UB984 chip_id、channel_id、test_count、fail_count、fail_condition 矩阵 | 吴志安 / 陈斌 per project table | multi-board reproduction matrix | 每个通道的失败率、板间差异和是否能稳定 4 通道出图 | H6/H9 |
-| P2 | 测量 eDP 上电时序，包含 DS90UB984 rails、reset、refclk/PLL、SerDes 参考时钟和关键 enable | 吴峰 per project table | power/reset/clock prerequisites | good/fault 对比 timing waveform 和状态表 | H2 |
-| P3 | 确认 Redriver 4 通道上电 PWDN、I2C 初始化状态、出图相关 PWDN 信号，以及重复测试期间是否保持不变 | 吴峰 per project table | Redriver static config/PWDN | PWDN/I2C/static config/input-output coverage note | H3 |
-| P4a | 先读取 DS90UB984 故障态所有可访问关键寄存器，不等待厂家解释 | 陈斌 per project table | decoder channel status/output | per-channel raw readback dump | H4/H1 |
-| P4b | 和厂家确认是否存在模拟出图输出、stream-detect、output-valid、error/status 相关寄存器及解释 | 陈斌 per project table | decoder register semantics | vendor confirmation mapped back to P4a dump | H4/H1 |
-| P5 | 测量 DS90UB984 关键管脚 | 陈斌、吴峰 per project table | decoder pins and prerequisites | per-pin voltage/timing/pass-fail table | H2/H4 |
-| P6 | 在同一故障窗口记录 DS90UB984 output-valid/Redriver output/AU15P input/CDR/comma 状态 | candidate: 吴峰 + FPGA debug owner, PM/project lead to confirm | data boundary split | decoder output valid? Redriver output valid? AU15P input valid? receiver lock? | H3/H4/H7 |
+| P1 | 补齐 4/6 块解码板的 board_id、DS90UB984 chip_id、channel_id、test_count、fail_count、fail_condition 矩阵 | 吴志安 / 陈斌 per project table | multi-board reproduction matrix | 每个通道的失败率、板间差异和是否能稳定 4 通道出图 | B0/M5 |
+| P2 | 测量 eDP 上电时序，包含 DS90UB984 rails、reset、refclk/PLL、SerDes 参考时钟和关键 enable | 吴峰 per project table | power/reset/clock prerequisites | good/fault 对比 timing waveform 和状态表 | M1 |
+| P3 | 确认 Redriver 4 通道上电 PWDN、I2C 初始化状态、出图相关 PWDN 信号，以及重复测试期间是否保持不变 | 吴峰 per project table | Redriver static config/PWDN | PWDN/I2C/static config/input-output coverage note | B3/M4 |
+| P4a | 先读取 DS90UB984 故障态所有可访问关键寄存器，不等待厂家解释 | 陈斌 per project table | decoder channel status/output | per-channel raw readback dump | B1/B2/M2/M3 |
+| P4b | 和厂家确认是否存在模拟出图输出、stream-detect、output-valid、error/status 相关寄存器及解释 | 陈斌 per project table | decoder register semantics | vendor confirmation mapped back to P4a dump | M3 |
+| P5 | 测量 DS90UB984 关键管脚 | 陈斌、吴峰 per project table | decoder pins and prerequisites | per-pin voltage/timing/pass-fail table | B1/B2/M1 |
+| P6 | 在同一故障窗口记录 DS90UB984 output-valid/Redriver output/AU15P input/CDR/comma 状态 | candidate: 吴峰 + FPGA debug owner, PM/project lead to confirm | data boundary split | decoder output valid? Redriver output valid? AU15P input valid? receiver lock? | B1/B2/B3/B4/B5/M1-M6 |
 
 ## 7. Contradictions / Revisions
 

@@ -66,6 +66,7 @@ Verify that:
 
 - probabilities are marked as engineering priors, not measured truth;
 - overlapping hypotheses are called out when probabilities are normalized;
+- boundary observations, causal mechanisms, and observability gaps are not mixed in one mutually exclusive probability table;
 - every probability has evidence that raises and lowers it;
 - action ranking is consistent with stated score or explicitly explains exceptions;
 - cost estimates are calibrated against `reasoning/cost_priors.yaml` or a stated local override;
@@ -79,6 +80,7 @@ The audit must explicitly state whether these checks pass, fail, or are not appl
 - fact vs inference split;
 - stale or non-same-interval evidence handling;
 - direct-symptom simplest-interpretation top-two rule;
+- boundary vs mechanism vs observability-gap separation;
 - `unknown / model gap` branch presence;
 - `reasoning/cost_priors.yaml` usage or a stated local override;
 - candidate owner wording vs confirmed assignment.

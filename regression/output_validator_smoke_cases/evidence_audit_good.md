@@ -29,6 +29,7 @@ The model separates control, power/reset/clock, data path, and receiver pipeline
 Probabilities are engineering priors and include raise/lower evidence.
 
 - The direct symptom's simplest physical interpretation is kept in the top two.
+- Boundary vs mechanism vs observability_gap separation is explicit, so boundary observations do not compete directly with causal mechanisms.
 - The hypothesis table includes an `unknown / model gap` branch.
 - Cost estimates cite `reasoning/cost_priors.yaml`; no local override is used.
 

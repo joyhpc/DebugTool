@@ -51,6 +51,12 @@ Do not calculate MOSFET SOA from VDS * ID until VDS and ID are captured safely.
 
 Use `reasoning/cost_priors.yaml` as the offline prior table. If a case-specific estimate differs, state the reason explicitly.
 
+Local override requirements:
+
+- name the closest prior class or state that no matching prior exists;
+- state the overridden `time_min` used in the ranking;
+- give the concrete local reason, such as partial data already collected, fixture already set up, access constraints, missing probe points, or required alignment across instruments.
+
 ## Output Requirement
 
 When producing a full debug tree, include either:

@@ -30,6 +30,7 @@ Rules:
 - Put direct measurements, logs, confirmed communication status, known architecture, and reproducible symptoms here.
 - Do not put root-cause guesses here.
 - Mark facts as `fresh` only when they are current enough to affect probabilities. Mark older, context-shifted, or non-same-interval observations as `requires_re_verification`; stale facts may guide missing-information lists but must not directly raise or lower hypothesis probabilities.
+- When a fact is marked `requires_re_verification`, add a matching Missing Information item that states what same-window evidence would refresh or retire it.
 - If the user says a prior belief was revised, preserve both the old belief and the revision in `Contradictions / Revisions`.
 - If a section has no user-provided content, still include one explicit row such as `not stated` so downstream routing knows the absence was checked.
 
@@ -72,6 +73,17 @@ Rules:
 Rules:
 - Preserve important changes in understanding.
 - Revisions should lower stale branches explicitly.
+- Major case-shape changes must appear here, not only in the summary. Examples: symptom scope changed, architecture mapping changed, a former baseline channel now fails, a repeated-test variable was reclassified, or old evidence moved to `requires_re_verification`.
+
+## Repeated-Test Boundary Rule
+
+When the user describes repeated tests, split repeated variables from invariants before routing:
+
+- repeated variables: what changes on each iteration, such as power cycle, reset, reconfiguration, channel selection, load, cable, board, or script order;
+- invariants: what is initialized once and should remain unchanged, such as static Redriver configuration, fixed strap state, constant firmware image, unchanged cable, unchanged board, or unchanged receiver settings;
+- unknown invariants: items assumed stable but not yet measured, which should become missing information.
+
+Do not rank an invariant as a dynamic repeated-test cause unless the input or measurement shows it is implicitly reset, rewritten, disturbed, or drifting.
 
 ## Router-Ready Case Brief
 

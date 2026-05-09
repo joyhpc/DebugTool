@@ -1,10 +1,10 @@
-# Debug Decision Tree Skill - V0.99.10 语义 Validator 门禁
+# Debug Decision Tree Skill - V0.99.11 Boundary / Mechanism Separation
 
 ## 状态
 
 当前状态：早期内部 pilot 候选。还不是团队级可推广版本，也不是 V1.0。
 
-V0.99.10 在 V0.99.9 的语义先验校准基础上，把部分可机械检查的语义护栏前移到 `scripts/output_validator.py`：Evidence Audit 必须显式覆盖 stale 证据、直接症状 top-two、unknown/model-gap、cost priors、candidate owner；Architecture-First 必须显式写出 top-two 理由、model-gap 分支和 cost-prior 来源。
+V0.99.11 在 V0.99.10 的语义 validator gate 基础上，固化 A57 Issue4 评估中证明有效的建模纪律：重大 case 形态变更必须进入 `Contradictions / Revisions`，重复测试必须拆分变量与不变量，Architecture-First 必须分离 boundary distribution、mechanism prior、coverage matrix 和 evidence ledger，避免把观测边界、因果机制和观测缺口混进同一张互斥概率表。
 
 用户可读正文应跟随用户语言。对于中文输入，摘要、判断、行动项、审核意见应使用中文；固定 contract 标题、schema 字段、命令、路径、信号名、寄存器名、料号等为了校验和追溯可以保留原文。
 

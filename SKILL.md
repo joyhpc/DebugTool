@@ -1,11 +1,11 @@
 ---
 name: debug-decision-tree
-version: "0.99.10"
+version: "0.99.11"
 api_version: "1"
 description: Hardware debug reasoning skill for natural-language bug reports, link-model analysis, hypothesis trees, action decision trees, probability/time-cost ranked troubleshooting, input cleaning, safety gating, and retrospective asset promotion. Use when the assistant needs to analyze a hardware, FPGA, embedded, power, high-speed interface, video, I2C, SPI, MIPI, eDP, PCIe, USB, JTAG, or system bring-up/debug issue; when the user asks for possible causes, probabilities, measurements, debug plan, decision tree, link model, or reusable case learning; or when a terse user bug report needs a complete first-pass debug deliverable.
 ---
 
-# Debug Decision Tree Skill - V0.99.10 Semantic Validator Gate
+# Debug Decision Tree Skill - V0.99.11 Boundary / Mechanism Separation
 
 ## Purpose
 
@@ -93,7 +93,7 @@ Treat the referenced case as a test fixture:
 14. S2/S3 nodes must include explicit safety warning or mitigation language.
 15. Mermaid decision-tree node IDs must match Node Explanation Table IDs.
 16. Every knowledge-linked claim must include fact source and confidence.
-17. Solved cases must produce a case_record draft and regression candidate.
+17. Solved cases must produce a case_record draft, regression candidate, and a Skill-Level Learning Proposal that says whether the case changes reusable rules or remains target-specific.
 18. Before promoting or saving an output, run `scripts/output_validator.py` with the correct mode.
 19. Full debug trees must rank early actions by probability, time cost, safety risk, and exclusion value.
 20. Multi-link failures must load and apply the relevant domain link model from `assets/link_models/` before blind tuning or component replacement.
@@ -103,11 +103,17 @@ Treat the referenced case as a test fixture:
 24. When optimizing this skill, use `output_contracts/skill_improvement.md` and prefer contract/routing/regression changes over re-running the same unresolved debug case.
 25. Match the user's language for prose output; contract headings and machine-checked field names may remain in the required language.
 26. When ranking hypotheses, the simplest physical interpretation of the direct symptom must appear in the top two unless explicit contrary evidence demotes it.
-27. Stale or non-same-interval facts must not lower or raise probabilities directly; list them as re-verification items until refreshed.
-28. Include a small `unknown / model gap` hypothesis when the link model could be incomplete.
+27. Stale or non-same-interval facts must not lower or raise probabilities directly; list them as `requires_re_verification` and add a matching missing-information item until refreshed.
+28. In unresolved Architecture-First outputs, include an `unknown / model gap` hypothesis and reserve at least 2% probability.
 29. Treat people named in chat as candidate owners only unless the input explicitly assigns responsibility.
-30. Use `reasoning/cost_priors.yaml` and `reasoning/probability_time_cost_model.md` for time-cost estimates; do not invent optimistic lab times for multi-instrument captures.
+30. Use `reasoning/cost_priors.yaml` and `reasoning/probability_time_cost_model.md` for time-cost estimates; do not invent optimistic lab times for multi-instrument captures. Any local override must state the base prior class, overridden time, and reason.
 31. Evidence Audit and Architecture-First outputs must make mechanically checkable semantic guardrails explicit: stale-evidence handling, direct-symptom top-two reasoning, model-gap branch, cost-prior source, and candidate-owner wording when applicable.
+32. Major case-shape changes must appear in Input Cleaning `Contradictions / Revisions`, not only in narrative summary. Examples: symptom scope changes, architecture mapping changes, a former baseline channel fails, or an old repeated-test variable becomes invariant.
+33. When a case involves repeated tests, Input Cleaning must separately list repeated variables, invariants, and unknown invariants before routing.
+34. Architecture-First outputs must not mix `boundary`, `mechanism`, and `observability_gap` rows in one mutually exclusive probability table. Use boundary distribution, mechanism prior, coverage matrix, and evidence ledger when the case is unresolved.
+35. Observability gaps such as missing fault-state readback are diagnostic gaps, not physical root causes; their actions improve measurement quality rather than changing hardware.
+36. If an Architecture-First hypothesis bundles multiple physical mechanisms because data is insufficient, add the evidence trigger that will split it into separate branches.
+37. `Cost / Probability Ranking` must expose priority tiers (`P0/P1/P2`) and co-acquisition grouping in addition to score, because execution owners scan tiers faster than scores.
 
 ## Mode Selection Order
 

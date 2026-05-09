@@ -96,7 +96,8 @@ MODE_HEADINGS = {
     "retrospective": [
         "Root Cause Summary", "Effective Fix", "Strong Indicators",
         "Misleading / Low-Value Paths", "Case Record Draft",
-        "Asset Update Proposal", "Regression Test Proposal", "Promotion Recommendation",
+        "Asset Update Proposal", "Regression Test Proposal",
+        "Skill-Level Learning Proposal", "Promotion Recommendation",
     ],
 }
 
@@ -558,6 +559,94 @@ def validate_forbidden_unsafe_patterns(text: str, errors: list[str]) -> None:
                 errors.append(f"unsafe instruction appears without local mitigation: {description}")
 
 
+def parse_probability_value(raw: str) -> float | None:
+    cleaned = normalize_text(raw).lower()
+    match = re.search(r"([0-9]+(?:\.[0-9]+)?)", cleaned)
+    if not match:
+        return None
+    value = float(match.group(1))
+    if "%" in cleaned or "percent" in cleaned or value > 1:
+        value /= 100
+    return value
+
+
+def find_model_gap_probability(text: str) -> float | None:
+    for table in find_tables(text):
+        for row in table.rows:
+            combined = " ".join(row.values())
+            if not contains_any(combined, ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"]):
+                continue
+            for column, value in row.items():
+                if "prob" in column or column in {"p", "probability"}:
+                    parsed = parse_probability_value(value)
+                    if parsed is not None:
+                        return parsed
+            # Fall back to scanning the row when the table uses a localized
+            # probability column name that does not normalize to "prob".
+            parsed = parse_probability_value(combined)
+            if parsed is not None:
+                return parsed
+    return None
+
+
+def validate_boundary_mechanism_tables(hypothesis_text: str, errors: list[str]) -> None:
+    boundary_table = find_table_with_columns(hypothesis_text, ["id", "type", "first_fail_boundary", "p"])
+    if not boundary_table:
+        errors.append("architecture_first output must include a Boundary Distribution table with id, type, first_fail_boundary, and p columns")
+    else:
+        total = 0.0
+        found_probability = False
+        for idx, row in enumerate(boundary_table.rows, start=1):
+            row_id = normalize_text(row.get("id", "")) or f"row#{idx}"
+            row_type = normalize_text(row.get("type", "")).lower()
+            if row_type != "boundary":
+                errors.append(f"boundary row {row_id}: type must be boundary")
+            probability = parse_probability_value(row.get("p", ""))
+            if probability is None:
+                errors.append(f"boundary row {row_id}: p must be a probability")
+            else:
+                found_probability = True
+                total += probability
+        if found_probability and abs(total - 1.0) > 0.02:
+            errors.append(f"Boundary Distribution probabilities must sum to 1.00 ± 0.02, got {total:.3f}")
+
+    mechanism_table = find_table_with_columns(hypothesis_text, ["id", "type", "mechanism", "p_active", "affects_boundaries"])
+    if not mechanism_table:
+        errors.append("architecture_first output must include a Mechanism Prior table with id, type, mechanism, p_active, and affects_boundaries columns")
+    else:
+        valid_types = {"mechanism", "observability_gap"}
+        for idx, row in enumerate(mechanism_table.rows, start=1):
+            row_id = normalize_text(row.get("id", "")) or f"row#{idx}"
+            row_type = normalize_text(row.get("type", "")).lower()
+            if row_type not in valid_types:
+                errors.append(f"mechanism row {row_id}: type must be one of {sorted(valid_types)}")
+            if parse_probability_value(row.get("p_active", "")) is None:
+                errors.append(f"mechanism row {row_id}: p_active must be a probability")
+
+    if not contains_any(hypothesis_text, ["Coverage Matrix", "coverage matrix", "覆盖矩阵"]):
+        errors.append("architecture_first output must include a Coverage Matrix for mechanism-to-boundary likelihood")
+
+    if not find_table_with_columns(hypothesis_text, ["evidence", "status", "affects"]):
+        errors.append("architecture_first output must include an Evidence Ledger table with evidence, status, and affects columns")
+
+
+def validate_cost_ranking_table(cost_text: str, errors: list[str]) -> None:
+    required_columns = ["tier", "co_acquisition", "boundary_subset", "mechanism_subset", "p_hit", "p_exclude", "time_min"]
+    cost_table = find_table_with_columns(cost_text, required_columns)
+    if not cost_table:
+        errors.append(
+            "Cost / Probability Ranking must include a table with tier, co_acquisition, "
+            "boundary_subset, mechanism_subset, p_hit, p_exclude, and time_min columns"
+        )
+        return
+
+    for idx, row in enumerate(cost_table.rows, start=1):
+        row_id = normalize_text(row.get("action_id", "") or row.get("node", "")) or f"row#{idx}"
+        co_acquisition = normalize_text(row.get("co_acquisition", "")).lower()
+        if co_acquisition not in {"true", "false", "yes", "no"}:
+            errors.append(f"cost row {row_id}: co_acquisition must be true/false or yes/no")
+
+
 def validate_architecture_first_semantics(text: str, mode: str, errors: list[str]) -> None:
     if mode != "architecture_first":
         return
@@ -568,8 +657,16 @@ def validate_architecture_first_semantics(text: str, mode: str, errors: list[str
             extract_section(text, "Hypothesis Tree With Probabilities"),
         ]
     )
+    validate_boundary_mechanism_tables(hypothesis_text, errors)
+
     if not contains_any(hypothesis_text, ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"]):
         errors.append("architecture_first output must include an explicit unknown / model gap hypothesis")
+    else:
+        model_gap_probability = find_model_gap_probability(hypothesis_text)
+        if model_gap_probability is None:
+            errors.append("architecture_first unknown / model gap hypothesis must include a probability")
+        elif model_gap_probability < 0.02:
+            errors.append("architecture_first unknown / model gap probability must be at least 0.02")
 
     if not contains_any(hypothesis_text, ["direct symptom", "simplest physical", "直接物理症状", "最简解释"]):
         errors.append("architecture_first output must explicitly justify direct-symptom simplest-interpretation ranking")
@@ -579,8 +676,7 @@ def validate_architecture_first_semantics(text: str, mode: str, errors: list[str
     cost_text = extract_section(text, "Cost / Probability Ranking")
     if not contains_any(cost_text, ["cost_priors.yaml", "cost prior", "local override", "成本先验", "本地覆盖"]):
         errors.append("Cost / Probability Ranking must cite cost_priors.yaml or a stated local override")
-    if not find_table_with_columns(cost_text, ["p_hit", "p_exclude", "time_min"]):
-        errors.append("Cost / Probability Ranking must include a table with p_hit, p_exclude, and time_min columns")
+    validate_cost_ranking_table(cost_text, errors)
 
     for table in find_tables(text):
         columns = set(table.columns)
@@ -628,6 +724,7 @@ def validate_evidence_audit_contract(text: str, mode: str, errors: list[str]) ->
         ("fact vs inference split", ["fact", "inference", "事实", "推断"]),
         ("stale or non-same-interval evidence", ["stale", "staleness", "requires_re_verification", "非同故障窗口", "过期证据"]),
         ("direct symptom top-two ranking", ["direct symptom", "simplest physical", "top two", "top-2", "直接物理症状", "最简解释"]),
+        ("boundary vs mechanism separation", ["boundary", "mechanism", "observability_gap", "边界", "机制", "观测缺口"]),
         ("unknown / model gap branch", ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"]),
         ("cost prior calibration", ["cost_priors.yaml", "cost prior", "成本先验", "local override"]),
         ("candidate owner vs assignment", ["candidate owner", "candidate_owner", "候选 owner", "正式分配", "PM"]),

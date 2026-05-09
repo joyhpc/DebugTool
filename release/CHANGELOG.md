@@ -1,5 +1,14 @@
 # Changelog
 
+## V0.99.11 Boundary / Mechanism Separation
+
+- Codified A57 Issue4 lessons into mandatory input-cleaning rules: major case-shape changes must appear in `Contradictions / Revisions`, repeated tests must split variables from invariants, and stale evidence must get a matching same-window re-verification gap.
+- Reworked Architecture-First requirements to separate boundary distribution, mechanism priors, coverage matrix, and evidence ledger, preventing boundary observations and causal mechanisms from competing in one flat root-cause table.
+- Tightened Architecture-First validator checks: `unknown / model gap` now reserves at least 2% probability, boundary probabilities must sum to 1.00, mechanism rows must declare `type=mechanism` or `type=observability_gap`, and cost ranking tables must expose `P0/P1/P2`, `co_acquisition`, `boundary_subset`, and `mechanism_subset`.
+- Added local time-cost override policy to `reasoning/cost_priors.yaml` and `reasoning/probability_time_cost_model.md`.
+- Made retrospective outputs include a Skill-Level Learning Proposal so solved cases explicitly decide whether to update reusable DebugTool rules.
+- Reworked the A57 Issue4 latest output from a flat H table into boundary/mechanism/evidence/action-batch structure, with P0 same-window co-acquisition for DS90UB984 status, timing, Redriver state, and AU15P input/CDR/comma.
+
 ## V0.99.10 Semantic Validator Gate
 
 - Hardened `scripts/output_validator.py` with mechanically checkable semantic gates for Architecture-First, Evidence Audit, Skill Improvement, and Input Cleaning staleness.

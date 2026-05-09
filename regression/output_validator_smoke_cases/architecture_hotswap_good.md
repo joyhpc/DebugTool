@@ -40,34 +40,66 @@ L3 --> L6[Gate control and clamp]
 
 ## 6. Fault-Domain Localization
 
-| Domain | Why Relevant | Evidence Refs | Priority |
-|---|---|---|---|
-| Safe test envelope | repeated full-power reproduction may destroy parts | F1 | P0 |
-| MOSFET transient SOA | startup has high VDS and high ID overlap | F1,F2 | P0 |
-| Gate drive / Miller plateau | slow or uncontrolled gate ramp can worsen SOA stress | F3,F4 | P1 |
-| Downstream capacitance/load | inrush source and active-load timing must be separated | F2,F3 | P1 |
-| Steady-state thermal | still possible but less likely if failure occurs at plug-in | F1 | P2 |
+The direct symptom's simplest physical interpretation is startup MOSFET stress or its immediate inrush/gate-control neighbors, so the first-fail boundary at the MOSFET/gate-control area is kept in the top two before remote explanations.
 
-The direct symptom's simplest physical interpretation is startup MOSFET stress or its immediate inrush/gate-control neighbors, so those branches are kept in the top two before remote explanations.
+### Boundary Distribution
+
+| id | type | first_fail_boundary | p | why now |
+|---|---|---|---:|---|
+| B1 | boundary | MOSFET stress window | 0.50 | failure occurs at hot-plug/startup |
+| B2 | boundary | gate-control / clamp boundary | 0.20 | gate ramp and clamp are not measured |
+| B3 | boundary | downstream capacitance or active load | 0.15 | large capacitance is assumed |
+| B4 | boundary | assembly or downstream short | 0.05 | possible but cheap to exclude |
+| B0 | boundary | unknown / model gap | 0.10 | waveforms and exact topology are missing |
+
+### Mechanism Prior
+
+| id | type | mechanism | p_active | affects_boundaries |
+|---|---|---|---:|---|
+| M1 | mechanism | transient SOA overstress | 0.55 | B1 |
+| M2 | mechanism | gate ramp, Miller plateau, or clamp problem | 0.35 | B1,B2 |
+| M3 | mechanism | downstream capacitance or active-load inrush | 0.30 | B1,B3 |
+| M4 | mechanism | assembly or downstream short | 0.10 | B4 |
+| M5 | observability_gap | missing startup waveform and SOA review | 0.30 | B0 |
+
+### Coverage Matrix
+
+| mechanism_id | B1 MOSFET stress | B2 gate control | B3 load inrush | B4 short | B0 model gap |
+|---|---|---|---|---|---|
+| M1 transient SOA | H | M | L | - | - |
+| M2 gate/clamp | M | H | - | - | - |
+| M3 capacitance/load | M | - | H | - | - |
+| M4 assembly/short | L | - | - | H | - |
+
+### Evidence Ledger
+
+| evidence | status | affects | probability_effect |
+|---|---|---|---|
+| current-limited startup envelope | missing | B0,M5 | destructive reproduction remains blocked |
+| aligned VIN/VOUT/VGS/VDS/ID waveform | missing | B1,B2,M1,M2 | MOSFET stress boundary cannot be confirmed |
+| downstream capacitance/load isolation | missing | B3,M3 | load mechanism cannot be separated |
+| static DMM/visual short inspection | missing | B4,M4 | cheap exclusion path remains open |
 
 ## 7. Hypothesis Tree With Probabilities
 
 ```mermaid
 flowchart TD
-H0[Startup MOSFET failure] --> H1[Transient SOA overstress 43 percent]
-H0 --> H2[Gate ramp or clamp problem 24 percent]
-H0 --> H3[Downstream capacitance or active-load inrush 18 percent]
-H0 --> H4[Assembly or downstream short 10 percent]
-H0 --> H5[unknown model gap 5 percent]
+H0[Startup MOSFET failure] --> B1[B1 MOSFET stress boundary 50 percent]
+H0 --> B2[B2 gate-control boundary 20 percent]
+H0 --> B3[B3 downstream load boundary 15 percent]
+H0 --> B4[B4 short boundary 5 percent]
+H0 --> B0[B0 unknown model gap 10 percent]
+M1[M1 transient SOA active 55 percent] -.-> B1
+M2[M2 gate clamp active 35 percent] -.-> B1
+M2 -.-> B2
+M3[M3 downstream load active 30 percent] -.-> B3
 ```
 
-| id | hypothesis | probability | confirm_by | falsify_by |
-|---|---|---:|---|---|
-| H1 | transient SOA overstress | 0.43 | VDS and ID overlap exceeds SOA | safe capture shows low stress |
-| H2 | gate ramp or clamp problem | 0.24 | abnormal VGS/Miller plateau | normal gate profile |
-| H3 | capacitance or active load inrush | 0.18 | failure changes with isolated load | failure unchanged |
-| H4 | assembly or downstream short | 0.10 | DMM/thermal inspection finds short | clean static checks |
-| H5 | unknown / model gap | 0.05 | H1-H4 are excluded but failure remains | new evidence maps to H1-H4 |
+| item | probability semantics | how to read it |
+|---|---|---|
+| B1-B4/B0 | boundary distribution，互斥，sum=1.00 | first-fail boundary |
+| M1-M5 | mechanism prior，独立，不 sum=1.00 | candidate active mechanisms |
+| M5 | observability_gap | missing waveform / SOA review evidence |
 
 ## 8. Candidate Matching Report
 
@@ -88,11 +120,11 @@ Not Applied: repeat full-power hot-plug, software-first debugging, lower-RDS(on)
 
 This table uses `reasoning/cost_priors.yaml`; no local override is applied.
 
-| node | action | p_hit | p_exclude | time_min | priority_reason |
-|---|---|---:|---:|---:|---|
-| A1 | Set safe current limit and thermal monitoring | 0.20 | 0.70 | 10 | prerequisite for safe evidence |
-| A2 | Capture VIN VOUT VGS VDS and ID | 0.45 | 0.50 | 30 | highest root-cause evidence value |
-| A5 | Inspect polarity clamp TVS and downstream short | 0.10 | 0.40 | 20 | cheap exclusion path |
+| node | tier | co_acquisition | action | boundary_subset | mechanism_subset | p_hit | p_exclude | time_min | priority_reason |
+|---|---|---|---|---|---|---:|---:|---:|---|
+| A1 | P0 | false | Set safe current limit and thermal monitoring | B0 | M5 | 0.20 | 0.70 | 10 | prerequisite for safe evidence |
+| A2 | P0 | true | Capture VIN VOUT VGS VDS and ID | B1,B2 | M1,M2 | 0.45 | 0.50 | 30 | highest root-cause evidence value |
+| A5 | P1 | false | Inspect polarity clamp TVS and downstream short | B4 | M4 | 0.10 | 0.40 | 20 | cheap exclusion path |
 
 ## 11. Optimal Troubleshooting Path
 

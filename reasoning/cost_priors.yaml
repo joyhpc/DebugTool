@@ -1,5 +1,11 @@
 version: 1
 description: Offline cost priors for DebugTool action ranking. Values are engineering priors, not guarantees.
+override_policy:
+  rule: Local time-cost overrides are allowed only when the output states the closest prior class, the overridden value, and a concrete local reason.
+  required_fields:
+    - base_prior_or_prior_class
+    - overridden_time_min
+    - reason
 exclude_weight_by_mode:
   fast_path: 0.3
   standard: 0.5
