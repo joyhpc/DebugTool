@@ -231,4 +231,10 @@ python scripts/lint_dataset_1000.py
 
 ## 当前下一步
 
-继续扩展 frozen artifact replay：每次 DebugTool contract 或 validator 有重大变更，都要把至少一个 raw input 和对应生成物加入 replay，让 CI 检查自然语言入口没有回退到旧结构。
+继续扩展 frozen artifact replay：每次 DebugTool contract 或 validator 有重大变更，都要把至少一个 raw input 和对应冻结生成物加入 replay，让 CI 检查 contract / validator 升级不会让历史合规生成物失效。这个检查不替代真实 LLM replay。
+
+暂不删除 `Coverage Matrix`、`Node Explanation Table` 或其他高结构化字段；先等跨人 pilot 数据。若第一次 PUREHPC 之外工程师 pilot 中出现以下任一情况，就重新评估对应字段或表是否应删除、合并或降级为 advisory：
+
+- 工程师跳过整张表，只阅读另一张表里的同一信息；
+- 工程师在复盘里明确表示某字段难填、填不准或不影响行动；
+- 同一信息在两张表里出现不一致超过 1 次。
