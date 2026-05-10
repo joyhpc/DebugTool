@@ -1,0 +1,35 @@
+version: 0.1
+description: "Blind hardware-debug evaluation fixtures. Raw inputs are safe to show before prediction; expected files are gold criteria for scoring after prediction."
+cases:
+  - id: BE-CLR-113-FPGA-JTAG-ID
+    source_record: training/closed_loop/records/CLR-113-INTEL-FPGA-JTAG-ID-NOT-RECOGNIZED.yaml
+    raw_input: regression/blind_eval/raw_inputs/BE-CLR-113-FPGA-JTAG-ID.md
+    expected: regression/blind_eval/expected/BE-CLR-113-FPGA-JTAG-ID.yaml
+  - id: BE-CLR-116-NIOS-JTAG-NODES
+    source_record: training/closed_loop/records/CLR-116-INTEL-NIOS-JTAGCONFIG-NODES.yaml
+    raw_input: regression/blind_eval/raw_inputs/BE-CLR-116-NIOS-JTAG-NODES.md
+    expected: regression/blind_eval/expected/BE-CLR-116-NIOS-JTAG-NODES.yaml
+  - id: BE-CLR-119-ARRIA10-IOPLL-LOCKED
+    source_record: training/closed_loop/records/CLR-119-INTEL-ARRIA10-IOPLL-LOCKED-BEHAVIOR.yaml
+    raw_input: regression/blind_eval/raw_inputs/BE-CLR-119-ARRIA10-IOPLL-LOCKED.md
+    expected: regression/blind_eval/expected/BE-CLR-119-ARRIA10-IOPLL-LOCKED.yaml
+  - id: BE-CLR-123-JETSON-CSI-TIMEOUT
+    source_record: training/closed_loop/records/CLR-123-NVIDIA-JETSON-CSI-MODE-SETTINGS.yaml
+    raw_input: regression/blind_eval/raw_inputs/BE-CLR-123-JETSON-CSI-TIMEOUT.md
+    expected: regression/blind_eval/expected/BE-CLR-123-JETSON-CSI-TIMEOUT.yaml
+  - id: BE-CLR-126-MIPI-DPHY-HS
+    source_record: training/closed_loop/records/CLR-126-AMD-MIPI-DPHY-LP11-STOPSTATE-HS.yaml
+    raw_input: regression/blind_eval/raw_inputs/BE-CLR-126-MIPI-DPHY-HS.md
+    expected: regression/blind_eval/expected/BE-CLR-126-MIPI-DPHY-HS.yaml
+  - id: BE-CLR-128-CX3-UNUSED-LANES
+    source_record: training/closed_loop/records/CLR-128-INFINEON-CX3-UNUSED-MIPI-LANES.yaml
+    raw_input: regression/blind_eval/raw_inputs/BE-CLR-128-CX3-UNUSED-LANES.md
+    expected: regression/blind_eval/expected/BE-CLR-128-CX3-UNUSED-LANES.yaml
+  - id: BE-CLR-129-IMX8-DSI-HOST-BINDING
+    source_record: training/closed_loop/records/CLR-129-NXP-IMX8-DSI-HOST-NODE-MISSING.yaml
+    raw_input: regression/blind_eval/raw_inputs/BE-CLR-129-IMX8-DSI-HOST-BINDING.md
+    expected: regression/blind_eval/expected/BE-CLR-129-IMX8-DSI-HOST-BINDING.yaml
+  - id: BE-CLR-111-I2C-HUMIDITY-SHORT
+    source_record: training/closed_loop/records/CLR-111-PUBLIC-I2C-MOISTURE-RTC-SHORT.yaml
+    raw_input: regression/blind_eval/raw_inputs/BE-CLR-111-I2C-HUMIDITY-SHORT.md
+    expected: regression/blind_eval/expected/BE-CLR-111-I2C-HUMIDITY-SHORT.yaml

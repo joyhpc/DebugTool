@@ -1,0 +1,21 @@
+case_id: BE-CLR-126-MIPI-DPHY-HS
+source_record: training/closed_loop/records/CLR-126-AMD-MIPI-DPHY-LP11-STOPSTATE-HS.yaml
+actual_resolution_summary: "AMD D-PHY debug orders checks through clock/reset constraints, LP11/T_INIT initialization, stopstate, HS clock transfer, HS data transfer, PPI errors, HS_SETTLE, and signal-integrity branches."
+hit_criteria:
+  must_include:
+    - "LP11"
+    - "T_INIT"
+    - "stopstate"
+    - "HS clock"
+    - "HS data"
+    - "PPI"
+    - "HS_SETTLE"
+    - "signal integrity"
+  must_not_include:
+    - "packet layer first"
+    - "tune HS_SETTLE first"
+    - "driver rewrite first"
+  near_hit_min_fraction: 0.70
+review_notes:
+  - "A hit preserves the physical-layer sequence before packet/controller debug."
+  - "HS_SETTLE is valid but not a first blind knob."

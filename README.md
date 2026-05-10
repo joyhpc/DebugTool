@@ -174,6 +174,12 @@ python scripts/run_output_validator_smoke.py
 python scripts/run_frozen_artifact_replay.py
 ```
 
+运行 blind-eval corpus 检查：
+
+```bash
+python scripts/run_blind_eval.py
+```
+
 运行 closed-loop training record 检查：
 
 ```bash

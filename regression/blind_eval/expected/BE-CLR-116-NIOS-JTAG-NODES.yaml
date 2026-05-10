@@ -1,0 +1,21 @@
+case_id: BE-CLR-116-NIOS-JTAG-NODES
+source_record: training/closed_loop/records/CLR-116-INTEL-NIOS-JTAGCONFIG-NODES.yaml
+actual_resolution_summary: "jtagconfig -n can list the cable, FPGA device, and internal JTAG nodes; node ranges identify Nios II debug modules and JTAG UART, separating external chain success from internal debug-resource presence."
+hit_criteria:
+  must_include:
+    - "jtagconfig -n"
+    - "IDCODE"
+    - "SLD"
+    - "Nios"
+    - "debug module"
+    - "JTAG UART"
+    - "SOF"
+    - "sopcinfo"
+  must_not_include:
+    - "reinstall Eclipse first"
+    - "cable failure first"
+    - "external JTAG proves Nios debug"
+  near_hit_min_fraction: 0.70
+review_notes:
+  - "A hit distinguishes external JTAG visibility from internal design-content visibility."
+  - "The first checks should inspect loaded SOF contents and debug nodes."

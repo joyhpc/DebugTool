@@ -1,0 +1,20 @@
+case_id: BE-CLR-119-ARRIA10-IOPLL-LOCKED
+source_record: training/closed_loop/records/CLR-119-INTEL-ARRIA10-IOPLL-LOCKED-BEHAVIOR.yaml
+actual_resolution_summary: "Intel describes lock output as low during reset, low while the released PLL lacks a stable input clock, and asserted only after a digital filter observes internal lock for the required consecutive cycles."
+hit_criteria:
+  must_include:
+    - "reset"
+    - "reference clock"
+    - "stable"
+    - "digital filter"
+    - "lock"
+    - "delay"
+    - "downstream logic"
+  must_not_include:
+    - "replace FPGA first"
+    - "locked is instantaneous"
+    - "ignore reset"
+  near_hit_min_fraction: 0.70
+review_notes:
+  - "A hit treats locked as a filtered status signal, not an instantaneous analog truth."
+  - "Downstream reset release must be gated by proven clock/reset/lock behavior."

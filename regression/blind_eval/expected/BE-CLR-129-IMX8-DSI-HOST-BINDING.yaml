@@ -1,0 +1,20 @@
+case_id: BE-CLR-129-IMX8-DSI-HOST-BINDING
+source_record: training/closed_loop/records/CLR-129-NXP-IMX8-DSI-HOST-NODE-MISSING.yaml
+actual_resolution_summary: "The NXP thread resolved the no-waveform display failure by finding boot-log messages that dsi_host parent devices were unavailable; a disabled parent node prevented Android binding from enabling the DSI host."
+hit_criteria:
+  must_include:
+    - "boot log"
+    - "device tree"
+    - "DSI host"
+    - "binding"
+    - "parent"
+    - "enabled"
+    - "profile"
+    - "no waveform"
+  must_not_include:
+    - "routing failure first"
+    - "replace panel first"
+    - "board failure first"
+  near_hit_min_fraction: 0.70
+review_notes:
+  - "A hit explains that no waveform can be caused by host binding never enabling the MIPI block."
