@@ -5,7 +5,7 @@ api_version: "1"
 description: Hardware debug reasoning skill for natural-language bug reports, link-model analysis, hypothesis trees, action decision trees, probability/time-cost ranked troubleshooting, input cleaning, safety gating, and retrospective asset promotion. Use when the assistant needs to analyze a hardware, FPGA, embedded, power, high-speed interface, video, I2C, SPI, MIPI, eDP, PCIe, USB, JTAG, or system bring-up/debug issue; when the user asks for possible causes, probabilities, measurements, debug plan, decision tree, link model, or reusable case learning; or when a terse user bug report needs a complete first-pass debug deliverable.
 ---
 
-# Debug Decision Tree Skill - V0.99.13 End-to-End Replay
+# Debug Decision Tree Skill - V0.99.13 Frozen Artifact Replay
 
 ## Purpose
 

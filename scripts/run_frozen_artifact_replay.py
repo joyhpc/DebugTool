@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Validate committed end-to-end replay artifacts.
+"""Validate committed frozen artifact replay artifacts.
 
 The replay runner is intentionally offline: CI does not call an LLM. A human or
-agent generates outputs from the raw inputs, commits them, and this script
-checks that those generated artifacts pass their output validators and preserve
-case-specific semantic guardrails.
+agent generates outputs from the raw inputs, commits them as frozen artifacts,
+and this script checks that those artifacts pass their output validators and
+preserve case-specific semantic guardrails.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from typing import Any
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_MANIFEST = ROOT / "regression" / "end_to_end_replay" / "manifest.yaml"
+DEFAULT_MANIFEST = ROOT / "regression" / "frozen_artifact_replay" / "manifest.yaml"
 VALIDATOR = ROOT / "scripts" / "output_validator.py"
 
 
@@ -117,7 +117,7 @@ def main() -> int:
     if len(sys.argv) > 1:
         manifest_path = ROOT / sys.argv[1]
     if not manifest_path.exists():
-        print(f"END-TO-END REPLAY FAILED\n- manifest not found: {rel(manifest_path)}")
+        print(f"FROZEN ARTIFACT REPLAY FAILED\n- manifest not found: {rel(manifest_path)}")
         return 2
 
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
@@ -132,12 +132,12 @@ def main() -> int:
         validate_case(case, failures)
 
     if failures:
-        print("END-TO-END REPLAY FAILED")
+        print("FROZEN ARTIFACT REPLAY FAILED")
         for failure in failures:
             print(f"- {failure}")
         return 1
 
-    print(f"END-TO-END REPLAY PASSED: {len(cases)} cases")
+    print(f"FROZEN ARTIFACT REPLAY PASSED: {len(cases)} cases")
     for case in cases:
         print(f"- {case.get('id')}")
     return 0
@@ -145,4 +145,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -1,10 +1,10 @@
-# Debug Decision Tree Skill - V0.99.13 End-to-End Replay
+# Debug Decision Tree Skill - V0.99.13 Frozen Artifact Replay
 
 ## 状态
 
 当前状态：早期内部 pilot 候选。还不是团队级可推广版本，也不是 V1.0。
 
-V0.99.13 在 V0.99.12 的 validator hardening 基础上，新增 end-to-end replay：保存 raw input 与生成物配对，CI 运行 replay runner，确认 A57 Issue4、hotswap SOA、stale evidence 三类输入能从生成物层面保持 `provenance`、四表分离、evidence gates、P0 co-acquisition group 等关键结构。
+V0.99.13 在 V0.99.12 的 validator hardening 基础上，新增 frozen artifact replay：保存 raw input 与冻结生成物配对，CI 运行 replay runner，确认 A57 Issue4、hotswap SOA、stale evidence 三类已提交生成物能保持 `provenance`、四表分离、evidence gates、P0 co-acquisition group 等关键结构。这个检查不调用 LLM，也不证明 raw input 到新输出的生成链路没有退化。
 
 用户可读正文应跟随用户语言。对于中文输入，摘要、判断、行动项、审核意见应使用中文；固定 contract 标题、schema 字段、命令、路径、信号名、寄存器名、料号等为了校验和追溯可以保留原文。
 
@@ -168,10 +168,10 @@ python scripts/regression_suite_linter.py
 python scripts/run_output_validator_smoke.py
 ```
 
-运行 end-to-end replay cases：
+运行 frozen artifact replay cases：
 
 ```bash
-python scripts/run_end_to_end_replay.py
+python scripts/run_frozen_artifact_replay.py
 ```
 
 运行 closed-loop training record 检查：
@@ -231,4 +231,4 @@ python scripts/lint_dataset_1000.py
 
 ## 当前下一步
 
-继续扩展 end-to-end replay：每次 DebugTool contract 或 validator 有重大变更，都要把至少一个 raw input 和对应生成物加入 replay，让 CI 检查自然语言入口没有回退到旧结构。
+继续扩展 frozen artifact replay：每次 DebugTool contract 或 validator 有重大变更，都要把至少一个 raw input 和对应生成物加入 replay，让 CI 检查自然语言入口没有回退到旧结构。

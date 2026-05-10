@@ -1,10 +1,10 @@
-# End-to-End Replay
+# Frozen Artifact Replay
 
-This directory records raw user prompts and the generated artifacts that should
-survive the full DebugTool validation path.
+This directory records raw user prompts and frozen generated artifacts that
+should survive the full DebugTool validation path.
 
 The replay runner does not call an LLM in CI. Instead, it verifies that committed
-replay outputs generated from the raw prompts:
+frozen replay outputs paired with the raw prompts:
 
 - pass the relevant `scripts/output_validator.py` mode;
 - preserve system-critical fields such as `provenance`, `co_acq_group_id`, and
@@ -15,6 +15,5 @@ replay outputs generated from the raw prompts:
 Run:
 
 ```bash
-python scripts/run_end_to_end_replay.py
+python scripts/run_frozen_artifact_replay.py
 ```
-

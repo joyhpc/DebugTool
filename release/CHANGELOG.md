@@ -1,10 +1,10 @@
 # Changelog
 
-## V0.99.13 End-to-End Replay
+## V0.99.13 Frozen Artifact Replay
 
-- Added `regression/end_to_end_replay/` with raw-input fixtures and generated artifacts for A57 Issue4, hotswap SOA, and stale-evidence eDP cases.
-- Added `scripts/run_end_to_end_replay.py`, an offline replay runner that validates each generated artifact with `scripts/output_validator.py --strict` and checks case-specific semantic guardrail phrases.
-- Wired end-to-end replay into GitHub Actions so CI now checks raw-input-to-generated-output stability in addition to output-validator smoke cases.
+- Added `regression/frozen_artifact_replay/` with raw-input fixtures and generated artifacts for A57 Issue4, hotswap SOA, and stale-evidence eDP cases.
+- Added `scripts/run_frozen_artifact_replay.py`, an offline replay runner that validates each generated artifact with `scripts/output_validator.py --strict` and checks case-specific semantic guardrail phrases.
+- Wired frozen artifact replay into GitHub Actions so CI now checks committed generated artifacts in addition to output-validator smoke cases; this is explicitly not an LLM-generation replay.
 - Added a stale-evidence replay output pair that proves `requires_re_verification` context does not directly change Architecture-First probabilities.
 
 ## V0.99.12 System Hardening
