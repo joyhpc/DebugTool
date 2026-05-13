@@ -38,7 +38,7 @@ Each link node must state what is known, what is inferred, what is unknown, and 
 
 For unresolved multi-link cases, do not force every likely item into one flat root-cause probability table. Separate at least these tables:
 
-- `Boundary Distribution`: where the signal or state first leaves spec. Rows must be `type=boundary`; probabilities are mutually exclusive and must sum to about 1.00.
+- `Boundary Distribution`: where the signal or state first leaves spec. Rows must be `type=boundary`; probabilities are mutually exclusive and must sum to about 1.00. Include `evidence_refs` so each top-two physical boundary cites observed fact IDs from the Fact / Assumption Table.
 - `Mechanism Prior`: mechanisms that could cause one or more boundaries. Rows must use `type=mechanism` or `type=observability_gap`; `p_active` values are independent and must not be forced to sum to 1.00.
 - `Coverage Matrix`: each mechanism must state which boundaries it can explain using a compact scale such as `H/M/L/-`.
 - `Evidence Ledger`: same-window evidence status for each key measurement. Required columns: `id`, `evidence`, `status`, `criticality`, `gates_boundaries`, `gates_mechanisms`, `probability_effect`, and `local_override`.
@@ -51,7 +51,7 @@ Probability rules:
 - Do not let "not yet measured" alone outrank the closest physical boundary indicated by the symptom.
 - Stale facts or non-same-interval facts may appear as context, but must not directly raise or lower probabilities until re-verified.
 - Include an `unknown / model gap` hypothesis in unresolved Architecture-First outputs. It must reserve at least 2% probability, so known branches do not silently consume all uncertainty.
-- State the direct-symptom top-two reasoning explicitly so structural validation can catch silent drift.
+- State the direct-symptom top-two reasoning explicitly, and bind the top-two physical boundary rows to observed fact IDs through `evidence_refs` so structural validation can catch silent drift.
 - If a hypothesis intentionally bundles multiple physical mechanisms because data is insufficient, name the split trigger that will force it to become separate branches.
 - Do not put `boundary`, `mechanism`, and `observability_gap` rows into the same mutually exclusive probability table.
 - Observability gaps are measurement/diagnostic gaps. Their actions should improve evidence quality, not change hardware.
@@ -75,7 +75,8 @@ The `Decision Tree` section is the action decision tree. It must map each early 
 - Show cumulative path cost for the optimal path when more than three actions are chained.
 - If owner names are inferred from chat participation, label them as candidate owners and state that PM/project lead confirmation is required.
 - Distinguish broad knowledge retrieval from low-cost point checks such as datasheet polarity verification.
-- `Cost / Probability Ranking` must include `tier`, `co_acq_group_id`, `same_failure_window`, `capture_channel`, `boundary_subset`, `mechanism_subset`, `p_hit`, `p_exclude`, and `time_min` columns.
+- `Cost / Probability Ranking` must include `tier`, `co_acq_group_id`, `same_failure_window`, `capture_channel`, `boundary_subset`, `mechanism_subset`, `prior_source`, `p_hit`, `p_exclude`, and `time_min` columns.
+- Every cost row must cite `cost_priors.yaml` or a stated local override in `prior_source`.
 - P0 rows must have a non-empty `co_acq_group_id`. Multi-row co-acquisition groups must set `same_failure_window=true` on every member. Single-row P0 groups are allowed only when the row explains why it is a standalone prerequisite or matrix-normalization action.
 
 ## Retrospective Trigger Requirements

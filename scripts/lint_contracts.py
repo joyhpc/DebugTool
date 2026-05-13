@@ -4,7 +4,13 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
+
+for _stream in (sys.stdout, sys.stderr):
+    _reconfigure = getattr(_stream, "reconfigure", None)
+    if _reconfigure is not None:
+        _reconfigure(encoding="utf-8")
 
 ROOT = Path(__file__).resolve().parents[1]
 

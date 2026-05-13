@@ -1,5 +1,5 @@
 case_id: BE-CLR-128-CX3-UNUSED-LANES
-source_record: training/closed_loop/records/CLR-128-INFINEON-CX3-UNUSED-MIPI-LANES.yaml
+source_record: training/closed_loop/synthetic_closures/CLR-128-INFINEON-CX3-UNUSED-MIPI-LANES.yaml
 actual_resolution_summary: "Infineon support accepted that unused MIPI CSI-2 data lanes on CX3 must be tied to ground; floating unused lanes can cause no frame detection, unstable streaming, and noise susceptibility, with no firmware workaround."
 hit_criteria:
   must_include:

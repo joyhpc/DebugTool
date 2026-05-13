@@ -16,6 +16,11 @@ if __package__ in {None, ""}:
 
 from scripts import lint_case_governance as governance
 
+for _stream in (sys.stdout, sys.stderr):
+    _reconfigure = getattr(_stream, "reconfigure", None)
+    if _reconfigure is not None:
+        _reconfigure(encoding="utf-8")
+
 ROOT = Path(__file__).resolve().parents[1]
 PILOT_ROOT = "pilot_runs"
 CURRENT_ARTIFACT_RE = re.compile(
@@ -232,7 +237,7 @@ def build_case_report(root: Path, case_name: str, *, max_items: int = 12) -> Cas
 
     current = current_artifacts(case_dir)
     stale_patterns = [token_pattern(token) for token in governance.STALE_TRIGGERS]
-    attention_patterns = governance.HIGH_ATTENTION_PATTERNS
+    attention_patterns = governance.high_attention_patterns(root)
     stale_items: list[LineItem] = []
     attention_items: list[LineItem] = []
     next_actions: list[LineItem] = []

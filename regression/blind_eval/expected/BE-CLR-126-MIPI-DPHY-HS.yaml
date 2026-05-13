@@ -1,5 +1,5 @@
 case_id: BE-CLR-126-MIPI-DPHY-HS
-source_record: training/closed_loop/records/CLR-126-AMD-MIPI-DPHY-LP11-STOPSTATE-HS.yaml
+source_record: training/closed_loop/synthetic_closures/CLR-126-AMD-MIPI-DPHY-LP11-STOPSTATE-HS.yaml
 actual_resolution_summary: "AMD D-PHY debug orders checks through clock/reset constraints, LP11/T_INIT initialization, stopstate, HS clock transfer, HS data transfer, PPI errors, HS_SETTLE, and signal-integrity branches."
 hit_criteria:
   must_include:

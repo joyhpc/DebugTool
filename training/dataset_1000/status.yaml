@@ -2,8 +2,11 @@ version: 0.99.5
 last_updated: '2026-05-02'
 target_count: 1000
 current_counts:
-  official_source_prior_closed: 116
-  closed_loop_records_total: 130
+  official_source_prior_synthetic_closures: 116
+  synthetic_closures_total: 130
+  closed_loop_records_total: 0
+  blind_eval_cases: 8
+  frozen_replay_cases: 3
   public_or_forum_reviewed_records: 13
   real_project_reviewed_cases: 1
   near_hit_or_miss_records: 2

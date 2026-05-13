@@ -77,48 +77,21 @@ Treat the referenced case as a test fixture:
 
 ## Mandatory Rules
 
-0. Run Input Cleaning before Safety Gate, mode routing, candidate matching, or debug-tree generation.
-1. Preserve facts, judgments, actions tried, proposed methods, revisions, and missing information separately.
-2. Run Safety Gate before any debug action.
-3. Do not repeat destructive reproduction without a changed hypothesis and a documented safety envelope.
-4. Use current observations over generic experience.
-5. Use link models when experience is absent.
-6. Do not adopt narrow assets without required evidence.
-7. Do not query external knowledge unless the user asks for it or a high-impact gap makes the first-pass model/action ranking unstable.
-8. When external knowledge is used, resolve sources without hard-coding machine-local absolute paths.
-9. Keep raw external knowledge in the external workspace source; cite source paths and extracted claims inside DebugTool outputs.
-10. Always list Adopted / Deferred / Not Applied for full-tree modes.
-11. Always put the optimal path before the full tree.
-12. Every action node must use `output_contracts/node_table_schema.md`.
-13. Every action node must include `action_type`, `tool_required`, `safety_level`, `cost`, `reversibility`, and `evidence_refs`.
-14. S2/S3 nodes must include explicit safety warning or mitigation language.
-15. Mermaid decision-tree node IDs must match Node Explanation Table IDs.
-16. Every knowledge-linked claim must include fact source and confidence.
-17. Solved cases must produce a case_record draft, regression candidate, and a Skill-Level Learning Proposal that says whether the case changes reusable rules or remains target-specific.
-18. Before promoting or saving an output, run `scripts/output_validator.py` with the correct mode.
-19. Full debug trees must rank early actions by probability, time cost, safety risk, and exclusion value.
-20. Multi-link failures must load and apply the relevant domain link model from `assets/link_models/` before blind tuning or component replacement.
-21. Domain-specific stage requirements belong in link-model assets, not in the top-level skill contract.
-22. When the user asks whether an output, conclusion, or probability ranking is reliable, run Evidence Audit using `output_contracts/evidence_audit.md`; structural validation is not enough.
-23. When saving or publishing a pilot/debug output, apply the artifact hygiene rules in `lifecycle/case_artifact_hygiene.md`.
-24. When optimizing this skill, use `output_contracts/skill_improvement.md` and prefer contract/routing/regression changes over re-running the same unresolved debug case.
-25. Match the user's language for prose output; contract headings and machine-checked field names may remain in the required language.
-26. When ranking hypotheses, the simplest physical interpretation of the direct symptom must appear in the top two unless explicit contrary evidence demotes it.
-27. Stale or non-same-interval facts must not lower or raise probabilities directly; list them as `requires_re_verification` and add a matching missing-information item until refreshed.
-28. In unresolved Architecture-First outputs, include an `unknown / model gap` hypothesis and reserve at least 2% probability.
-29. Treat people named in chat as candidate owners only unless the input explicitly assigns responsibility.
-30. Use `reasoning/cost_priors.yaml` and `reasoning/probability_time_cost_model.md` for time-cost estimates; do not invent optimistic lab times for multi-instrument captures. Any local override must state the base prior class, overridden time, and reason.
-31. Evidence Audit and Architecture-First outputs must make mechanically checkable semantic guardrails explicit: stale-evidence handling, direct-symptom top-two reasoning, model-gap branch, cost-prior source, and candidate-owner wording when applicable.
-32. Major case-shape changes must appear in Input Cleaning `Contradictions / Revisions`, not only in narrative summary. Examples: symptom scope changes, architecture mapping changes, a former baseline channel fails, or an old repeated-test variable becomes invariant.
-33. When a case involves repeated tests, Input Cleaning must separately list repeated variables, invariants, and unknown invariants before routing.
-34. Architecture-First outputs must not mix `boundary`, `mechanism`, and `observability_gap` rows in one mutually exclusive probability table. Use boundary distribution, mechanism prior, coverage matrix, and evidence ledger when the case is unresolved; validators must reject legacy flat root-cause probability tables.
-35. Observability gaps such as missing fault-state readback are diagnostic gaps, not physical root causes; their actions improve measurement quality rather than changing hardware.
-36. If an Architecture-First hypothesis bundles multiple physical mechanisms because data is insufficient, add the evidence trigger that will split it into separate branches.
-37. `Cost / Probability Ranking` must expose priority tiers (`P0/P1/P2`) and explicit co-acquisition grouping through `co_acq_group_id`, `same_failure_window`, and `capture_channel`, because execution owners scan tiers faster than scores and same-window actions must be auditable.
-38. Input Cleaning facts must carry `provenance`; `team_attestation_unverified` facts are capped at `medium` confidence until backed by a raw artifact, instrument log, waveform, register dump, or same-window measurement.
-39. Architecture-First evidence ledgers must be mechanically linked: each evidence row states `criticality`, `gates_boundaries`, and `gates_mechanisms`; missing critical evidence caps gated boundary/mechanism probabilities at `0.50` unless a local override explains the cap, new value, and reason.
-40. Before creating a new pilot/debug artifact, answering where to record a case update, or processing a short follow-up with case-like tokens, check `pilot_runs/CASE_INDEX.md` when present. A strong or probable index match must update the existing case current entry point instead of creating or suggesting a new standalone record.
-41. If a user says a follow-up should have matched an earlier case, treat it as a routing/artifact-lifecycle defect. Add or correct the case-index aliases and update lifecycle/routing rules before committing the fix.
+R01. Run Input Cleaning first and preserve facts, judgments, actions tried, proposed methods, revisions, repeated-test variables, invariants, and missing information separately. Details: `output_contracts/input_cleaning.md`.
+R02. Run Safety Gate before any debug action; do not repeat destructive reproduction without a changed hypothesis and documented safety envelope. Details: `safety/` and `output_contracts/node_table_schema.md`.
+R03. Prefer current observations over generic experience, but use link models when experience is absent or the case spans multiple boundaries. Details: `assets/link_models/` and `reasoning/evidence_gate_rules.md`.
+R04. Do not adopt narrow assets without required evidence; every full-tree mode must list Adopted / Deferred / Not Applied. Details: `reasoning/asset_priority.md`.
+R05. External knowledge is opt-in or gap-triggered; resolve sources portably, keep raw knowledge outside DebugTool, and cite extracted claims with source paths. Details: `retrieval/` and `output_contracts/knowledge_linked_output.md`.
+R06. Full debug outputs put the optimal path before the full tree, rank early actions by probability/time/safety/exclusion value, and use the node table contract for every action node. Details: `output_contracts/node_table_schema.md`.
+R07. S2/S3 actions require explicit safety mitigation, and Mermaid decision-tree IDs must match Node Explanation Table IDs. Details: `scripts/output_validator.py`.
+R08. Architecture-First unresolved cases must separate boundary distribution, mechanism prior, coverage matrix, and evidence ledger; never use a flat root-cause probability table. Details: `output_contracts/architecture_first_output.md`.
+R09. Direct-symptom simplest physical explanations must stay in the top two unless evidence demotes them, and top-two boundary rows must cite observed fact IDs through `evidence_refs`. Details: `scripts/output_validator_RULES.md`.
+R10. Stale or non-same-window facts must not directly change probabilities; mark them `requires_re_verification` until refreshed. Details: `output_contracts/input_cleaning.md` and `output_contracts/evidence_audit.md`.
+R11. Keep `unknown / model gap` in unresolved Architecture-First outputs with at least 2% probability, and treat observability gaps as diagnostic gaps, not physical root causes. Details: `output_contracts/architecture_first_output.md`.
+R12. Cost ranking must cite `reasoning/cost_priors.yaml` or a local override per row and expose P0/P1/P2 tiers plus `co_acq_group_id`, `same_failure_window`, and `capture_channel`. Details: `reasoning/probability_time_cost_model.md`.
+R13. Treat chat participants as candidate owners unless responsibility is explicitly assigned by the input or project lead. Details: `lifecycle/case_governance_rules.md`.
+R14. Before saving, publishing, or promoting outputs, run the correct validator/evidence audit and apply artifact hygiene. Details: `scripts/output_validator.py`, `output_contracts/evidence_audit.md`, and `lifecycle/case_artifact_hygiene.md`.
+R15. Skill optimization must update durable contracts, routing, lifecycle rules, validators, or regression fixtures rather than re-running an unresolved case as a demo. Details: `output_contracts/skill_improvement.md`.
 
 ## Mode Selection Order
 

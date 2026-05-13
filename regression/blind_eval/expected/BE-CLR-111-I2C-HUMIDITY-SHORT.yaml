@@ -1,5 +1,5 @@
 case_id: BE-CLR-111-I2C-HUMIDITY-SHORT
-source_record: training/closed_loop/records/CLR-111-PUBLIC-I2C-MOISTURE-RTC-SHORT.yaml
+source_record: training/closed_loop/synthetic_closures/CLR-111-PUBLIC-I2C-MOISTURE-RTC-SHORT.yaml
 actual_resolution_summary: "The solved public case treated the SDA/SCL stuck-low condition as an electrical clamp/short/backfeed problem in a humid, contaminated system, not a protocol-only failure."
 hit_criteria:
   must_include:

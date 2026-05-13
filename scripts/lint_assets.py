@@ -11,50 +11,60 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from jsonschema import Draft202012Validator
+
+for _stream in (sys.stdout, sys.stderr):
+    _reconfigure = getattr(_stream, "reconfigure", None)
+    if _reconfigure is not None:
+        _reconfigure(encoding="utf-8")
 
 ROOT = Path(__file__).resolve().parents[1]
+SCHEMA_PATH = ROOT / "schemas" / "asset_schema.yaml"
 ids: dict[str, Path] = {}
 errors: list[str] = []
 warnings: list[str] = []
 
-ALLOWED_TYPES = {"link_model", "signature", "case_record", "pattern_bundle", "debug_principle"}
-ALLOWED_STATUS = {
-    "draft",
-    "candidate",
-    "validated_seed",
-    "validated_real_case",
-    "generalized",
-    "deprecated",
-}
-ALLOWED_SAFETY = {"S0", "S1", "S2", "S3"}
-ALLOWED_WEIGHT = {"high", "medium", "low"}
-ALLOWED_CONFIDENCE = {"low", "medium", "high"}
-ALLOWED_SOURCE_TYPE = {
-    "seed",
-    "real_case",
-    "authoritative_doc",
-    "project_doc",
-    "hypothesis",
-    "public_article",
-    "public_forum",
-    "vendor_app_note",
-    "user_provided_article",
-}
-ALLOWED_REF_RELATION = {
-    "derived_from",
-    "refines",
-    "counterexample_of",
-    "parent_of",
-    "supports",
-    "depends_on",
-}
-ID_PREFIX = {
-    "link_model": "LM-",
-    "signature": "SIG-",
-    "case_record": "CASE-",
-    "pattern_bundle": "PBU-",
-    "debug_principle": "DP-",
-}
+
+def load_schema() -> dict[str, Any]:
+    schema = yaml.safe_load(SCHEMA_PATH.read_text(encoding="utf-8")) or {}
+    Draft202012Validator.check_schema(schema)
+    return schema
+
+
+ASSET_SCHEMA = load_schema()
+ASSET_VALIDATOR = Draft202012Validator(ASSET_SCHEMA)
+
+
+def schema_enum(*keys: str) -> set[str]:
+    node: Any = ASSET_SCHEMA
+    for key in keys:
+        if not isinstance(node, dict):
+            return set()
+        node = node.get(key)
+    return {str(value) for value in node} if isinstance(node, list) else set()
+
+
+def schema_mapping(*keys: str) -> dict[str, str]:
+    node: Any = ASSET_SCHEMA
+    for key in keys:
+        if not isinstance(node, dict):
+            return {}
+        node = node.get(key)
+    if not isinstance(node, dict):
+        return {}
+    return {str(key): str(value) for key, value in node.items()}
+
+
+ALLOWED_TYPES = schema_enum("properties", "asset_type", "enum")
+ALLOWED_STATUS = schema_enum("properties", "status", "enum")
+ALLOWED_SAFETY = schema_enum("properties", "safety_level", "enum")
+ALLOWED_WEIGHT = schema_enum("properties", "use_when", "items", "properties", "weight", "enum")
+ALLOWED_CONFIDENCE = schema_enum("properties", "confidence", "enum")
+ALLOWED_SOURCE_TYPE = schema_enum("properties", "source", "properties", "type", "enum")
+ALLOWED_REF_RELATION = schema_enum(
+    "properties", "references", "items", "properties", "relation", "enum"
+)
+ID_PREFIX = schema_mapping("properties", "asset_type", "x-id-prefix")
 
 
 def fail(path: Path, msg: str) -> None:
@@ -72,6 +82,11 @@ def as_list(value: object) -> list[Any]:
 asset_paths = sorted((ROOT / "assets").rglob("*.yaml"))
 for path in asset_paths:
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    for schema_error in ASSET_VALIDATOR.iter_errors(data):
+        location = ".".join(str(part) for part in schema_error.absolute_path)
+        prefix = f"{location}: " if location else ""
+        fail(path, f"schema: {prefix}{schema_error.message}")
+
     aid = data.get("id")
     atype = data.get("asset_type")
     title = data.get("title", "")
@@ -189,11 +204,6 @@ for path in asset_paths:
     elif atype == "case_record":
         if not any(k in data for k in ["root_cause", "final_root_cause"]):
             fail(path, "case_record should include root_cause/final_root_cause")
-        if data.get("source", {}).get("type") != "real_case" and data.get("status") in {
-            "validated_real_case",
-            "generalized",
-        }:
-            fail(path, "validated_real_case/generalized case_record must use source.type real_case")
         if not data.get("misleading_paths"):
             warn(path, "case_record has no misleading_paths")
 
@@ -225,6 +235,22 @@ for path in asset_paths:
             fail(path, "debug_principle must include diagnostic_rule")
         if not data.get("anti_patterns"):
             warn(path, "debug_principle has no anti_patterns")
+
+    if data.get("status") in {"validated_real_case", "generalized"}:
+        source_type = data.get("source", {}).get("type")
+        if source_type != "real_case":
+            fail(path, "validated_real_case/generalized assets must use source.type real_case")
+        if atype != "case_record":
+            case_refs = [
+                ref.get("id")
+                for ref in as_list(data.get("references"))
+                if isinstance(ref, dict) and str(ref.get("id", "")).startswith("CASE-")
+            ]
+            if not case_refs:
+                fail(
+                    path,
+                    "PROMOTION BLOCKER: validated_real_case/generalized non-case assets must reference at least one real case_record",
+                )
 
 # reference integrity after collecting ids
 for path in asset_paths:

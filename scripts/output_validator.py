@@ -34,6 +34,11 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
+for _stream in (sys.stdout, sys.stderr):
+    _reconfigure = getattr(_stream, "reconfigure", None)
+    if _reconfigure is not None:
+        _reconfigure(encoding="utf-8")
+
 MODE_HEADINGS = {
     "input_cleaning": [
         "Raw Input Boundary",
@@ -897,6 +902,41 @@ def parse_id_refs(raw: str, prefix: str | None = None) -> set[str]:
     return refs
 
 
+def observed_fact_ids(text: str) -> set[str]:
+    fact_ids: set[str] = set()
+    section = extract_section(text, "Fact / Assumption Table")
+    for table in find_tables(section):
+        id_column = "fact_id" if "fact_id" in table.columns else "id"
+        if id_column not in table.columns:
+            continue
+        for row in table.rows:
+            row_id = normalize_text(row.get(id_column, ""))
+            if not (row_id.startswith("F") or "-F" in row_id):
+                continue
+            state = normalize_text(row.get("state", "") or row.get("type", "")).lower()
+            if not state or contains_any(state, ["fact", "observed", "confirmed"]):
+                fact_ids.add(row_id)
+    return fact_ids
+
+
+def semantic_check_has_verdict(text: str, tokens: Iterable[str]) -> bool:
+    verdicts = {"pass", "passed", "fail", "failed", "needs_revision", "not applicable", "n/a", "na"}
+    for line in text.splitlines():
+        if not contains_any(line, tokens):
+            continue
+        stripped = line.strip()
+        if stripped.startswith("|"):
+            cells = {normalize_text(cell).lower() for cell in split_md_row(stripped)}
+            if cells.intersection(verdicts):
+                return True
+        elif re.search(
+            r"(?i)(?:verdict|status)\s*[:=-]\s*(pass|passed|fail|failed|needs_revision|not applicable|n/a|na)\b",
+            stripped,
+        ):
+            return True
+    return False
+
+
 def bool_value(raw: str) -> bool | None:
     cleaned = normalize_text(raw).lower()
     if cleaned in {"true", "yes", "y", "1"}:
@@ -1170,6 +1210,45 @@ def validate_boundary_mechanism_tables(hypothesis_text: str, errors: list[str]) 
     )
 
 
+def validate_direct_symptom_evidence_binding(
+    text: str, hypothesis_text: str, errors: list[str]
+) -> None:
+    fact_ids = observed_fact_ids(text)
+    if not fact_ids:
+        errors.append(
+            "V-DIRECT-SYMPTOM-EVIDENCE: Fact / Assumption Table must expose observed fact IDs for top-two boundary evidence"
+        )
+        return
+
+    boundary_table = find_table_with_columns(
+        hypothesis_text, ["id", "type", "first_fail_boundary", "p", "evidence_refs"]
+    )
+    if not boundary_table:
+        errors.append(
+            "V-DIRECT-SYMPTOM-EVIDENCE: Boundary Distribution must include evidence_refs so top-two ranking is tied to observed facts"
+        )
+        return
+
+    scored_rows: list[tuple[float, str, dict[str, str]]] = []
+    for row in boundary_table.rows:
+        row_id = normalize_text(row.get("id", ""))
+        combined = " ".join(row.values())
+        if row_id == "B0" or contains_any(
+            combined, ["unknown / model gap", "unknown/model gap", "model gap"]
+        ):
+            continue
+        probability = parse_probability_value(row.get("p", ""))
+        if probability is not None:
+            scored_rows.append((probability, row_id, row))
+
+    for _probability, row_id, row in sorted(scored_rows, reverse=True)[:2]:
+        refs = parse_id_refs(row.get("evidence_refs", ""))
+        if not refs.intersection(fact_ids):
+            errors.append(
+                f"V-DIRECT-SYMPTOM-EVIDENCE: top-two boundary {row_id} must cite an observed fact ID in evidence_refs"
+            )
+
+
 def validate_cost_ranking_table(cost_text: str, errors: list[str]) -> None:
     required_columns = [
         "tier",
@@ -1178,6 +1257,7 @@ def validate_cost_ranking_table(cost_text: str, errors: list[str]) -> None:
         "capture_channel",
         "boundary_subset",
         "mechanism_subset",
+        "prior_source",
         "p_hit",
         "p_exclude",
         "time_min",
@@ -1186,7 +1266,7 @@ def validate_cost_ranking_table(cost_text: str, errors: list[str]) -> None:
     if not cost_table:
         errors.append(
             "Cost / Probability Ranking must include a table with tier, co_acq_group_id, "
-            "same_failure_window, capture_channel, boundary_subset, mechanism_subset, p_hit, p_exclude, and time_min columns"
+            "same_failure_window, capture_channel, boundary_subset, mechanism_subset, prior_source, p_hit, p_exclude, and time_min columns"
         )
         return
 
@@ -1210,12 +1290,20 @@ def validate_cost_ranking_table(cost_text: str, errors: list[str]) -> None:
             "capture_channel",
             "boundary_subset",
             "mechanism_subset",
+            "prior_source",
             "p_hit",
             "p_exclude",
             "time_min",
         ]:
             if is_blank_like(row.get(column, "")):
                 errors.append(f"cost row {row_id}: {column} is required")
+        prior_source = normalize_text(row.get("prior_source", "")).lower()
+        if prior_source and not contains_any(
+            prior_source, ["cost_priors.yaml", "cost prior", "local override"]
+        ):
+            errors.append(
+                f"cost row {row_id}: prior_source must cite cost_priors.yaml or a local override"
+            )
 
     for group_id, members in groups.items():
         if len(members) == 1:
@@ -1258,6 +1346,7 @@ def validate_architecture_first_semantics(text: str, mode: str, errors: list[str
         ]
     )
     validate_boundary_mechanism_tables(hypothesis_text, errors)
+    validate_direct_symptom_evidence_binding(text, hypothesis_text, errors)
 
     if not contains_any(
         hypothesis_text, ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"]
@@ -1282,18 +1371,7 @@ def validate_architecture_first_semantics(text: str, mode: str, errors: list[str
         errors.append(
             "architecture_first output must explicitly justify direct-symptom simplest-interpretation ranking"
         )
-    if not contains_any(hypothesis_text, ["top two", "top-2", "top 2", "前二", "前两"]):
-        errors.append(
-            "architecture_first output must state that the direct-symptom explanation is in the top two or explain demotion"
-        )
-
     cost_text = extract_section(text, "Cost / Probability Ranking")
-    if not contains_any(
-        cost_text, ["cost_priors.yaml", "cost prior", "local override", "成本先验", "本地覆盖"]
-    ):
-        errors.append(
-            "Cost / Probability Ranking must cite cost_priors.yaml or a stated local override"
-        )
     validate_cost_ranking_table(cost_text, errors)
 
     for table in find_tables(text):
@@ -1378,8 +1456,10 @@ def validate_evidence_audit_contract(text: str, mode: str, errors: list[str]) ->
         ),
     ]
     for label, tokens in semantic_checks:
-        if not contains_any(text, tokens):
-            errors.append(f"Evidence Audit must explicitly cover semantic check: {label}")
+        if not semantic_check_has_verdict(text, tokens):
+            errors.append(
+                f"Evidence Audit must explicitly cover semantic check with pass/fail/n/a verdict: {label}"
+            )
 
 
 def validate_skill_improvement_contract(text: str, mode: str, errors: list[str]) -> None:

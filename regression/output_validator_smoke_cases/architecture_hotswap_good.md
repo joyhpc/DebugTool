@@ -44,13 +44,13 @@ The direct symptom's simplest physical interpretation is startup MOSFET stress o
 
 ### Boundary Distribution
 
-| id | type | first_fail_boundary | p | why now |
-|---|---|---|---:|---|
-| B1 | boundary | MOSFET stress window | 0.50 | failure occurs at hot-plug/startup |
-| B2 | boundary | gate-control / clamp boundary | 0.20 | gate ramp and clamp are not measured |
-| B3 | boundary | downstream capacitance or active load | 0.15 | large capacitance is assumed |
-| B4 | boundary | assembly or downstream short | 0.05 | possible but cheap to exclude |
-| B0 | boundary | unknown / model gap | 0.10 | waveforms and exact topology are missing |
+| id | type | first_fail_boundary | p | evidence_refs | why now |
+|---|---|---|---:|---|---|
+| B1 | boundary | MOSFET stress window | 0.50 | F1,F2 | failure occurs at hot-plug/startup |
+| B2 | boundary | gate-control / clamp boundary | 0.20 | F1,F3 | gate ramp and clamp are not measured |
+| B3 | boundary | downstream capacitance or active load | 0.15 | F2 | large capacitance is assumed |
+| B4 | boundary | assembly or downstream short | 0.05 | F1 | possible but cheap to exclude |
+| B0 | boundary | unknown / model gap | 0.10 | F3,F4 | waveforms and exact topology are missing |
 
 ### Mechanism Prior
 
@@ -120,11 +120,11 @@ Not Applied: repeat full-power hot-plug, software-first debugging, lower-RDS(on)
 
 This table uses `reasoning/cost_priors.yaml`; no local override is applied.
 
-| node | tier | co_acq_group_id | same_failure_window | capture_channel | action | boundary_subset | mechanism_subset | p_hit | p_exclude | time_min | priority_reason |
-|---|---|---|---|---|---|---|---|---:|---:|---:|---|
-| A1 | P0 | CO-HS-SAFE-SETUP | false | bench_supply_thermal | Set safe current limit and thermal monitoring | B0 | M5 | 0.20 | 0.70 | 10 | standalone prerequisite for safe evidence |
-| A2 | P0 | CO-HS-STARTUP-CAPTURE-1 | true | scope_vin_vout_vgs_vds_id | Capture VIN VOUT VGS VDS and ID | B1,B2 | M1,M2 | 0.45 | 0.50 | 30 | standalone same-window multi-signal capture; no cross-owner co-acquisition needed |
-| A5 | P1 | none | false | dmm_visual_inspection | Inspect polarity clamp TVS and downstream short | B4 | M4 | 0.10 | 0.40 | 20 | cheap exclusion path |
+| node | tier | co_acq_group_id | same_failure_window | capture_channel | action | boundary_subset | mechanism_subset | prior_source | p_hit | p_exclude | time_min | priority_reason |
+|---|---|---|---|---|---|---|---|---|---:|---:|---:|---|
+| A1 | P0 | CO-HS-SAFE-SETUP | false | bench_supply_thermal | Set safe current limit and thermal monitoring | B0 | M5 | cost_priors.yaml:safe_setup | 0.20 | 0.70 | 10 | standalone prerequisite for safe evidence |
+| A2 | P0 | CO-HS-STARTUP-CAPTURE-1 | true | scope_vin_vout_vgs_vds_id | Capture VIN VOUT VGS VDS and ID | B1,B2 | M1,M2 | cost_priors.yaml:scope_capture | 0.45 | 0.50 | 30 | standalone same-window multi-signal capture; no cross-owner co-acquisition needed |
+| A5 | P1 | none | false | dmm_visual_inspection | Inspect polarity clamp TVS and downstream short | B4 | M4 | cost_priors.yaml:visual_dmm | 0.10 | 0.40 | 20 | cheap exclusion path |
 
 ## 11. Optimal Troubleshooting Path
 

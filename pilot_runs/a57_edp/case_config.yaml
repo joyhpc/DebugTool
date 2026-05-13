@@ -1,0 +1,12 @@
+case_id: a57_edp
+aliases:
+  - A57
+  - DS90UB984
+  - AU15P
+  - Redriver PWDN
+attention_patterns:
+  - PWDN
+  - CDR
+  - comma
+  - DS90UB984
+  - AU15P

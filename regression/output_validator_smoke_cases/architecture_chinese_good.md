@@ -114,8 +114,8 @@ flowchart TD
 
 ## 9. Adopted / Deferred / Not Applied
 
-Adopted: Architecture-First data-boundary split and stale-evidence quarantine.  
-Deferred: AUX/aux_in branch until same-window waveform/status is captured.  
+Adopted: Architecture-First data-boundary split and stale-evidence quarantine.
+Deferred: AUX/aux_in branch until same-window waveform/status is captured.
 Not Applied: stale evidence lowers AUX probability; direct AU15P tuning before input validity.
 
 ## 10. Cost / Probability Ranking
@@ -181,4 +181,3 @@ Stop any branch that uses stale aux_in evidence as current proof. Escalate only 
 ## 17. Retrospective Trigger
 
 Run retrospective if same-window capture proves that stale aux_in context was either misleading or a real repeated mechanism, and decide whether to update stale-evidence quarantine rules.
-

@@ -10,3 +10,4 @@ venv/
 *.bak
 *.zip
 knowledge_sources.yaml
+regression/blind_eval/live_outputs/

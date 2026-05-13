@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Close remaining authoritative training queue units as reviewed records.
+"""Close remaining authoritative training queue units as synthetic closures.
 
 This script is intentionally conservative: it only generates records for
 queue units whose status is not already `processed`, and it records the
@@ -9,14 +9,20 @@ blindness limitation that section-level queue focus can leak the lesson.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import yaml
 
+for _stream in (sys.stdout, sys.stderr):
+    _reconfigure = getattr(_stream, "reconfigure", None)
+    if _reconfigure is not None:
+        _reconfigure(encoding="utf-8")
+
 ROOT = Path(__file__).resolve().parents[1]
 TRAINING = ROOT / "training" / "closed_loop"
 QUEUE_PATH = TRAINING / "authoritative_training_queue.yaml"
-RECORDS = TRAINING / "records"
+RECORDS = TRAINING / "synthetic_closures"
 INDEX_PATH = TRAINING / "queue_closure_index.yaml"
 
 
@@ -519,6 +525,7 @@ def build_record(record_id: str, unit: dict) -> dict:
 def main() -> None:
     queue = yaml.safe_load(QUEUE_PATH.read_text(encoding="utf-8"))
     units = queue["units"]
+    RECORDS.mkdir(parents=True, exist_ok=True)
     existing_map = dict(EXISTING_QUEUE_MAP)
     next_num = next_record_number()
     generated = []

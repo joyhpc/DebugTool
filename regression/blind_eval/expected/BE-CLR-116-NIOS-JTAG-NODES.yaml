@@ -1,5 +1,5 @@
 case_id: BE-CLR-116-NIOS-JTAG-NODES
-source_record: training/closed_loop/records/CLR-116-INTEL-NIOS-JTAGCONFIG-NODES.yaml
+source_record: training/closed_loop/synthetic_closures/CLR-116-INTEL-NIOS-JTAGCONFIG-NODES.yaml
 actual_resolution_summary: "jtagconfig -n can list the cable, FPGA device, and internal JTAG nodes; node ranges identify Nios II debug modules and JTAG UART, separating external chain success from internal debug-resource presence."
 hit_criteria:
   must_include:

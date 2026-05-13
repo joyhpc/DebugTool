@@ -15,7 +15,8 @@ draft → candidate → validated_seed → validated_real_case → generalized
   - used in one real case with correct outcome
   - has at least one regression candidate
 - validated_seed → validated_real_case:
-  - reused in at least three cases
+  - V0.99 founder-pilot threshold: backed by at least one real solved case, with evidence traceable to a `case_record`
+  - V1.0 general-release threshold: reused in at least three independent cases
   - at least one negative test passes
   - promotion policy review passes
 - validated_real_case → generalized:

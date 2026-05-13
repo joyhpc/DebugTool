@@ -9,6 +9,10 @@ def write(path: Path, text: str) -> None:
 
 
 def test_global_case_specific_leak_is_rejected(tmp_path: Path) -> None:
+    write(
+        tmp_path / "pilot_runs" / "case_a" / "case_config.yaml",
+        "case_id: case_a\naliases:\n  - A57\n  - Redriver PWDN\n",
+    )
     write(tmp_path / "output_contracts" / "generic.md", "Query A57 Redriver PWDN\n")
 
     messages = cg.lint_global_case_specific_leaks(tmp_path)

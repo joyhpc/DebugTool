@@ -53,6 +53,14 @@ jobs:
         run: python scripts/run_frozen_artifact_replay.py
       - name: Validate blind-eval corpus
         run: python scripts/run_blind_eval.py
+      - name: Run live LLM replay when API key is available
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            python -m pip install -e ".[llm]"
+          fi
+          python scripts/run_llm_replay.py
       - name: Validate closed-loop training records
         run: python scripts/lint_closed_loop.py
       - name: Validate real project cases
@@ -69,6 +77,7 @@ jobs:
             scripts/run_output_validator_smoke.py \
             scripts/run_frozen_artifact_replay.py \
             scripts/run_blind_eval.py \
+            scripts/run_llm_replay.py \
             scripts/lint_contracts.py \
             scripts/lint_case_governance.py \
             scripts/lint_assets.py \

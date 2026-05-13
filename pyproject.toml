@@ -23,6 +23,7 @@ classifiers = [
 ]
 dependencies = [
   "PyYAML>=6.0,<7.0",
+  "jsonschema>=4,<5",
 ]
 
 [project.optional-dependencies]
@@ -37,6 +38,10 @@ dev = [
 
 parsing = [
   "markdown-it-py>=3,<4",
+]
+
+llm = [
+  "anthropic>=0.75,<1",
 ]
 
 [project.urls]
