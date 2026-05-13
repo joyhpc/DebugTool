@@ -5,10 +5,12 @@ This script is intentionally conservative: it only generates records for
 queue units whose status is not already `processed`, and it records the
 blindness limitation that section-level queue focus can leak the lesson.
 """
+
 from __future__ import annotations
 
-from pathlib import Path
 import re
+from pathlib import Path
+
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -68,15 +70,57 @@ def classify(focus: str, domain: str, title: str = "") -> dict:
                 "check configuration and supply before component replacement",
             ],
             "nodes": [
-                ("D1", "decision", "Verify supply, reset, and clock/oscillator configuration against the exact device mode.", 0.38, 0.55, 10, 5, 0),
-                ("A1", "action", "Use non-invasive evidence such as CLKOUT, status flags, or high-impedance probing.", 0.42, 0.45, 20, 15, 0),
-                ("D2", "decision", f"Evaluate the official lesson: {focus}.", 0.55, 0.35, 25, 10, 0),
-                ("T1", "terminal", "Apply the fix and validate across voltage, temperature, startup, and production spread.", 0.55, 0.10, 60, 60, 1),
+                (
+                    "D1",
+                    "decision",
+                    "Verify supply, reset, and clock/oscillator configuration against the exact device mode.",
+                    0.38,
+                    0.55,
+                    10,
+                    5,
+                    0,
+                ),
+                (
+                    "A1",
+                    "action",
+                    "Use non-invasive evidence such as CLKOUT, status flags, or high-impedance probing.",
+                    0.42,
+                    0.45,
+                    20,
+                    15,
+                    0,
+                ),
+                (
+                    "D2",
+                    "decision",
+                    f"Evaluate the official lesson: {focus}.",
+                    0.55,
+                    0.35,
+                    25,
+                    10,
+                    0,
+                ),
+                (
+                    "T1",
+                    "terminal",
+                    "Apply the fix and validate across voltage, temperature, startup, and production spread.",
+                    0.55,
+                    0.10,
+                    60,
+                    60,
+                    1,
+                ),
             ],
             "asset": "LM-CLOCK-RESET-TREE",
             "regression": "REG-OSCILLATOR-NO-START-MARGIN-FIRST",
         }
-    if domain in {"layout_emi", "measurement"} or "layout" in f or "probe" in f or "measurement" in f or "waveform" in f:
+    if (
+        domain in {"layout_emi", "measurement"}
+        or "layout" in f
+        or "probe" in f
+        or "measurement" in f
+        or "waveform" in f
+    ):
         return {
             "symptom": "Measured behavior is noisy, marginal, or inconsistent with expectations.",
             "background": "The observed fault may be created or hidden by probing, layout parasitics, or return-path coupling.",
@@ -90,19 +134,59 @@ def classify(focus: str, domain: str, title: str = "") -> dict:
                 "use safe probing around switching or high-current nodes",
             ],
             "nodes": [
-                ("D1", "decision", "Validate the measurement setup, reference point, bandwidth, and probe return path.", 0.48, 0.60, 10, 5, 0),
-                ("A1", "action", "Capture the relevant dynamic waveform at the physically correct node.", 0.50, 0.45, 20, 15, 0),
-                ("D2", "decision", f"Evaluate the official lesson: {focus}.", 0.55, 0.35, 25, 10, 0),
-                ("T1", "terminal", "Fix measurement, layout, decoupling, or return-path mechanism and repeat the same capture.", 0.50, 0.10, 45, 45, 1),
+                (
+                    "D1",
+                    "decision",
+                    "Validate the measurement setup, reference point, bandwidth, and probe return path.",
+                    0.48,
+                    0.60,
+                    10,
+                    5,
+                    0,
+                ),
+                (
+                    "A1",
+                    "action",
+                    "Capture the relevant dynamic waveform at the physically correct node.",
+                    0.50,
+                    0.45,
+                    20,
+                    15,
+                    0,
+                ),
+                (
+                    "D2",
+                    "decision",
+                    f"Evaluate the official lesson: {focus}.",
+                    0.55,
+                    0.35,
+                    25,
+                    10,
+                    0,
+                ),
+                (
+                    "T1",
+                    "terminal",
+                    "Fix measurement, layout, decoupling, or return-path mechanism and repeat the same capture.",
+                    0.50,
+                    0.10,
+                    45,
+                    45,
+                    1,
+                ),
             ],
             "asset": "DP-MEASUREMENT-BEFORE-DESIGN-CHANGE",
-            "regression": "REG-POWER-RIPPLE-MEASUREMENT-FIRST" if "ripple" in f else "REG-COST-AWARE-DEBUG-ORDERING",
+            "regression": "REG-POWER-RIPPLE-MEASUREMENT-FIRST"
+            if "ripple" in f
+            else "REG-COST-AWARE-DEBUG-ORDERING",
         }
     is_i2c = has_word(f, "i2c") or has_word(f, "sda") or has_word(f, "scl") or "scpa069" in f
     is_spi = has_word(f, "spi") or has_word(f, "miso") or has_word(f, "mosi")
     if domain == "digital_interface" or is_i2c or is_spi or has_word(f, "bus") or "interface" in f:
         asset = "LM-I2C-BUS" if is_i2c else "LM-SPI-TRANSACTION"
-        regression = "REG-I2C-STUCK-FALSE-CLOCK-RECOVERY" if is_i2c else "REG-SPI-ALL-FF-API-FRAMING-FIRST"
+        regression = (
+            "REG-I2C-STUCK-FALSE-CLOCK-RECOVERY" if is_i2c else "REG-SPI-ALL-FF-API-FRAMING-FIRST"
+        )
         return {
             "symptom": "A digital interface fails, returns constant data, or hangs under specific conditions.",
             "background": "The cause may be physical wiring, voltage threshold, bus ownership, timing, protocol framing, or driver transaction shape.",
@@ -116,15 +200,57 @@ def classify(focus: str, domain: str, title: str = "") -> dict:
                 "avoid continued contention when shared lines may be actively driven",
             ],
             "nodes": [
-                ("D1", "decision", "Map the failure to mechanical, electrical, protocol, driver, and application layers.", 0.38, 0.60, 10, 0, 0),
-                ("A1", "action", "Capture the actual bus transaction at the target pin.", 0.52, 0.45, 20, 15, 0),
-                ("D2", "decision", f"Evaluate the official lesson: {focus}.", 0.58, 0.35, 20, 10, 0),
-                ("T1", "terminal", "Promote the proven layer into the relevant link model, signature, or regression.", 0.30, 0.10, 20, 5, 0),
+                (
+                    "D1",
+                    "decision",
+                    "Map the failure to mechanical, electrical, protocol, driver, and application layers.",
+                    0.38,
+                    0.60,
+                    10,
+                    0,
+                    0,
+                ),
+                (
+                    "A1",
+                    "action",
+                    "Capture the actual bus transaction at the target pin.",
+                    0.52,
+                    0.45,
+                    20,
+                    15,
+                    0,
+                ),
+                (
+                    "D2",
+                    "decision",
+                    f"Evaluate the official lesson: {focus}.",
+                    0.58,
+                    0.35,
+                    20,
+                    10,
+                    0,
+                ),
+                (
+                    "T1",
+                    "terminal",
+                    "Promote the proven layer into the relevant link model, signature, or regression.",
+                    0.30,
+                    0.10,
+                    20,
+                    5,
+                    0,
+                ),
             ],
             "asset": asset,
             "regression": regression,
         }
-    if domain == "production" or "tolerance" in f or "spread" in f or "corner" in f or "derating" in f:
+    if (
+        domain == "production"
+        or "tolerance" in f
+        or "spread" in f
+        or "corner" in f
+        or "derating" in f
+    ):
         return {
             "symptom": "The design passes in a narrow condition but fails across production, temperature, or operating spread.",
             "background": "Nominal values may hide tolerance, derating, aging, or corner-case margin loss.",
@@ -138,17 +264,68 @@ def classify(focus: str, domain: str, title: str = "") -> dict:
                 "avoid destructive stress without a safe envelope",
             ],
             "nodes": [
-                ("D1", "decision", "Identify the parameter spread and environmental corner that changes failure probability.", 0.45, 0.50, 20, 10, 0),
-                ("A1", "action", "Run a bounded A/B or corner test that exercises the suspected margin.", 0.50, 0.35, 45, 45, 1),
-                ("D2", "decision", f"Evaluate the official lesson: {focus}.", 0.55, 0.30, 30, 10, 0),
-                ("T1", "terminal", "Add design margin, derating, screening, or regression coverage for the discovered spread.", 0.50, 0.10, 60, 60, 1),
+                (
+                    "D1",
+                    "decision",
+                    "Identify the parameter spread and environmental corner that changes failure probability.",
+                    0.45,
+                    0.50,
+                    20,
+                    10,
+                    0,
+                ),
+                (
+                    "A1",
+                    "action",
+                    "Run a bounded A/B or corner test that exercises the suspected margin.",
+                    0.50,
+                    0.35,
+                    45,
+                    45,
+                    1,
+                ),
+                (
+                    "D2",
+                    "decision",
+                    f"Evaluate the official lesson: {focus}.",
+                    0.55,
+                    0.30,
+                    30,
+                    10,
+                    0,
+                ),
+                (
+                    "T1",
+                    "terminal",
+                    "Add design margin, derating, screening, or regression coverage for the discovered spread.",
+                    0.50,
+                    0.10,
+                    60,
+                    60,
+                    1,
+                ),
             ],
             "asset": "DP-DYNAMIC-EVIDENCE-BEFORE-STATIC-RATING",
             "regression": "REG-COST-AWARE-DEBUG-ORDERING",
         }
-    if domain in {"power", "analog"} or "mosfet" in f or "soa" in f or "buck" in f or "ripple" in f or "capacitor" in f:
-        regression = "REG-HOTSWAP-SOA-SAFE-ENVELOPE" if "mosfet" in f or "soa" in f or "hot" in f else "REG-POWER-CHAIN-NO-REGULATOR-FIRST"
-        asset = "LM-HOTSWAP-HIGHSIDE-MOSFET" if "mosfet" in f or "soa" in f or "hot" in f else "LM-POWER-CHAIN"
+    if (
+        domain in {"power", "analog"}
+        or "mosfet" in f
+        or "soa" in f
+        or "buck" in f
+        or "ripple" in f
+        or "capacitor" in f
+    ):
+        regression = (
+            "REG-HOTSWAP-SOA-SAFE-ENVELOPE"
+            if "mosfet" in f or "soa" in f or "hot" in f
+            else "REG-POWER-CHAIN-NO-REGULATOR-FIRST"
+        )
+        asset = (
+            "LM-HOTSWAP-HIGHSIDE-MOSFET"
+            if "mosfet" in f or "soa" in f or "hot" in f
+            else "LM-POWER-CHAIN"
+        )
         return {
             "symptom": "A power path, converter, load, or analog rail behaves incorrectly under dynamic conditions.",
             "background": "The failure may depend on source capability, startup, current path, control loop, layout, load, or thermal/SOA limits.",
@@ -162,10 +339,46 @@ def classify(focus: str, domain: str, title: str = "") -> dict:
                 "measure relevant voltage, current, and time waveforms before replacement advice",
             ],
             "nodes": [
-                ("G1", "decision", "Define the safe measurement envelope and current/thermal limits before reproduction.", 0.25, 0.45, 10, 20, 0),
-                ("A1", "action", "Capture source, switch/control, load voltage, and current waveforms during the event.", 0.60, 0.40, 30, 30, 1),
-                ("D1", "decision", f"Evaluate the official lesson: {focus}.", 0.62, 0.35, 25, 15, 0),
-                ("T1", "terminal", "Apply the fix and re-test inside the safe envelope across load and temperature.", 0.55, 0.10, 60, 60, 2),
+                (
+                    "G1",
+                    "decision",
+                    "Define the safe measurement envelope and current/thermal limits before reproduction.",
+                    0.25,
+                    0.45,
+                    10,
+                    20,
+                    0,
+                ),
+                (
+                    "A1",
+                    "action",
+                    "Capture source, switch/control, load voltage, and current waveforms during the event.",
+                    0.60,
+                    0.40,
+                    30,
+                    30,
+                    1,
+                ),
+                (
+                    "D1",
+                    "decision",
+                    f"Evaluate the official lesson: {focus}.",
+                    0.62,
+                    0.35,
+                    25,
+                    15,
+                    0,
+                ),
+                (
+                    "T1",
+                    "terminal",
+                    "Apply the fix and re-test inside the safe envelope across load and temperature.",
+                    0.55,
+                    0.10,
+                    60,
+                    60,
+                    2,
+                ),
             ],
             "asset": asset,
             "regression": regression,
@@ -180,24 +393,55 @@ def classify(focus: str, domain: str, title: str = "") -> dict:
         ],
         "constraints": ["rank actions by probability, exclusion value, time, and safety"],
         "nodes": [
-            ("D1", "decision", "List plausible fault domains and rank them by expected information value.", 0.35, 0.55, 10, 0, 0),
-            ("A1", "action", "Perform the lowest-risk high-exclusion measurement.", 0.45, 0.45, 20, 10, 0),
+            (
+                "D1",
+                "decision",
+                "List plausible fault domains and rank them by expected information value.",
+                0.35,
+                0.55,
+                10,
+                0,
+                0,
+            ),
+            (
+                "A1",
+                "action",
+                "Perform the lowest-risk high-exclusion measurement.",
+                0.45,
+                0.45,
+                20,
+                10,
+                0,
+            ),
             ("D2", "decision", f"Evaluate the official lesson: {focus}.", 0.55, 0.35, 25, 10, 0),
-            ("T1", "terminal", "Promote stable learning into assets or regression.", 0.30, 0.10, 20, 5, 0),
+            (
+                "T1",
+                "terminal",
+                "Promote stable learning into assets or regression.",
+                0.30,
+                0.10,
+                20,
+                5,
+                0,
+            ),
         ],
         "asset": "DP-EXPECTED-VALUE-BEFORE-HABIT",
         "regression": "REG-COST-AWARE-DEBUG-ORDERING",
     }
 
 
-def score(p_hit: float, p_exclude: float, time_min: int, setup_min: int, risk_penalty: int) -> float:
+def score(
+    p_hit: float, p_exclude: float, time_min: int, setup_min: int, risk_penalty: int
+) -> float:
     return round((p_hit + 0.5 * p_exclude) / max(time_min + setup_min + risk_penalty, 1), 3)
 
 
 def build_record(record_id: str, unit: dict) -> dict:
     model = classify(unit["focus"], unit["domain"], unit["title"])
     nodes = []
-    for node_id, node_type, check, p_hit, p_exclude, time_min, setup_min, risk_penalty in model["nodes"]:
+    for node_id, node_type, check, p_hit, p_exclude, time_min, setup_min, risk_penalty in model[
+        "nodes"
+    ]:
         nodes.append(
             {
                 "node": node_id,
@@ -316,7 +560,9 @@ def main() -> None:
         yaml.safe_dump(index, sort_keys=False, allow_unicode=False, width=120),
         encoding="utf-8",
     )
-    print(f"Generated {len(generated)} records; all {len(units)} authoritative units are marked processed.")
+    print(
+        f"Generated {len(generated)} records; all {len(units)} authoritative units are marked processed."
+    )
 
 
 if __name__ == "__main__":

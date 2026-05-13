@@ -100,6 +100,34 @@ DebugTool 不应该拥有项目知识。项目原理图、datasheet、项目笔�
 7. 将结果记录到 `forms/founder_pilot_result_form.md`。
 8. 只有证据支持时，才运行 retrospective 并提出 case_record / regression 更新。
 
+## 生成物治理
+
+复杂 pilot/debug case 不应只保存一份长推理文档。生成物必须先让读者看清：当前 bug 属于哪个系统、哪个子系统、哪个模式门，以及第一批行动是什么。
+
+每个复杂 case 的目录应包含：
+
+- `README.md`：case 入口、阅读顺序、归档索引和维护规则。
+- `visual-architecture-brief.md`：第一屏系统/子系统架构图、Mode gate、高信噪比证据栈和现场 brief。
+- `latest-input-cleaning.md`：事实清洗、实体规范化、修订和 stale evidence。
+- `latest-architecture-first.md`：完整 boundary / mechanism / probability / decision tree。
+- `field-action-plan.md`：failure matrix、same-window evidence batch、owner candidate 和 stop conditions。
+- `archive/`：被替代生成物，只作追溯，不参与当前判断。
+
+全局路由先查 `pilot_runs/CASE_INDEX.md`。如果短更新能匹配已有 case，就更新该 case 的当前入口，不创建新的顶层散落文件。
+
+治理检查命令：
+
+```bash
+python scripts/lint_case_governance.py
+python scripts/case_status_report.py a57_edp
+```
+
+通用模板：
+
+- `forms/visual_architecture_brief_template.md`
+- `forms/failure_matrix_template.md`
+- `forms/same_window_evidence_batch_checklist.md`
+
 ## V1.0 晋级标准
 
 不要因为设计看起来完整就升级到 V1.0。
@@ -194,6 +222,14 @@ python scripts/lint_closed_loop.py
 
 ```bash
 python scripts/lint_real_project_cases.py
+```
+
+运行 case governance 检查和状态恢复：
+
+```bash
+python scripts/lint_case_governance.py
+python scripts/case_status_report.py a57_edp
+python scripts/case_status_report.py --all --max-items 3
 ```
 
 运行 1000-unit training program 检查：

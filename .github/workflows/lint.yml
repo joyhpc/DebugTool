@@ -28,9 +28,21 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          python -m pip install -e ".[dev]"
+      - name: Run ruff
+        run: python -m ruff check .
+      - name: Check ruff formatting
+        run: python -m ruff format --check .
+      - name: Run mypy
+        run: python -m mypy
+      - name: Run unit tests
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+        run: python -m pytest
       - name: Validate contract identity and portable artifacts
         run: python scripts/lint_contracts.py
+      - name: Validate case governance
+        run: python scripts/lint_case_governance.py
       - name: Validate assets
         run: python scripts/lint_assets.py
       - name: Validate regression suite structure
@@ -53,10 +65,12 @@ jobs:
         run: |
           python -m py_compile \
             scripts/output_validator.py \
+            scripts/case_status_report.py \
             scripts/run_output_validator_smoke.py \
             scripts/run_frozen_artifact_replay.py \
             scripts/run_blind_eval.py \
             scripts/lint_contracts.py \
+            scripts/lint_case_governance.py \
             scripts/lint_assets.py \
             scripts/regression_suite_linter.py \
             scripts/regression_run.py \

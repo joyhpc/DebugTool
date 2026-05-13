@@ -1,5 +1,12 @@
 # Architecture-First Debug Decision Tree
 
+## Artifact Navigation
+
+- Start with `visual-architecture-brief.md` for the current system/subsystem frame and Mode A / Mode B gate.
+- Use this file for detailed boundary, mechanism, evidence, probability, and decision-tree reasoning.
+- Execute captures from `field-action-plan.md`; do not treat action rows here as the field checklist.
+- Use `latest-input-cleaning.md` for raw-fact provenance and `README.md` for archive context.
+
 ## 1. Project Context Summary
 
 案子：A57 项目，DS90UB984 解码板，Issue4 eDP 概率性出图异常。

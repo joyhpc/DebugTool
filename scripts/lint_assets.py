@@ -5,8 +5,11 @@ This is still a structural/static linter. It verifies schema consistency,
 reference integrity, basic enum values, and a few quality gates that prevent
 empty-but-valid assets from entering the library.
 """
-from pathlib import Path
+
 import sys
+from pathlib import Path
+from typing import Any
+
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,15 +18,36 @@ errors: list[str] = []
 warnings: list[str] = []
 
 ALLOWED_TYPES = {"link_model", "signature", "case_record", "pattern_bundle", "debug_principle"}
-ALLOWED_STATUS = {"draft", "candidate", "validated_seed", "validated_real_case", "generalized", "deprecated"}
+ALLOWED_STATUS = {
+    "draft",
+    "candidate",
+    "validated_seed",
+    "validated_real_case",
+    "generalized",
+    "deprecated",
+}
 ALLOWED_SAFETY = {"S0", "S1", "S2", "S3"}
 ALLOWED_WEIGHT = {"high", "medium", "low"}
 ALLOWED_CONFIDENCE = {"low", "medium", "high"}
 ALLOWED_SOURCE_TYPE = {
-    "seed", "real_case", "authoritative_doc", "project_doc", "hypothesis",
-    "public_article", "public_forum", "vendor_app_note", "user_provided_article",
+    "seed",
+    "real_case",
+    "authoritative_doc",
+    "project_doc",
+    "hypothesis",
+    "public_article",
+    "public_forum",
+    "vendor_app_note",
+    "user_provided_article",
 }
-ALLOWED_REF_RELATION = {"derived_from", "refines", "counterexample_of", "parent_of", "supports", "depends_on"}
+ALLOWED_REF_RELATION = {
+    "derived_from",
+    "refines",
+    "counterexample_of",
+    "parent_of",
+    "supports",
+    "depends_on",
+}
 ID_PREFIX = {
     "link_model": "LM-",
     "signature": "SIG-",
@@ -41,7 +65,7 @@ def warn(path: Path, msg: str) -> None:
     warnings.append(f"{path}: {msg}")
 
 
-def as_list(value):
+def as_list(value: object) -> list[Any]:
     return value if isinstance(value, list) else []
 
 
@@ -64,7 +88,18 @@ for path in asset_paths:
     elif aid and not str(aid).startswith(ID_PREFIX[atype]):
         fail(path, f"id should start with {ID_PREFIX[atype]} for {atype}")
 
-    for key in ["title", "version", "domain", "applicability", "use_when", "do_not_use_when", "confidence", "safety_level", "source", "status"]:
+    for key in [
+        "title",
+        "version",
+        "domain",
+        "applicability",
+        "use_when",
+        "do_not_use_when",
+        "confidence",
+        "safety_level",
+        "source",
+        "status",
+    ]:
         if key not in data:
             fail(path, f"missing {key}")
 
@@ -116,7 +151,12 @@ for path in asset_paths:
         causal_order = as_list(data.get("causal_order"))
         if len(causal_order) < 3:
             fail(path, "link_model must have causal_order with at least 3 stages")
-        if data.get("status") in {"candidate", "validated_seed", "validated_real_case", "generalized"}:
+        if data.get("status") in {
+            "candidate",
+            "validated_seed",
+            "validated_real_case",
+            "generalized",
+        }:
             if not data.get("debug_rules"):
                 fail(path, "candidate+ link_model must include debug_rules")
             if not data.get("counterexamples"):
@@ -129,15 +169,19 @@ for path in asset_paths:
                     continue
                 if not stage.get("stage"):
                     fail(path, f"stage_model[{idx}] missing stage")
-                if not any(stage.get(k) for k in ["measurement_points", "strong_indicators", "actions", "safe_actions"]):
+                if not any(
+                    stage.get(k)
+                    for k in ["measurement_points", "strong_indicators", "actions", "safe_actions"]
+                ):
                     warn(path, f"stage_model[{idx}] has no measurement/indicator/action detail")
 
     elif atype == "signature":
         if not data.get("top_actions"):
             fail(path, "signature must have non-empty top_actions")
-        if not data.get("min_match_count"):
+        min_match_count = data.get("min_match_count")
+        if not min_match_count:
             fail(path, "signature must define min_match_count")
-        elif not isinstance(data.get("min_match_count"), int) or data.get("min_match_count") < 1:
+        elif not isinstance(min_match_count, int) or min_match_count < 1:
             fail(path, "min_match_count must be positive integer")
         if len(as_list(data.get("top_actions"))) < 2:
             warn(path, "signature has fewer than 2 top_actions")
@@ -145,7 +189,10 @@ for path in asset_paths:
     elif atype == "case_record":
         if not any(k in data for k in ["root_cause", "final_root_cause"]):
             fail(path, "case_record should include root_cause/final_root_cause")
-        if data.get("source", {}).get("type") != "real_case" and data.get("status") in {"validated_real_case", "generalized"}:
+        if data.get("source", {}).get("type") != "real_case" and data.get("status") in {
+            "validated_real_case",
+            "generalized",
+        }:
             fail(path, "validated_real_case/generalized case_record must use source.type real_case")
         if not data.get("misleading_paths"):
             warn(path, "case_record has no misleading_paths")
@@ -161,9 +208,15 @@ for path in asset_paths:
             if not pattern.get("symptom"):
                 fail(path, f"pattern_bundle pattern[{idx}] missing symptom")
             if not any(pattern.get(k) for k in ["first_checks", "actions", "diagnostic_checks"]):
-                fail(path, f"pattern_bundle pattern[{idx}] missing first_checks/actions/diagnostic_checks")
+                fail(
+                    path,
+                    f"pattern_bundle pattern[{idx}] missing first_checks/actions/diagnostic_checks",
+                )
         if data.get("source", {}).get("type") == "real_case":
-            fail(path, "pattern_bundle should not use source.type real_case; promote confirmed learning into case_record")
+            fail(
+                path,
+                "pattern_bundle should not use source.type real_case; promote confirmed learning into case_record",
+            )
 
     elif atype == "debug_principle":
         if not data.get("principle"):

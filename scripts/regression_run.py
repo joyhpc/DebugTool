@@ -4,15 +4,16 @@
 This is not an LLM-backed judge yet. It summarizes reviewed closed-loop records
 and enforces that the corpus has the fields needed for a future blind runner.
 """
+
 from __future__ import annotations
 
+import argparse
+import json
+import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-import argparse
-import json
-import sys
 from typing import Any
 
 import yaml
@@ -66,7 +67,7 @@ def load_case(path: Path) -> CorpusCase:
     errors: list[str] = []
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    except Exception as exc:  # noqa: BLE001 - report all parse/read failures as corpus errors
+    except Exception as exc:
         return CorpusCase(
             case_id=path.stem,
             path=path,
@@ -164,7 +165,9 @@ def pct(value: float) -> str:
     return f"{value * 100:.1f}%"
 
 
-def render_markdown(cases: list[CorpusCase], summary: dict[str, Any], baseline: dict[str, Any] | None) -> str:
+def render_markdown(
+    cases: list[CorpusCase], summary: dict[str, Any], baseline: dict[str, Any] | None
+) -> str:
     lines = [
         f"# Regression Corpus Report - {datetime.now(timezone.utc).isoformat()}",
         "",
@@ -252,15 +255,23 @@ def write_outputs(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Summarize DebugTool closed-loop regression corpus.")
-    parser.add_argument("--cases", default=str(DEFAULT_CASES), help="YAML file or directory of closed-loop records")
+    parser = argparse.ArgumentParser(
+        description="Summarize DebugTool closed-loop regression corpus."
+    )
+    parser.add_argument(
+        "--cases", default=str(DEFAULT_CASES), help="YAML file or directory of closed-loop records"
+    )
     parser.add_argument("--output", help="Markdown report path")
     parser.add_argument("--json", help="JSON report path")
     parser.add_argument("--baseline", help="Prior JSON report for metric deltas")
     parser.add_argument("--fail-under", type=float, default=0.0, help="Minimum hit rate, 0.0-1.0")
-    parser.add_argument("--max-blocked-pct", type=float, default=1.0, help="Maximum blocked rate, 0.0-1.0")
+    parser.add_argument(
+        "--max-blocked-pct", type=float, default=1.0, help="Maximum blocked rate, 0.0-1.0"
+    )
     parser.add_argument("--list-cases", action="store_true", help="List case ids and results")
-    parser.add_argument("--validate-cases", action="store_true", help="Only validate corpus records")
+    parser.add_argument(
+        "--validate-cases", action="store_true", help="Only validate corpus records"
+    )
     args = parser.parse_args()
 
     try:
@@ -294,7 +305,10 @@ def main() -> int:
     )
 
     if invalid:
-        print(f"REGRESSION CORPUS WARNINGS: {len(invalid)} records have corpus errors", file=sys.stderr)
+        print(
+            f"REGRESSION CORPUS WARNINGS: {len(invalid)} records have corpus errors",
+            file=sys.stderr,
+        )
 
     if summary["blocked_rate"] > args.max_blocked_pct:
         print(

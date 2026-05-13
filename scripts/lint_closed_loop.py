@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Lint closed-loop debug training records."""
-from pathlib import Path
+
 import sys
+from pathlib import Path
+from typing import Any
+
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,7 +34,7 @@ errors: list[str] = []
 warnings: list[str] = []
 
 
-def as_list(value):
+def as_list(value: object) -> list[Any]:
     return value if isinstance(value, list) else []
 
 
@@ -49,7 +52,8 @@ if not queue_path.exists():
 else:
     queue = yaml.safe_load(queue_path.read_text(encoding="utf-8")) or {}
     candidates = as_list(queue.get("candidates"))
-    if not isinstance(queue.get("target_count"), int) or queue.get("target_count") < 1:
+    target_count = queue.get("target_count")
+    if not isinstance(target_count, int) or target_count < 1:
         fail(queue_path, "target_count must be positive integer")
     if not candidates:
         fail(queue_path, "candidates must be non-empty")
@@ -81,7 +85,7 @@ else:
         fail(auth_queue_path, "target_count must be positive integer")
     if not isinstance(current_units, int) or current_units != len(units):
         fail(auth_queue_path, "current_units must match number of units")
-    if target_count and len(units) < target_count:
+    if isinstance(target_count, int) and len(units) < target_count:
         fail(auth_queue_path, "units must meet target_count")
     ids = set()
     for idx, unit in enumerate(units, start=1):
@@ -151,8 +155,18 @@ for path in record_paths:
         if cost_model.get("version") != "probability_time_cost_v1":
             fail(path, "cost_model.version must be probability_time_cost_v1")
         for idx, node in enumerate(tree, start=1):
-            node_id = node.get("node", f"node[{idx}]") if isinstance(node, dict) else f"node[{idx}]"
-            for key in ["p_hit", "p_exclude", "time_min", "setup_min", "risk_penalty", "priority_score"]:
+            if not isinstance(node, dict):
+                fail(path, f"node[{idx}] cost fields require a mapping node")
+                continue
+            node_id = node.get("node", f"node[{idx}]")
+            for key in [
+                "p_hit",
+                "p_exclude",
+                "time_min",
+                "setup_min",
+                "risk_penalty",
+                "priority_score",
+            ]:
                 if key not in node:
                     fail(path, f"{node_id} missing cost field {key}")
                     continue
@@ -160,12 +174,10 @@ for path in record_paths:
                 if key in {"p_hit", "p_exclude"}:
                     if not isinstance(value, (int, float)) or value < 0 or value > 1:
                         fail(path, f"{node_id}.{key} must be 0.0-1.0")
-                elif key in {"time_min", "setup_min", "risk_penalty"}:
-                    if not isinstance(value, (int, float)) or value < 0:
-                        fail(path, f"{node_id}.{key} must be non-negative")
-                elif key == "priority_score":
-                    if not isinstance(value, (int, float)) or value < 0:
-                        fail(path, f"{node_id}.{key} must be non-negative")
+                elif key in {"time_min", "setup_min", "risk_penalty", "priority_score"} and (
+                    not isinstance(value, (int, float)) or value < 0
+                ):
+                    fail(path, f"{node_id}.{key} must be non-negative")
 
     actual = data.get("actual_resolution") or {}
     if not actual.get("summary"):
@@ -185,20 +197,26 @@ for path in record_paths:
 if closure_index is not None:
     auth_queue = yaml.safe_load(auth_queue_path.read_text(encoding="utf-8")) or {}
     units = as_list(auth_queue.get("units"))
-    unit_ids = [unit.get("id") for unit in units if isinstance(unit, dict)]
+    unit_ids: list[str] = []
+    for unit in units:
+        if not isinstance(unit, dict):
+            continue
+        unit_id = unit.get("id")
+        if isinstance(unit_id, str):
+            unit_ids.append(unit_id)
     if closure_index.get("target_count") != auth_queue.get("target_count"):
         fail(closure_index_path, "target_count must match authoritative queue")
     if closure_index.get("closed_units") != len(unit_ids):
         fail(closure_index_path, "closed_units must match authoritative queue unit count")
     mappings = as_list(closure_index.get("unit_to_records"))
-    mapped = {}
+    mapped: dict[str, list[Any]] = {}
     for idx, item in enumerate(mappings, start=1):
         if not isinstance(item, dict):
             fail(closure_index_path, f"unit_to_records[{idx}] must be mapping")
             continue
         unit = item.get("unit")
         records = as_list(item.get("records"))
-        if not unit:
+        if not isinstance(unit, str) or not unit:
             fail(closure_index_path, f"unit_to_records[{idx}] missing unit")
             continue
         if unit in mapped:
@@ -212,13 +230,18 @@ if closure_index is not None:
     missing_units = sorted(set(unit_ids) - set(mapped))
     if missing_units:
         fail(closure_index_path, f"missing closure mappings for {', '.join(missing_units)}")
-    queued_units = [
-        unit.get("id")
-        for unit in units
-        if isinstance(unit, dict) and unit.get("status") != "processed"
-    ]
+    queued_units: list[str] = []
+    for unit in units:
+        if not isinstance(unit, dict) or unit.get("status") == "processed":
+            continue
+        unit_id = unit.get("id")
+        if isinstance(unit_id, str):
+            queued_units.append(unit_id)
     if queued_units:
-        fail(closure_index_path, f"authoritative queue not fully processed: {', '.join(queued_units)}")
+        fail(
+            closure_index_path,
+            f"authoritative queue not fully processed: {', '.join(queued_units)}",
+        )
 
 if errors:
     print("CLOSED LOOP LINT FAILED")

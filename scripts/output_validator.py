@@ -24,87 +24,146 @@ This is a structural validator, not an LLM quality judge. It cannot determine
 whether the debug reasoning is correct; it catches contract drift, common unsafe wording, and unsafe or
 incomplete output structure before a generated answer is reused as an asset.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
 import argparse
 import re
 import sys
-from typing import Iterable
+from collections.abc import Iterable
+from dataclasses import dataclass
+from pathlib import Path
 
 MODE_HEADINGS = {
     "input_cleaning": [
-        "Raw Input Boundary", "Entity / Alias Normalization",
-        "Observed / Confirmed Facts", "Judgments / Inferences / Hypotheses",
-        "Actions Already Tried And Results", "Proposed Methods / Pending Actions",
-        "Contradictions / Revisions", "Missing Information",
+        "Raw Input Boundary",
+        "Entity / Alias Normalization",
+        "Observed / Confirmed Facts",
+        "Judgments / Inferences / Hypotheses",
+        "Actions Already Tried And Results",
+        "Proposed Methods / Pending Actions",
+        "Contradictions / Revisions",
+        "Missing Information",
         "Router-Ready Case Brief",
     ],
     "standard": [
-        "Problem Summary", "Input Cleaning Snapshot", "Context Mode", "Safety Gate",
-        "Working Link Model / Scope", "Fact / Assumption Table",
-        "Hypothesis Ranking", "Candidate Matching Report",
-        "Adopted / Deferred / Not Applied", "Cost / Probability Ranking",
-        "Optimal Troubleshooting Path", "Decision Tree", "Node Explanation Table",
-        "Missing Information", "Next 3-5 Actions",
-        "Stop / Escalation Conditions", "Retrospective Trigger",
+        "Problem Summary",
+        "Input Cleaning Snapshot",
+        "Context Mode",
+        "Safety Gate",
+        "Working Link Model / Scope",
+        "Fact / Assumption Table",
+        "Hypothesis Ranking",
+        "Candidate Matching Report",
+        "Adopted / Deferred / Not Applied",
+        "Cost / Probability Ranking",
+        "Optimal Troubleshooting Path",
+        "Decision Tree",
+        "Node Explanation Table",
+        "Missing Information",
+        "Next 3-5 Actions",
+        "Stop / Escalation Conditions",
+        "Retrospective Trigger",
     ],
     "knowledge_linked": [
-        "Retrieval Summary", "Fact Table", "Project Context Model",
-        "Fault-Domain Localization", "Candidate Matching Report",
-        "Adopted / Deferred / Not Applied", "Optimal Troubleshooting Path",
-        "Decision Tree", "Node Explanation Table", "Missing / Contradictory Context",
-        "Next 3-5 Actions", "Stop / Escalation Conditions", "Retrospective Trigger",
+        "Retrieval Summary",
+        "Fact Table",
+        "Project Context Model",
+        "Fault-Domain Localization",
+        "Candidate Matching Report",
+        "Adopted / Deferred / Not Applied",
+        "Optimal Troubleshooting Path",
+        "Decision Tree",
+        "Node Explanation Table",
+        "Missing / Contradictory Context",
+        "Next 3-5 Actions",
+        "Stop / Escalation Conditions",
+        "Retrospective Trigger",
     ],
     "fast_path": [
-        "Mode / Signature / Confidence", "Safety Gate", "Quick Diagnosis",
-        "Minimal Context Still Needed", "Top 3-5 Actions",
-        "Stop / Escalate Conditions", "Mini Decision Tree",
-        "Why Full Architecture Is Not Needed Yet", "When To Switch Modes",
+        "Mode / Signature / Confidence",
+        "Safety Gate",
+        "Quick Diagnosis",
+        "Minimal Context Still Needed",
+        "Top 3-5 Actions",
+        "Stop / Escalate Conditions",
+        "Mini Decision Tree",
+        "Why Full Architecture Is Not Needed Yet",
+        "When To Switch Modes",
     ],
     "architecture_first": [
-        "Project Context Summary", "Input Cleaning Snapshot",
-        "Architecture / Link Understanding", "Evidence-Aware Link Model",
-        "Fact / Assumption Table", "Fault-Domain Localization",
-        "Hypothesis Tree With Probabilities", "Candidate Matching Report",
-        "Adopted / Deferred / Not Applied", "Cost / Probability Ranking",
-        "Optimal Troubleshooting Path", "Decision Tree", "Node Explanation Table",
-        "Missing Architecture Information", "Next 3-5 Actions",
-        "Stop / Escalation Conditions", "Retrospective Trigger",
+        "Project Context Summary",
+        "Input Cleaning Snapshot",
+        "Architecture / Link Understanding",
+        "Evidence-Aware Link Model",
+        "Fact / Assumption Table",
+        "Fault-Domain Localization",
+        "Hypothesis Tree With Probabilities",
+        "Candidate Matching Report",
+        "Adopted / Deferred / Not Applied",
+        "Cost / Probability Ranking",
+        "Optimal Troubleshooting Path",
+        "Decision Tree",
+        "Node Explanation Table",
+        "Missing Architecture Information",
+        "Next 3-5 Actions",
+        "Stop / Escalation Conditions",
+        "Retrospective Trigger",
     ],
     "assumption_driven": [
-        "Context Mode", "Proposed Link Model / Classic Architecture",
-        "Assumptions To Confirm", "Fault Domains If Assumptions Hold",
-        "Provisional Optimal Path", "Provisional Decision Tree",
-        "What Would Change The Tree", "Next User Confirmation",
+        "Context Mode",
+        "Proposed Link Model / Classic Architecture",
+        "Assumptions To Confirm",
+        "Fault Domains If Assumptions Hold",
+        "Provisional Optimal Path",
+        "Provisional Decision Tree",
+        "What Would Change The Tree",
+        "Next User Confirmation",
     ],
     "evidence_audit": [
-        "Artifact Under Review", "Review Verdict", "Contract Compliance",
-        "Evidence Integrity Findings", "Link Model Findings",
-        "Probability And Ranking Findings", "Action Tree Findings",
-        "Missing Or Overclaimed Information", "Required Fixes Before Publish",
+        "Artifact Under Review",
+        "Review Verdict",
+        "Contract Compliance",
+        "Evidence Integrity Findings",
+        "Link Model Findings",
+        "Probability And Ranking Findings",
+        "Action Tree Findings",
+        "Missing Or Overclaimed Information",
+        "Required Fixes Before Publish",
         "Reviewer Decision",
     ],
     "skill_improvement": [
-        "Improvement Objective", "Triggering Example Or Failure",
-        "Skill Layer Diagnosis", "Target-Case Uncertainty vs Skill Defect",
+        "Improvement Objective",
+        "Triggering Example Or Failure",
+        "Skill Layer Diagnosis",
+        "Target-Case Uncertainty vs Skill Defect",
         "Required Contract / Routing / Lifecycle Changes",
-        "Regression Coverage To Add Or Update", "Changes Made",
-        "Validation", "Residual Risks", "Next Skill Backlog",
+        "Regression Coverage To Add Or Update",
+        "Changes Made",
+        "Validation",
+        "Residual Risks",
+        "Next Skill Backlog",
     ],
     "retrospective": [
-        "Root Cause Summary", "Effective Fix", "Strong Indicators",
-        "Misleading / Low-Value Paths", "Case Record Draft",
-        "Asset Update Proposal", "Regression Test Proposal",
-        "Skill-Level Learning Proposal", "Promotion Recommendation",
+        "Root Cause Summary",
+        "Effective Fix",
+        "Strong Indicators",
+        "Misleading / Low-Value Paths",
+        "Case Record Draft",
+        "Asset Update Proposal",
+        "Regression Test Proposal",
+        "Skill-Level Learning Proposal",
+        "Promotion Recommendation",
     ],
 }
 
 MODES_REQUIRING_NODE_TABLE = {"standard", "knowledge_linked", "architecture_first"}
 MODES_WITH_DECISION_TREE = {
-    "standard", "knowledge_linked", "architecture_first",
-    "fast_path", "assumption_driven",
+    "standard",
+    "knowledge_linked",
+    "architecture_first",
+    "fast_path",
+    "assumption_driven",
 }
 
 DECISION_TREE_SECTION_BY_MODE = {
@@ -116,18 +175,43 @@ DECISION_TREE_SECTION_BY_MODE = {
 }
 
 REQUIRED_NODE_COLUMNS = [
-    "id", "type", "action_type", "check_or_action", "tool_required",
-    "expected_observation", "interpretation", "safety_level", "cost",
-    "reversibility", "next_branch", "evidence_refs",
+    "id",
+    "type",
+    "action_type",
+    "check_or_action",
+    "tool_required",
+    "expected_observation",
+    "interpretation",
+    "safety_level",
+    "cost",
+    "reversibility",
+    "next_branch",
+    "evidence_refs",
 ]
 
 VALID_TYPE = {"decision", "action", "gate", "terminal"}
 VALID_ACTION_TYPE = {
-    "observe", "isolate", "perturb", "replace", "reconfigure",
-    "reproduce", "rollback", "none", "n/a", "na", "-", "",
+    "observe",
+    "isolate",
+    "perturb",
+    "replace",
+    "reconfigure",
+    "reproduce",
+    "rollback",
+    "none",
+    "n/a",
+    "na",
+    "-",
+    "",
 }
 VALID_ACTION_ONLY_ACTION_TYPE = {
-    "observe", "isolate", "perturb", "replace", "reconfigure", "reproduce", "rollback",
+    "observe",
+    "isolate",
+    "perturb",
+    "replace",
+    "reconfigure",
+    "reproduce",
+    "rollback",
 }
 VALID_SAFETY_LEVEL = {"S0", "S1", "S2", "S3"}
 VALID_COST = {"low", "medium", "high"}
@@ -135,52 +219,165 @@ VALID_REVERSIBILITY = {"reversible", "partial", "irreversible", "n/a", "na", "-"
 VALID_ACTION_ONLY_REVERSIBILITY = {"reversible", "partial", "irreversible"}
 VALID_CONFIDENCE = {"high", "medium", "low"}
 VALID_STALENESS = {"fresh", "requires_re_verification", "archived"}
-VALID_PROVENANCE = {"raw_artifact", "instrument_log", "team_attestation_unverified", "datasheet", "derived"}
+VALID_PROVENANCE = {
+    "raw_artifact",
+    "instrument_log",
+    "team_attestation_unverified",
+    "datasheet",
+    "derived",
+}
 VALID_EVIDENCE_STATUS = {"present", "missing", "partial"}
 VALID_EVIDENCE_CRITICALITY = {"critical", "supporting"}
 VALID_EVIDENCE_AUDIT_VERDICTS = {"pass", "pass_with_minor_fixes", "needs_revision", "reject"}
 VALID_PUBLISH_READY = {"yes", "no"}
 
 SKILL_LAYER_KEYWORDS = {
-    "intake", "routing", "route", "link_model_contract", "link model",
-    "output_contract", "output contract", "evidence_audit", "evidence audit",
-    "artifact_lifecycle", "artifact lifecycle", "lifecycle", "validator",
-    "regression", "asset_coverage", "asset coverage",
+    "intake",
+    "routing",
+    "route",
+    "link_model_contract",
+    "link model",
+    "output_contract",
+    "output contract",
+    "evidence_audit",
+    "evidence audit",
+    "artifact_lifecycle",
+    "artifact lifecycle",
+    "lifecycle",
+    "validator",
+    "regression",
+    "asset_coverage",
+    "asset coverage",
 }
 
 INPUT_CLEANING_TABLES = [
-    ("Observed / Confirmed Facts", ["id", "fact", "source_in_input", "provenance", "confidence", "staleness", "affected_link_or_node"]),
-    ("Judgments / Inferences / Hypotheses", ["id", "statement", "based_on", "confidence", "could_be_wrong_if"]),
-    ("Actions Already Tried And Results", ["id", "action", "target", "result", "interpretation", "evidence_refs"]),
-    ("Proposed Methods / Pending Actions", ["id", "proposed_action", "owner_if_known", "target", "expected_evidence", "hypothesis_or_link_node"]),
-    ("Contradictions / Revisions", ["id", "previous_statement", "revised_statement", "why_revised", "impact_on_routing"]),
+    (
+        "Observed / Confirmed Facts",
+        [
+            "id",
+            "fact",
+            "source_in_input",
+            "provenance",
+            "confidence",
+            "staleness",
+            "affected_link_or_node",
+        ],
+    ),
+    (
+        "Judgments / Inferences / Hypotheses",
+        ["id", "statement", "based_on", "confidence", "could_be_wrong_if"],
+    ),
+    (
+        "Actions Already Tried And Results",
+        ["id", "action", "target", "result", "interpretation", "evidence_refs"],
+    ),
+    (
+        "Proposed Methods / Pending Actions",
+        [
+            "id",
+            "proposed_action",
+            "owner_if_known",
+            "target",
+            "expected_evidence",
+            "hypothesis_or_link_node",
+        ],
+    ),
+    (
+        "Contradictions / Revisions",
+        ["id", "previous_statement", "revised_statement", "why_revised", "impact_on_routing"],
+    ),
 ]
 
 SAFETY_WORDS = {
     # Explicit warning / mitigation terms. Do not include bare hazard names like
     # "high voltage" because merely naming a hazard is not enough for an S2/S3 node.
-    "warning", "caution", "hazard", "risk", "safe", "safety", "limit", "isolate",
-    "disable", "de-energize", "deenergize", "current-limit", "current limit", "ppe",
-    "e-stop", "fuse", "thermal limit", "destructive", "do not", "stop",
-    "安全", "风险", "危险", "警告", "注意", "限流", "隔离", "断电", "防护", "禁止", "停止",
+    "warning",
+    "caution",
+    "hazard",
+    "risk",
+    "safe",
+    "safety",
+    "limit",
+    "isolate",
+    "disable",
+    "de-energize",
+    "deenergize",
+    "current-limit",
+    "current limit",
+    "ppe",
+    "e-stop",
+    "fuse",
+    "thermal limit",
+    "destructive",
+    "do not",
+    "stop",
+    "安全",
+    "风险",
+    "危险",
+    "警告",
+    "注意",
+    "限流",
+    "隔离",
+    "断电",
+    "防护",
+    "禁止",
+    "停止",
 }
 
 NODE_ID_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
+# Keep longest-to-shortest so shorter arrows cannot partially match longer ones.
+ARROW_PATTERNS = ("-.->", "-->", "==>", "---", "--")
+ARROW_RE = re.compile("|".join(re.escape(pattern) for pattern in ARROW_PATTERNS))
 
 FORBIDDEN_UNSAFE_PATTERNS = [
-    (re.compile(r"(?:repeat\s+)?full[-\s]?power\s+hot[-\s]?plug(?:\s+reproduction)?", re.I), "unbounded full-power hot-plug reproduction"),
-    (re.compile(r"bypass\s+(?:the\s+)?(?:fuse|efuse|current\s*limit|protection)", re.I), "bypassing protection/current limit"),
-    (re.compile(r"short\s+(?:pg|fault|enable|en)\s+(?:to|high|low)", re.I), "forcing control/status pins without constraints"),
-    (re.compile(r"remove\s+(?:the\s+)?current\s*limit", re.I), "removing current limit on an unsafe power fault"),
-    (re.compile(r"无限流|取消限流|旁路(?:保险|保护|限流)|直接短接", re.I), "unsafe Chinese power-debug phrase"),
+    (
+        re.compile(r"(?:repeat\s+)?full[-\s]?power\s+hot[-\s]?plug(?:\s+reproduction)?", re.I),
+        "unbounded full-power hot-plug reproduction",
+    ),
+    (
+        re.compile(r"bypass\s+(?:the\s+)?(?:fuse|efuse|current\s*limit|protection)", re.I),
+        "bypassing protection/current limit",
+    ),
+    (
+        re.compile(r"short\s+(?:pg|fault|enable|en)\s+(?:to|high|low)", re.I),
+        "forcing control/status pins without constraints",
+    ),
+    (
+        re.compile(r"remove\s+(?:the\s+)?current\s*limit", re.I),
+        "removing current limit on an unsafe power fault",
+    ),
+    (
+        re.compile(r"无限流|取消限流|旁路(?:保险|保护|限流)|直接短接", re.I),
+        "unsafe Chinese power-debug phrase",
+    ),
 ]
 
 UNSAFE_MITIGATION_TERMS = [
-    "do not", "must not", "never", "avoid", "stop", "not applied",
-    "forbidden", "prohibited", "blocked", "instead",
-    "current-limited", "current limited", "safe envelope", "precharge",
-    "fuse-protected", "fused", "efuse", "e-fuse",
-    "不要", "禁止", "停止", "避免", "限流", "安全边界", "安全包络",
+    "do not",
+    "must not",
+    "never",
+    "avoid",
+    "stop",
+    "not applied",
+    "forbidden",
+    "prohibited",
+    "blocked",
+    "instead",
+    "current-limited",
+    "current limited",
+    "safe envelope",
+    "precharge",
+    "fuse-protected",
+    "fused",
+    "efuse",
+    "e-fuse",
+    "不要",
+    "禁止",
+    "停止",
+    "避免",
+    "限流",
+    "安全边界",
+    "安全包络",
 ]
 
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
@@ -309,25 +506,38 @@ def find_tables(text: str) -> list[MarkdownTable]:
                 if len(cells) < len(columns):
                     cells += [""] * (len(columns) - len(cells))
                 if len(cells) > len(columns):
-                    cells = cells[: len(columns) - 1] + [" | ".join(cells[len(columns) - 1 :])]
-                rows.append(dict(zip(columns, cells)))
-            tables.append(MarkdownTable(start_line=start + 1, lines=raw_table, columns=columns, rows=rows))
+                    cells = [*cells[: len(columns) - 1], " | ".join(cells[len(columns) - 1 :])]
+                rows.append(dict(zip(columns, cells, strict=True)))
+            tables.append(
+                MarkdownTable(start_line=start + 1, lines=raw_table, columns=columns, rows=rows)
+            )
             i = j
         else:
             i += 1
     return tables
 
 
-def find_node_table(text: str) -> MarkdownTable | None:
+def select_node_table(text: str) -> tuple[MarkdownTable | None, list[MarkdownTable]]:
     tables = find_tables(text)
     best: MarkdownTable | None = None
+    tied_best: list[MarkdownTable] = []
     best_score = 0
     for table in tables:
         cols = set(table.columns)
         score = len(cols.intersection(REQUIRED_NODE_COLUMNS))
         if {"id", "safety_level"}.issubset(cols) and score > best_score:
             best = table
+            tied_best = [table]
             best_score = score
+        elif {"id", "safety_level"}.issubset(cols) and score == best_score and score > 0:
+            tied_best.append(table)
+    if len(tied_best) > 1:
+        return None, tied_best
+    return best, []
+
+
+def find_node_table(text: str) -> MarkdownTable | None:
+    best, _ambiguous_tables = select_node_table(text)
     return best
 
 
@@ -335,7 +545,15 @@ def is_blank_like(value: str) -> bool:
     return normalize_text(value).lower() in {"", "-", "n/a", "na", "none", "null"}
 
 
-def validate_enum(value: str, allowed: set[str], field: str, row_id: str, errors: list[str], *, case_sensitive: bool = False) -> None:
+def validate_enum(
+    value: str,
+    allowed: set[str],
+    field: str,
+    row_id: str,
+    errors: list[str],
+    *,
+    case_sensitive: bool = False,
+) -> None:
     cleaned = normalize_text(value)
     candidate = cleaned if case_sensitive else cleaned.lower()
     allowed_cmp = allowed if case_sensitive else {x.lower() for x in allowed}
@@ -343,8 +561,17 @@ def validate_enum(value: str, allowed: set[str], field: str, row_id: str, errors
         errors.append(f"node {row_id}: invalid {field} '{value}', allowed={sorted(allowed)}")
 
 
-def validate_node_table(text: str, mode: str, errors: list[str], warnings: list[str]) -> tuple[set[str], MarkdownTable | None]:
-    node_table = find_node_table(text)
+def validate_node_table(
+    text: str, mode: str, errors: list[str], warnings: list[str]
+) -> tuple[set[str], MarkdownTable | None]:
+    node_table, ambiguous_tables = select_node_table(text)
+
+    if ambiguous_tables:
+        lines = [table.start_line for table in ambiguous_tables]
+        errors.append(
+            f"ambiguous node table: multiple candidate tables have the same best score at lines {lines}"
+        )
+        return set(), None
 
     if not node_table:
         if mode in MODES_REQUIRING_NODE_TABLE:
@@ -380,14 +607,27 @@ def validate_node_table(text: str, mode: str, errors: list[str], warnings: list[
         else:
             validate_enum(node_type, VALID_TYPE, "type", row_id, errors)
 
-        for required in ["check_or_action", "expected_observation", "interpretation", "safety_level", "cost", "next_branch"]:
+        for required in [
+            "check_or_action",
+            "expected_observation",
+            "interpretation",
+            "safety_level",
+            "cost",
+            "next_branch",
+        ]:
             if required in node_table.columns and is_blank_like(row.get(required, "")):
                 errors.append(f"node {row_id}: {required} is required")
 
-        if "safety_level" in node_table.columns:
-            safety_level = normalize_text(row.get("safety_level", "")).upper()
-            if safety_level:
-                validate_enum(safety_level, VALID_SAFETY_LEVEL, "safety_level", row_id, errors, case_sensitive=True)
+        safety_level = normalize_text(row.get("safety_level", "")).upper()
+        if "safety_level" in node_table.columns and safety_level:
+            validate_enum(
+                safety_level,
+                VALID_SAFETY_LEVEL,
+                "safety_level",
+                row_id,
+                errors,
+                case_sensitive=True,
+            )
 
         if "cost" in node_table.columns:
             validate_enum(row.get("cost", ""), VALID_COST, "cost", row_id, errors)
@@ -396,23 +636,31 @@ def validate_node_table(text: str, mode: str, errors: list[str], warnings: list[
             action_type = normalize_text(row.get("action_type", "")).lower()
             validate_enum(action_type, VALID_ACTION_TYPE, "action_type", row_id, errors)
             if node_type == "action" and action_type not in VALID_ACTION_ONLY_ACTION_TYPE:
-                errors.append(f"node {row_id}: action node requires action_type in {sorted(VALID_ACTION_ONLY_ACTION_TYPE)}")
+                errors.append(
+                    f"node {row_id}: action node requires action_type in {sorted(VALID_ACTION_ONLY_ACTION_TYPE)}"
+                )
 
         if "reversibility" in node_table.columns:
             reversibility = normalize_text(row.get("reversibility", "")).lower()
             validate_enum(reversibility, VALID_REVERSIBILITY, "reversibility", row_id, errors)
             if node_type == "action" and reversibility not in VALID_ACTION_ONLY_REVERSIBILITY:
-                errors.append(f"node {row_id}: action node requires reversibility in {sorted(VALID_ACTION_ONLY_REVERSIBILITY)}")
+                errors.append(
+                    f"node {row_id}: action node requires reversibility in {sorted(VALID_ACTION_ONLY_REVERSIBILITY)}"
+                )
 
-        if node_type in {"action", "gate"} and "tool_required" in node_table.columns:
-            if is_blank_like(row.get("tool_required", "")):
-                errors.append(f"node {row_id}: {node_type} node requires tool_required")
+        if (
+            node_type in {"action", "gate"}
+            and "tool_required" in node_table.columns
+            and is_blank_like(row.get("tool_required", ""))
+        ):
+            errors.append(f"node {row_id}: {node_type} node requires tool_required")
 
-        safety_level = normalize_text(row.get("safety_level", "")).upper()
         if safety_level in {"S2", "S3"}:
             combined = " ".join(row.values()).lower()
             if not any(word.lower() in combined for word in SAFETY_WORDS):
-                errors.append(f"node {row_id}: {safety_level} node must contain explicit safety warning/mitigation language")
+                errors.append(
+                    f"node {row_id}: {safety_level} node must contain explicit safety warning/mitigation language"
+                )
 
     if duplicate_ids:
         errors.append(f"duplicate node ids: {sorted(duplicate_ids)}")
@@ -439,7 +687,11 @@ def mermaid_node_ids(block: str) -> set[str]:
         line = raw_line.strip()
         if not line or line.startswith("%%"):
             continue
-        if re.match(r"^(flowchart|graph|sequenceDiagram|stateDiagram|classDiagram|subgraph|end)\b", line, re.I):
+        if re.match(
+            r"^(flowchart|graph|sequenceDiagram|stateDiagram|classDiagram|subgraph|end)\b",
+            line,
+            re.I,
+        ):
             continue
 
         # Node declarations: A1[...], D1{...}, T1((...)), G1>...]
@@ -448,13 +700,14 @@ def mermaid_node_ids(block: str) -> set[str]:
             ids.add(decl.group(1))
 
         # Edge left side: A1 --> B1, A1 -- pass --> B1, A1 -->|pass| B1
-        edge_left = re.match(r"^([A-Za-z][A-Za-z0-9_-]*)\s*(?:-->|---|==>|-.->|--)", line)
+        edge_left = re.match(rf"^([A-Za-z][A-Za-z0-9_-]*)\s*(?:{ARROW_RE.pattern})", line)
         if edge_left:
             ids.add(edge_left.group(1))
 
         # Edge right side. Strip labels and grab the first node-like token after the arrow.
-        if any(arrow in line for arrow in ["-->", "---", "==>", "-.->", "--"]):
-            rhs = re.split(r"-->|---|==>|-\.->|--", line, maxsplit=1)[-1].strip()
+        arrow_matches = list(ARROW_RE.finditer(line))
+        if arrow_matches:
+            rhs = line[arrow_matches[-1].end() :].strip()
             rhs = re.sub(r"^\|.*?\|", "", rhs).strip()
             rhs_node = re.match(r"^([A-Za-z][A-Za-z0-9_-]*)", rhs)
             if rhs_node:
@@ -462,7 +715,9 @@ def mermaid_node_ids(block: str) -> set[str]:
     return ids
 
 
-def validate_mermaid_consistency(text: str, mode: str, node_ids: set[str], errors: list[str], warnings: list[str]) -> None:
+def validate_mermaid_consistency(
+    text: str, mode: str, node_ids: set[str], errors: list[str], warnings: list[str]
+) -> None:
     if mode not in MODES_WITH_DECISION_TREE:
         return
 
@@ -470,7 +725,9 @@ def validate_mermaid_consistency(text: str, mode: str, node_ids: set[str], error
     tree_text = extract_section(text, section_name) if section_name else text
     blocks = fenced_code_blocks(tree_text, "mermaid")
     if not blocks:
-        errors.append(f"{section_name or 'decision tree'} section requires a fenced ```mermaid block")
+        errors.append(
+            f"{section_name or 'decision tree'} section requires a fenced ```mermaid block"
+        )
         return
 
     tree_ids: set[str] = set()
@@ -489,7 +746,9 @@ def validate_mermaid_consistency(text: str, mode: str, node_ids: set[str], error
         if missing_in_tree:
             errors.append(f"node table ids missing from mermaid decision tree: {missing_in_tree}")
     else:
-        warnings.append("mermaid decision tree found but no node table is available for id consistency check")
+        warnings.append(
+            "mermaid decision tree found but no node table is available for id consistency check"
+        )
 
 
 def validate_case_record_draft(text: str, mode: str, errors: list[str]) -> None:
@@ -513,10 +772,14 @@ def validate_input_cleaning_contract(text: str, mode: str, errors: list[str]) ->
         section = extract_section(text, heading)
         table = find_table_with_columns(section, required_columns)
         if not table:
-            errors.append(f"input cleaning section '{heading}' missing required table columns: {required_columns}")
+            errors.append(
+                f"input cleaning section '{heading}' missing required table columns: {required_columns}"
+            )
             continue
         if not table.rows:
-            errors.append(f"input cleaning section '{heading}' table must contain at least one explicit row")
+            errors.append(
+                f"input cleaning section '{heading}' table must contain at least one explicit row"
+            )
             continue
 
         for idx, row in enumerate(table.rows, start=1):
@@ -555,9 +818,16 @@ def validate_input_cleaning_contract(text: str, mode: str, errors: list[str]) ->
 
             for column in required_columns:
                 if is_blank_like(row.get(normalize_col(column), "")):
-                    errors.append(f"input cleaning section '{heading}' row {row_id or idx}: {column} is required")
+                    errors.append(
+                        f"input cleaning section '{heading}' row {row_id or idx}: {column} is required"
+                    )
 
-    for heading in ["Raw Input Boundary", "Entity / Alias Normalization", "Missing Information", "Router-Ready Case Brief"]:
+    for heading in [
+        "Raw Input Boundary",
+        "Entity / Alias Normalization",
+        "Missing Information",
+        "Router-Ready Case Brief",
+    ]:
         section = extract_section(text, heading)
         if len(re.sub(r"\s+", " ", section).strip()) < 20:
             errors.append(f"input cleaning section '{heading}' must contain useful content")
@@ -591,7 +861,9 @@ def find_model_gap_probability(text: str) -> float | None:
     for table in find_tables(text):
         for row in table.rows:
             combined = " ".join(row.values())
-            if not contains_any(combined, ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"]):
+            if not contains_any(
+                combined, ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"]
+            ):
                 continue
             for column, value in row.items():
                 if "prob" in column or column in {"p", "probability"}:
@@ -658,8 +930,16 @@ def validate_no_flat_rootcause_table(text: str, errors: list[str]) -> None:
         ]
         if len(values) < 2 or abs(sum(values) - 1.0) > 0.05:
             continue
-        row_types = {normalize_text(row.get("type", "")).lower() for row in table.rows if not is_blank_like(row.get("type", ""))}
-        if "type" not in columns or len(row_types) != 1 or row_types.issubset({"boundary", "mechanism", "observability_gap"}):
+        row_types = {
+            normalize_text(row.get("type", "")).lower()
+            for row in table.rows
+            if not is_blank_like(row.get("type", ""))
+        }
+        if (
+            "type" not in columns
+            or len(row_types) != 1
+            or row_types.issubset({"boundary", "mechanism", "observability_gap"})
+        ):
             errors.append(
                 f"V-NO-FLAT-ROOTCAUSE: table at line {table.start_line} looks like a normalized "
                 "mixed/untagged root-cause probability table; use Boundary Distribution, "
@@ -676,13 +956,17 @@ def validate_coverage_matrix(
     section = extract_section(hypothesis_text, "Coverage Matrix")
     table = find_table_with_columns(section, ["mechanism_id"])
     if not table:
-        errors.append("architecture_first output must include a Coverage Matrix table with a mechanism_id column")
+        errors.append(
+            "architecture_first output must include a Coverage Matrix table with a mechanism_id column"
+        )
         return
 
     physical_boundaries = sorted(boundary_id for boundary_id in boundary_ids if boundary_id != "B0")
     for boundary_id in physical_boundaries:
         if not any(column.startswith(boundary_id.lower()) for column in table.columns):
-            errors.append(f"V-COVERAGE-COMPLETE: Coverage Matrix missing column for boundary {boundary_id}")
+            errors.append(
+                f"V-COVERAGE-COMPLETE: Coverage Matrix missing column for boundary {boundary_id}"
+            )
 
     row_by_mechanism: dict[str, dict[str, str]] = {}
     for row in table.rows:
@@ -694,15 +978,17 @@ def validate_coverage_matrix(
     for mechanism_id, mechanism_type in mechanism_types.items():
         if mechanism_type != "mechanism":
             continue
-        row = row_by_mechanism.get(mechanism_id)
-        if row is None:
-            errors.append(f"V-COVERAGE-COMPLETE: mechanism {mechanism_id} has no Coverage Matrix row")
+        coverage_row = row_by_mechanism.get(mechanism_id)
+        if coverage_row is None:
+            errors.append(
+                f"V-COVERAGE-COMPLETE: mechanism {mechanism_id} has no Coverage Matrix row"
+            )
             continue
         meaningful = False
         for column in table.columns:
             if column == "mechanism_id":
                 continue
-            value = normalize_text(row.get(column, "")).lower()
+            value = normalize_text(coverage_row.get(column, "")).lower()
             if value not in coverage_values:
                 errors.append(
                     f"V-COVERAGE-COMPLETE: mechanism {mechanism_id} coverage cell '{column}' "
@@ -711,7 +997,9 @@ def validate_coverage_matrix(
             if value in {"h", "m", "l"}:
                 meaningful = True
         if not meaningful:
-            errors.append(f"V-COVERAGE-COMPLETE: mechanism {mechanism_id} has no non-empty coverage cell")
+            errors.append(
+                f"V-COVERAGE-COMPLETE: mechanism {mechanism_id} has no non-empty coverage cell"
+            )
 
 
 def validate_evidence_ledger(
@@ -721,8 +1009,14 @@ def validate_evidence_ledger(
     errors: list[str],
 ) -> None:
     required = [
-        "id", "evidence", "status", "criticality", "gates_boundaries",
-        "gates_mechanisms", "probability_effect", "local_override",
+        "id",
+        "evidence",
+        "status",
+        "criticality",
+        "gates_boundaries",
+        "gates_mechanisms",
+        "probability_effect",
+        "local_override",
     ]
     table = find_table_with_columns(extract_section(hypothesis_text, "Evidence Ledger"), required)
     if not table:
@@ -737,14 +1031,20 @@ def validate_evidence_ledger(
         status = normalize_text(row.get("status", "")).lower()
         criticality = normalize_text(row.get("criticality", "")).lower()
         if status not in VALID_EVIDENCE_STATUS:
-            errors.append(f"evidence row {row_id}: status must be one of {sorted(VALID_EVIDENCE_STATUS)}")
+            errors.append(
+                f"evidence row {row_id}: status must be one of {sorted(VALID_EVIDENCE_STATUS)}"
+            )
         if criticality not in VALID_EVIDENCE_CRITICALITY:
-            errors.append(f"evidence row {row_id}: criticality must be one of {sorted(VALID_EVIDENCE_CRITICALITY)}")
+            errors.append(
+                f"evidence row {row_id}: criticality must be one of {sorted(VALID_EVIDENCE_CRITICALITY)}"
+            )
 
         gated_boundaries = parse_id_refs(row.get("gates_boundaries", ""), "B")
         gated_mechanisms = parse_id_refs(row.get("gates_mechanisms", ""), "M")
         if not gated_boundaries and not gated_mechanisms:
-            errors.append(f"V-EVIDENCE-LEDGER-LINKED: evidence row {row_id} must gate at least one boundary or mechanism")
+            errors.append(
+                f"V-EVIDENCE-LEDGER-LINKED: evidence row {row_id} must gate at least one boundary or mechanism"
+            )
 
         for boundary_id in sorted(gated_boundaries):
             if boundary_id not in boundary_probabilities:
@@ -784,9 +1084,13 @@ def validate_boundary_mechanism_tables(hypothesis_text: str, errors: list[str]) 
     mechanism_probabilities: dict[str, float] = {}
     mechanism_types: dict[str, str] = {}
 
-    boundary_table = find_table_with_columns(hypothesis_text, ["id", "type", "first_fail_boundary", "p"])
+    boundary_table = find_table_with_columns(
+        hypothesis_text, ["id", "type", "first_fail_boundary", "p"]
+    )
     if not boundary_table:
-        errors.append("architecture_first output must include a Boundary Distribution table with id, type, first_fail_boundary, and p columns")
+        errors.append(
+            "architecture_first output must include a Boundary Distribution table with id, type, first_fail_boundary, and p columns"
+        )
     else:
         total = 0.0
         found_probability = False
@@ -803,16 +1107,27 @@ def validate_boundary_mechanism_tables(hypothesis_text: str, errors: list[str]) 
                 boundary_probabilities[row_id] = probability
                 total += probability
         if found_probability and abs(total - 1.0) > 0.02:
-            errors.append(f"Boundary Distribution probabilities must sum to 1.00 ± 0.02, got {total:.3f}")
+            errors.append(
+                f"Boundary Distribution probabilities must sum to 1.00 ± 0.02, got {total:.3f}"
+            )
         if not any(
-            row_id == "B0" or contains_any(" ".join(row.values()), ["unknown / model gap", "unknown/model gap", "model gap"])
+            row_id == "B0"
+            or contains_any(
+                " ".join(row.values()), ["unknown / model gap", "unknown/model gap", "model gap"]
+            )
             for row_id, row in ((normalize_text(r.get("id", "")), r) for r in boundary_table.rows)
         ):
-            errors.append("V-BOUNDARY-SUM: Boundary Distribution must include B0 unknown / model gap")
+            errors.append(
+                "V-BOUNDARY-SUM: Boundary Distribution must include B0 unknown / model gap"
+            )
 
-    mechanism_table = find_table_with_columns(hypothesis_text, ["id", "type", "mechanism", "p_active", "affects_boundaries"])
+    mechanism_table = find_table_with_columns(
+        hypothesis_text, ["id", "type", "mechanism", "p_active", "affects_boundaries"]
+    )
     if not mechanism_table:
-        errors.append("architecture_first output must include a Mechanism Prior table with id, type, mechanism, p_active, and affects_boundaries columns")
+        errors.append(
+            "architecture_first output must include a Mechanism Prior table with id, type, mechanism, p_active, and affects_boundaries columns"
+        )
     else:
         valid_types = {"mechanism", "observability_gap"}
         mechanism_total = 0.0
@@ -831,24 +1146,41 @@ def validate_boundary_mechanism_tables(hypothesis_text: str, errors: list[str]) 
                 found_probability = True
                 mechanism_probabilities[row_id] = probability
                 mechanism_total += probability
-        if found_probability and 0.95 <= mechanism_total <= 1.05 and "intentionally_normalized: true" not in hypothesis_text:
+        if (
+            found_probability
+            and 0.95 <= mechanism_total <= 1.05
+            and "intentionally_normalized: true" not in hypothesis_text
+        ):
             errors.append(
                 f"V-MECH-NO-FORCED-SUM: Mechanism Prior p_active values look normalized "
                 f"(sum={mechanism_total:.3f}); mechanism priors must be independent unless intentionally_normalized: true is stated"
             )
 
     if not contains_any(hypothesis_text, ["Coverage Matrix", "coverage matrix", "覆盖矩阵"]):
-        errors.append("architecture_first output must include a Coverage Matrix for mechanism-to-boundary likelihood")
+        errors.append(
+            "architecture_first output must include a Coverage Matrix for mechanism-to-boundary likelihood"
+        )
     else:
-        validate_coverage_matrix(hypothesis_text, set(boundary_probabilities), mechanism_types, errors)
+        validate_coverage_matrix(
+            hypothesis_text, set(boundary_probabilities), mechanism_types, errors
+        )
 
-    validate_evidence_ledger(hypothesis_text, boundary_probabilities, mechanism_probabilities, errors)
+    validate_evidence_ledger(
+        hypothesis_text, boundary_probabilities, mechanism_probabilities, errors
+    )
 
 
 def validate_cost_ranking_table(cost_text: str, errors: list[str]) -> None:
     required_columns = [
-        "tier", "co_acq_group_id", "same_failure_window", "capture_channel",
-        "boundary_subset", "mechanism_subset", "p_hit", "p_exclude", "time_min",
+        "tier",
+        "co_acq_group_id",
+        "same_failure_window",
+        "capture_channel",
+        "boundary_subset",
+        "mechanism_subset",
+        "p_hit",
+        "p_exclude",
+        "time_min",
     ]
     cost_table = find_table_with_columns(cost_text, required_columns)
     if not cost_table:
@@ -869,10 +1201,19 @@ def validate_cost_ranking_table(cost_text: str, errors: list[str]) -> None:
         group_id = normalize_text(row.get("co_acq_group_id", ""))
         if tier == "P0":
             if is_blank_like(group_id) or group_id.lower() == "none":
-                errors.append(f"V-P0-CO-ACQ-GROUP: P0 cost row {row_id} requires a non-empty co_acq_group_id")
+                errors.append(
+                    f"V-P0-CO-ACQ-GROUP: P0 cost row {row_id} requires a non-empty co_acq_group_id"
+                )
             else:
                 groups.setdefault(group_id, []).append((row_id, row))
-        for column in ["capture_channel", "boundary_subset", "mechanism_subset", "p_hit", "p_exclude", "time_min"]:
+        for column in [
+            "capture_channel",
+            "boundary_subset",
+            "mechanism_subset",
+            "p_hit",
+            "p_exclude",
+            "time_min",
+        ]:
             if is_blank_like(row.get(column, "")):
                 errors.append(f"cost row {row_id}: {column} is required")
 
@@ -893,10 +1234,14 @@ def validate_cost_ranking_table(cost_text: str, errors: list[str]) -> None:
         for row_id, row in members:
             same_failure_window = bool_value(row.get("same_failure_window", ""))
             if same_failure_window is not True:
-                errors.append(f"V-P0-CO-ACQ-GROUP: multi-row group {group_id} member {row_id} must set same_failure_window=true")
+                errors.append(
+                    f"V-P0-CO-ACQ-GROUP: multi-row group {group_id} member {row_id} must set same_failure_window=true"
+                )
             channel = normalize_text(row.get("capture_channel", "")).lower()
             if channel in seen_channels:
-                errors.append(f"V-P0-CO-ACQ-GROUP: group {group_id} has duplicate capture_channel '{channel}'")
+                errors.append(
+                    f"V-P0-CO-ACQ-GROUP: group {group_id} has duplicate capture_channel '{channel}'"
+                )
             seen_channels.add(channel)
 
 
@@ -914,34 +1259,56 @@ def validate_architecture_first_semantics(text: str, mode: str, errors: list[str
     )
     validate_boundary_mechanism_tables(hypothesis_text, errors)
 
-    if not contains_any(hypothesis_text, ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"]):
-        errors.append("architecture_first output must include an explicit unknown / model gap hypothesis")
+    if not contains_any(
+        hypothesis_text, ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"]
+    ):
+        errors.append(
+            "architecture_first output must include an explicit unknown / model gap hypothesis"
+        )
     else:
         model_gap_probability = find_model_gap_probability(hypothesis_text)
         if model_gap_probability is None:
-            errors.append("architecture_first unknown / model gap hypothesis must include a probability")
+            errors.append(
+                "architecture_first unknown / model gap hypothesis must include a probability"
+            )
         elif model_gap_probability < 0.02:
-            errors.append("architecture_first unknown / model gap probability must be at least 0.02")
+            errors.append(
+                "architecture_first unknown / model gap probability must be at least 0.02"
+            )
 
-    if not contains_any(hypothesis_text, ["direct symptom", "simplest physical", "直接物理症状", "最简解释"]):
-        errors.append("architecture_first output must explicitly justify direct-symptom simplest-interpretation ranking")
+    if not contains_any(
+        hypothesis_text, ["direct symptom", "simplest physical", "直接物理症状", "最简解释"]
+    ):
+        errors.append(
+            "architecture_first output must explicitly justify direct-symptom simplest-interpretation ranking"
+        )
     if not contains_any(hypothesis_text, ["top two", "top-2", "top 2", "前二", "前两"]):
-        errors.append("architecture_first output must state that the direct-symptom explanation is in the top two or explain demotion")
+        errors.append(
+            "architecture_first output must state that the direct-symptom explanation is in the top two or explain demotion"
+        )
 
     cost_text = extract_section(text, "Cost / Probability Ranking")
-    if not contains_any(cost_text, ["cost_priors.yaml", "cost prior", "local override", "成本先验", "本地覆盖"]):
-        errors.append("Cost / Probability Ranking must cite cost_priors.yaml or a stated local override")
+    if not contains_any(
+        cost_text, ["cost_priors.yaml", "cost prior", "local override", "成本先验", "本地覆盖"]
+    ):
+        errors.append(
+            "Cost / Probability Ranking must cite cost_priors.yaml or a stated local override"
+        )
     validate_cost_ranking_table(cost_text, errors)
 
     for table in find_tables(text):
         columns = set(table.columns)
         if "owner" in columns and "candidate_owner" not in columns:
-            errors.append("owner action tables must use candidate_owner instead of confirmed owner unless explicit assignment exists")
+            errors.append(
+                "owner action tables must use candidate_owner instead of confirmed owner unless explicit assignment exists"
+            )
         if "candidate_owner" in columns and not contains_any(
             text,
             ["PM", "project lead", "项目负责人", "正式", "confirm", "确认"],
         ):
-            errors.append("candidate_owner tables must state that PM/project lead confirmation is required")
+            errors.append(
+                "candidate_owner tables must state that PM/project lead confirmation is required"
+            )
 
 
 def parse_key_value(section: str, key: str) -> str | None:
@@ -966,24 +1333,49 @@ def validate_evidence_audit_contract(text: str, mode: str, errors: list[str]) ->
     if decision is None:
         errors.append("Reviewer Decision must include 'decision: ...'")
     elif decision not in VALID_EVIDENCE_AUDIT_VERDICTS:
-        errors.append(f"Reviewer Decision has invalid decision '{decision}', allowed={sorted(VALID_EVIDENCE_AUDIT_VERDICTS)}")
+        errors.append(
+            f"Reviewer Decision has invalid decision '{decision}', allowed={sorted(VALID_EVIDENCE_AUDIT_VERDICTS)}"
+        )
     if publish_ready is None:
         errors.append("Reviewer Decision must include 'publish_ready: yes|no'")
     elif publish_ready not in VALID_PUBLISH_READY:
-        errors.append(f"Reviewer Decision has invalid publish_ready '{publish_ready}', allowed={sorted(VALID_PUBLISH_READY)}")
+        errors.append(
+            f"Reviewer Decision has invalid publish_ready '{publish_ready}', allowed={sorted(VALID_PUBLISH_READY)}"
+        )
     for required_key in ["required_fixes", "residual_risk"]:
         if not re.search(rf"(?im)^\s*{required_key}\s*:", reviewer_decision):
             errors.append(f"Reviewer Decision must include '{required_key}: ...'")
 
     semantic_checks = [
         ("fact vs inference split", ["fact", "inference", "事实", "推断"]),
-        ("fact provenance and confidence ceiling", ["provenance", "team_attestation_unverified", "口头", "转述", "confidence ceiling"]),
-        ("stale or non-same-interval evidence", ["stale", "staleness", "requires_re_verification", "非同故障窗口", "过期证据"]),
-        ("direct symptom top-two ranking", ["direct symptom", "simplest physical", "top two", "top-2", "直接物理症状", "最简解释"]),
-        ("boundary vs mechanism separation", ["boundary", "mechanism", "observability_gap", "边界", "机制", "观测缺口"]),
-        ("unknown / model gap branch", ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"]),
-        ("cost prior calibration", ["cost_priors.yaml", "cost prior", "成本先验", "local override"]),
-        ("candidate owner vs assignment", ["candidate owner", "candidate_owner", "候选 owner", "正式分配", "PM"]),
+        (
+            "fact provenance and confidence ceiling",
+            ["provenance", "team_attestation_unverified", "口头", "转述", "confidence ceiling"],
+        ),
+        (
+            "stale or non-same-interval evidence",
+            ["stale", "staleness", "requires_re_verification", "非同故障窗口", "过期证据"],
+        ),
+        (
+            "direct symptom top-two ranking",
+            ["direct symptom", "simplest physical", "top two", "top-2", "直接物理症状", "最简解释"],
+        ),
+        (
+            "boundary vs mechanism separation",
+            ["boundary", "mechanism", "observability_gap", "边界", "机制", "观测缺口"],
+        ),
+        (
+            "unknown / model gap branch",
+            ["unknown / model gap", "unknown/model gap", "model gap", "模型缺口"],
+        ),
+        (
+            "cost prior calibration",
+            ["cost_priors.yaml", "cost prior", "成本先验", "local override"],
+        ),
+        (
+            "candidate owner vs assignment",
+            ["candidate owner", "candidate_owner", "候选 owner", "正式分配", "PM"],
+        ),
     ]
     for label, tokens in semantic_checks:
         if not contains_any(text, tokens):
@@ -999,10 +1391,20 @@ def validate_skill_improvement_contract(text: str, mode: str, errors: list[str])
         errors.append("Skill Layer Diagnosis must name at least one recognized skill layer")
 
     uncertainty_vs_defect = extract_section(text, "Target-Case Uncertainty vs Skill Defect")
-    if not contains_any(uncertainty_vs_defect, ["target-case uncertainty", "target case uncertainty", "目标 case", "目标案例", "目标案"]):
-        errors.append("Target-Case Uncertainty vs Skill Defect must explicitly state target-case uncertainty")
-    if not contains_any(uncertainty_vs_defect, ["skill defect", "skill-design defect", "skill 缺陷", "工具缺陷", "机制缺陷"]):
-        errors.append("Target-Case Uncertainty vs Skill Defect must explicitly state the skill defect")
+    if not contains_any(
+        uncertainty_vs_defect,
+        ["target-case uncertainty", "target case uncertainty", "目标 case", "目标案例", "目标案"],
+    ):
+        errors.append(
+            "Target-Case Uncertainty vs Skill Defect must explicitly state target-case uncertainty"
+        )
+    if not contains_any(
+        uncertainty_vs_defect,
+        ["skill defect", "skill-design defect", "skill 缺陷", "工具缺陷", "机制缺陷"],
+    ):
+        errors.append(
+            "Target-Case Uncertainty vs Skill Defect must explicitly state the skill defect"
+        )
 
     durable_change_text = "\n".join(
         [
@@ -1012,9 +1414,21 @@ def validate_skill_improvement_contract(text: str, mode: str, errors: list[str])
     )
     if not contains_any(
         durable_change_text,
-        ["routing", "route", "contract", "prompt", "lifecycle", "validator", "regression", "fixture", "asset"],
+        [
+            "routing",
+            "route",
+            "contract",
+            "prompt",
+            "lifecycle",
+            "validator",
+            "regression",
+            "fixture",
+            "asset",
+        ],
     ):
-        errors.append("Skill Improvement review must identify at least one durable artifact class or explain why none changed")
+        errors.append(
+            "Skill Improvement review must identify at least one durable artifact class or explain why none changed"
+        )
 
 
 def validate_text(text: str, mode: str) -> ValidationResult:
@@ -1035,7 +1449,9 @@ def validate_text(text: str, mode: str) -> ValidationResult:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Validate generated debug markdown against output contracts.")
+    ap = argparse.ArgumentParser(
+        description="Validate generated debug markdown against output contracts."
+    )
     ap.add_argument("--mode", required=True, choices=sorted(MODE_HEADINGS))
     ap.add_argument("--file", required=True, help="Markdown file to validate")
     ap.add_argument("--quiet", action="store_true", help="Only print failures")
@@ -1053,7 +1469,9 @@ def main() -> int:
         print(f"OUTPUT VALIDATION FAILED\n- could not read file: {path}: {exc}", file=sys.stderr)
         return 2
     except UnicodeDecodeError as exc:
-        print(f"OUTPUT VALIDATION FAILED\n- file is not valid UTF-8: {path}: {exc}", file=sys.stderr)
+        print(
+            f"OUTPUT VALIDATION FAILED\n- file is not valid UTF-8: {path}: {exc}", file=sys.stderr
+        )
         return 2
 
     result = validate_text(text, args.mode)

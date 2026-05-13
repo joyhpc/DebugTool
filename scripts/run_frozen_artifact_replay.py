@@ -6,11 +6,12 @@ agent generates outputs from the raw inputs, commits them as frozen artifacts,
 and this script checks that those artifacts pass their output validators and
 preserve case-specific semantic guardrails.
 """
+
 from __future__ import annotations
 
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any
 
 import yaml
@@ -72,7 +73,9 @@ def validate_output(case_id: str, output_spec: dict[str, Any], failures: list[st
 
     rc, validator_output = run_validator(mode, path)
     if rc != 0:
-        failures.append(f"{case_id}: validator failed for {rel(path)} mode={mode}\n{validator_output}")
+        failures.append(
+            f"{case_id}: validator failed for {rel(path)} mode={mode}\n{validator_output}"
+        )
         return
 
     text = path.read_text(encoding="utf-8")

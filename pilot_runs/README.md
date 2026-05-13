@@ -15,5 +15,15 @@ Case workspace convention:
 
 - Before creating a new pilot artifact or answering where a case update should be recorded, check `CASE_INDEX.md` for matching aliases.
 - Use a subdirectory when a case has more than one generated artifact.
+- For complex cases, make `visual-architecture-brief.md` the first reader-facing artifact: system placement, current subsystem, mode gate, evidence stack, and field brief.
 - Keep one current entry point per case/mode, for example `a57_edp/latest-architecture-first.md`.
 - Move superseded same-case outputs into that case's `archive/` directory instead of leaving duplicate files at the top level.
+- Run `python scripts/case_status_report.py <case_dir>` to recover the current evidence, stale items, next actions, and stop conditions without rereading every artifact.
+
+Recommended read order for complex cases:
+
+1. case `README.md`;
+2. `visual-architecture-brief.md`;
+3. `latest-architecture-first.md`;
+4. `field-action-plan.md`;
+5. `latest-input-cleaning.md` when fact provenance or stale evidence matters.

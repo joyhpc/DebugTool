@@ -29,6 +29,13 @@ repos:
         pass_filenames: false
         files: ^(SKILL\.md|README\.md|pyproject\.toml|release/VERSION\.md|prompts/|safety/safety_gate_rules\.yaml|examples/|pilot_runs/|regression/)
 
+      - id: lint-case-governance
+        name: Lint case governance
+        entry: python scripts/lint_case_governance.py
+        language: system
+        pass_filenames: false
+        files: ^(pilot_runs/|forms/|output_contracts/|scripts/lint_case_governance\.py|lifecycle/case_governance_rules\.md)
+
       - id: lint-assets
         name: Lint assets
         entry: python scripts/lint_assets.py

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Lint DebugTool contract identity and committed artifact portability."""
+
 from __future__ import annotations
 
-from pathlib import Path
 import re
-import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -44,9 +44,7 @@ def skill_version() -> str:
 
 def check_equal(errors: list[str], path: Path, found: str, expected: str, label: str) -> None:
     if found != expected:
-        errors.append(
-            f"{path.relative_to(ROOT)}: {label} is {found!r}, expected {expected!r}"
-        )
+        errors.append(f"{path.relative_to(ROOT)}: {label} is {found!r}, expected {expected!r}")
 
 
 def check_required_version(
@@ -87,7 +85,9 @@ def lint_versions(expected: str) -> list[str]:
 
     for path in sorted((ROOT / "prompts").glob("*.md")):
         header = "\n".join(read_text(path).splitlines()[:8])
-        check_required_version(errors, path, PROMPT_VERSION_RE, header, expected, "prompt skill identity")
+        check_required_version(
+            errors, path, PROMPT_VERSION_RE, header, expected, "prompt skill identity"
+        )
 
     return errors
 

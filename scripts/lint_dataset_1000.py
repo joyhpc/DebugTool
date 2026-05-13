@@ -1,16 +1,40 @@
 #!/usr/bin/env python3
 """Lint the 1000-unit training program metadata and source queues."""
-from pathlib import Path
+
 import sys
+from pathlib import Path
+from typing import Any
+
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 DATASET = ROOT / "training" / "dataset_1000"
 RECORDS = ROOT / "training" / "closed_loop" / "records"
 VALID_TIERS = {"T0", "T1", "T2", "T3", "T4", "T5"}
-VALID_QUEUE_STATUS = {"queued_blind", "in_review", "reviewed", "reviewed_existing", "promoted", "blocked"}
-VALID_SOURCE_TYPES = {"public_solved_case", "vendor_forum_fae_resolved", "real_project_case", "official_source_prior"}
-VALID_DOMAINS = {"power", "measurement", "digital_interface", "clock_reset", "analog", "production", "layout_emi", "other"}
+VALID_QUEUE_STATUS = {
+    "queued_blind",
+    "in_review",
+    "reviewed",
+    "reviewed_existing",
+    "promoted",
+    "blocked",
+}
+VALID_SOURCE_TYPES = {
+    "public_solved_case",
+    "vendor_forum_fae_resolved",
+    "real_project_case",
+    "official_source_prior",
+}
+VALID_DOMAINS = {
+    "power",
+    "measurement",
+    "digital_interface",
+    "clock_reset",
+    "analog",
+    "production",
+    "layout_emi",
+    "other",
+}
 
 errors: list[str] = []
 warnings: list[str] = []
@@ -24,7 +48,7 @@ def warn(path: Path, msg: str) -> None:
     warnings.append(f"{path}: {msg}")
 
 
-def as_list(value):
+def as_list(value: object) -> list[Any]:
     return value if isinstance(value, list) else []
 
 
@@ -33,16 +57,16 @@ status_path = DATASET / "status.yaml"
 public_queue_path = DATASET / "public_solved_case_queue.yaml"
 public_index_path = DATASET / "public_case_closure_index.yaml"
 specialized_queues = [
-    {
-        "queue": DATASET / "intel_altera_fpga_queue.yaml",
-        "index": DATASET / "intel_altera_fpga_closure_index.yaml",
-        "label": "Intel/Altera FPGA",
-    },
-    {
-        "queue": DATASET / "mipi_debug_queue.yaml",
-        "index": DATASET / "mipi_debug_closure_index.yaml",
-        "label": "MIPI DSI/CSI",
-    },
+    (
+        DATASET / "intel_altera_fpga_queue.yaml",
+        DATASET / "intel_altera_fpga_closure_index.yaml",
+        "Intel/Altera FPGA",
+    ),
+    (
+        DATASET / "mipi_debug_queue.yaml",
+        DATASET / "mipi_debug_closure_index.yaml",
+        "MIPI DSI/CSI",
+    ),
 ]
 
 for path in [target_path, status_path, public_queue_path]:
@@ -67,10 +91,11 @@ if target_path.exists():
         if tid in tier_ids:
             fail(target_path, f"duplicate tier id {tid}")
         tier_ids.add(tid)
-        if not isinstance(tier.get("target"), int) or tier.get("target") < 1:
+        tier_target = tier.get("target")
+        if not isinstance(tier_target, int) or tier_target < 1:
             fail(target_path, f"tier {tid} target must be positive integer")
         else:
-            tier_sum += tier.get("target")
+            tier_sum += tier_target
         for key in ["name", "description", "promotion_limit"]:
             if not tier.get(key):
                 fail(target_path, f"tier {tid} missing {key}")
@@ -88,15 +113,27 @@ if status_path.exists():
     for key, value in counts.items():
         if not isinstance(value, int) or value < 0:
             fail(status_path, f"current_counts.{key} must be non-negative integer")
-    if counts.get("closed_loop_records_total", 0) < counts.get("official_source_prior_closed", 0):
-        fail(status_path, "closed_loop_records_total cannot be lower than official_source_prior_closed")
-    if counts.get("real_project_reviewed_cases", 0) < 1:
+    closed_total = counts.get("closed_loop_records_total", 0)
+    official_closed = counts.get("official_source_prior_closed", 0)
+    if (
+        isinstance(closed_total, int)
+        and isinstance(official_closed, int)
+        and closed_total < official_closed
+    ):
+        fail(
+            status_path,
+            "closed_loop_records_total cannot be lower than official_source_prior_closed",
+        )
+    real_project_reviewed = counts.get("real_project_reviewed_cases", 0)
+    if isinstance(real_project_reviewed, int) and real_project_reviewed < 1:
         warn(status_path, "real_project_reviewed_cases is still below practical calibration needs")
+
 
 def validate_source_queue(path: Path, label: str) -> None:
     queue = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     candidates = as_list(queue.get("candidates"))
-    if not isinstance(queue.get("target_count"), int) or queue.get("target_count") < 1:
+    target_count = queue.get("target_count")
+    if not isinstance(target_count, int) or target_count < 1:
         fail(path, f"{label} target_count must be positive integer")
     if queue.get("current_candidates") != len(candidates):
         fail(path, f"{label} current_candidates must match number of candidates")
@@ -161,10 +198,7 @@ if public_index_path.exists():
     if reviewed != len(mapped_ids):
         fail(public_index_path, "reviewed_public_cases must match mapped public case count")
 
-for spec in specialized_queues:
-    queue_path = spec["queue"]
-    index_path = spec["index"]
-    label = spec["label"]
+for queue_path, index_path, label in specialized_queues:
     if queue_path.exists():
         validate_source_queue(queue_path, label)
     if index_path.exists():

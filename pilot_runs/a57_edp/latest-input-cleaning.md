@@ -1,5 +1,12 @@
 # Input Cleaning Record
 
+## Artifact Navigation
+
+- Use this file for raw-fact provenance, entity normalization, revisions, and stale-evidence handling.
+- Use `visual-architecture-brief.md` for the current system/subsystem frame before reading the long debug tree.
+- Use `latest-architecture-first.md` for boundary/mechanism reasoning.
+- Use `field-action-plan.md` for same-window evidence capture.
+
 ## 1. Raw Input Boundary
 
 本记录清洗 Issue4 中 A57 eDP 问题的新补充。新输入不是一个全新硬件案子，而是对既有 A57 eDP case 的 evidence update：

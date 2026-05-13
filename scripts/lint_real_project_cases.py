@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Lint real project case intake records when present."""
-from pathlib import Path
+
 import sys
+from pathlib import Path
+
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]

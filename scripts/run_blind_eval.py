@@ -13,12 +13,12 @@ named <case_id>.md in that directory using simple must-include / must-not-includ
 criteria. This is a coarse gate; human review is still required for capability
 claims.
 """
+
 from __future__ import annotations
 
+import argparse
 from dataclasses import dataclass
 from pathlib import Path
-import argparse
-import sys
 from typing import Any
 
 import yaml
@@ -129,7 +129,12 @@ def validate_case(case: dict[str, Any], failures: list[str]) -> dict[str, Any] |
     validate_raw_input(case_id, raw_path, failures)
     expected = validate_expected(case_id, expected_path, failures)
 
-    return {"id": case_id, "raw_path": raw_path, "expected_path": expected_path, "expected": expected}
+    return {
+        "id": case_id,
+        "raw_path": raw_path,
+        "expected_path": expected_path,
+        "expected": expected,
+    }
 
 
 def find_output(outputs_dir: Path, case_id: str) -> Path | None:
@@ -202,7 +207,9 @@ def print_scores(scores: list[CaseScore]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate and score DebugTool blind eval cases.")
-    parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST), help="Blind eval manifest path")
+    parser.add_argument(
+        "--manifest", default=str(DEFAULT_MANIFEST), help="Blind eval manifest path"
+    )
     parser.add_argument("--outputs", help="Directory containing generated <case_id>.md outputs")
     parser.add_argument(
         "--allow-missing-outputs",

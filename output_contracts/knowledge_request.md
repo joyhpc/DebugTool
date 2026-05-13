@@ -41,13 +41,13 @@ If the user explicitly asks for online learning, broad exploration, my-wiki lear
 
 | gap_id | missing_knowledge | why_needed | affects | current_state |
 |---|---|---|---|---|
-| KG1 | Redriver PWDN polarity and board connection | distinguishes enable issue from downstream path issue | H5 / D_RED | missing |
+| KG1 | target conditioner enable polarity and board connection | distinguishes enable issue from downstream path issue | H5 / D_CONDITIONER | missing |
 
 ## Queries Table
 
 | query_id | query | target_scope | source_priority | expected_evidence | affects |
 |---|---|---|---|---|---|
-| KQ1 | A57 984 Redriver PWDN low enable board connection | project wiki, schematic, datasheet | project docs then vendor docs | schematic net or datasheet claim | KG1 |
+| KQ1 | target board conditioner enable polarity and connection | project wiki, schematic, datasheet | project docs then vendor docs | schematic net or datasheet claim | KG1 |
 
 ## Rules
 

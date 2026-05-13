@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Run output-validator smoke cases with expected pass/fail outcomes."""
+
 from __future__ import annotations
 
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = ROOT / "scripts" / "output_validator.py"
@@ -45,7 +46,9 @@ def main() -> int:
         print(f"{status}: {filename} expected rc={expected}, got rc={proc.returncode}")
         if not passed:
             output = "\n".join(part for part in [proc.stdout.strip(), proc.stderr.strip()] if part)
-            failures.append(f"{filename}: expected rc={expected}, got rc={proc.returncode}\n{output}")
+            failures.append(
+                f"{filename}: expected rc={expected}, got rc={proc.returncode}\n{output}"
+            )
 
     if failures:
         print("OUTPUT VALIDATOR SMOKE FAILED")
