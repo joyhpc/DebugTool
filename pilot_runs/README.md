@@ -6,12 +6,14 @@ Do not promote a pilot record into `assets/case_records/` until the promotion ga
 
 Initial run records:
 
+- `CASE_INDEX.md` - quick-match table for routing short follow-ups to existing pilot cases.
 - `PILOT-LA1010-KINGSTVIS-105.md`
 - `PILOT-HOTSWAP-MOSFET-SOA.md`
 - `a57_edp/latest-architecture-first.md`
 
 Case workspace convention:
 
+- Before creating a new pilot artifact or answering where a case update should be recorded, check `CASE_INDEX.md` for matching aliases.
 - Use a subdirectory when a case has more than one generated artifact.
 - Keep one current entry point per case/mode, for example `a57_edp/latest-architecture-first.md`.
 - Move superseded same-case outputs into that case's `archive/` directory instead of leaving duplicate files at the top level.

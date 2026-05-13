@@ -9,7 +9,6 @@
 - 新增 Redriver 配置时序边界；
 - 新增重复测试方式；
 - 新增当前项目事项表和部分已完成/待完成状态。
-- 2026-05-13 群聊更新：当前现象已前移到 A57/eDP Source 侧 CR/EQ 概率失败、持续训练字、无图像；且当前 AUX/DPCD 训练状态不是 SerDes 实际反馈，而是 FPGA/逻辑代答。
 
 清洗原则：保留用户原文中的事实、判断、已完成动作和计划动作；把“责任人”按项目表记录，但后续输出中仍应区分正式 owner 与候选执行人；旧 A57 结论只作为 context，除非本次补充重新确认，否则不直接更新概率。
 
@@ -25,11 +24,6 @@
 | redriver | eDP mainstream 中间 Redriver | user update | 设备上电后配置一次，重复测试期间不重新配置 |
 | 重复测试 | 对 DS90UB984 重新上下电和重新配置 | user update | 不是整机重新上电，也不是 Redriver 重新配置 |
 | 出图异常 / 无法出图 | eDP display-output failure | user update | 概率性通道输出异常 |
-| CR / EQ 失败 | A57/eDP Source 侧 link training status 未通过 | group chat update 2026-05-13 | 当前架构下不等同于 SerDes 实际训练失败 |
-| 训练字 | Main Link training pattern | group chat update 2026-05-13 | Source 仍停留在训练阶段，未切到正常视频数据 |
-| AUX 三根信号线 | AUX+/AUX- plus HPD/control-related signal set | group chat update 2026-05-13 | 用户当前重点检查对象；需按板上实际命名确认 |
-| FPGA 直接告诉 eDP 训练 OK | FPGA/DPCD responder synthesizes training status | group chat update 2026-05-13 | CR/EQ OK 返回不取自 SerDes feedback |
-| SerDes 反馈 common/comma 周期规律异常 | downstream receiver/SerDes symptom | group chat update 2026-05-13 | 在当前 CR/EQ fail 模式下不是训练状态返回源 |
 
 ## 3. Observed / Confirmed Facts
 
@@ -56,16 +50,6 @@
 | F19 | 读 eDP 解码芯片相关寄存器，以及模拟出图输出相关寄存器是否存在，需要和厂家确认 | project action table | raw_artifact | high | fresh | decoder status/readback |
 | F20 | DS90UB984 关键管脚测量仍待硬件确认 | project action table | raw_artifact | high | fresh | pin/power/reset/clock |
 | F21 | 旧版 A57 context 中曾有 AUX 正常、AU15P CDR/comma 异常、SerDes reset 无改善等信息 | previous A57 latest | derived | medium | requires_re_verification | prior receiver symptom |
-| F22 | 当前补充明确出现 EQ、CR 概率失败，A57/eDP Source 一直发训练字且无图像 | group chat update 2026-05-13 | raw_artifact | high | fresh | training-control boundary |
-| F23 | 降温只能降低异常概率，且条件严格：空调口、小风扇、大风扇一起吹也不能绝对消除 | group chat update 2026-05-13 | raw_artifact | high | fresh | temperature / margin |
-| F24 | 换解码板或机械扰动也可能影响复现，说明不是单一固定坏板现象 | group chat update 2026-05-13 | raw_artifact | high | fresh | board/mechanical variation |
-| F25 | 当前实现与标准 eDP training 闭环不同：CR/EQ 状态不是从 SerDes feedback 得到 | group chat update 2026-05-13 | raw_artifact | high | fresh | protocol implementation boundary |
-| F26 | AUX 通信当前不需要 SerDes 反馈任何状态；FPGA/逻辑根据 eDP 侧读写请求直接返回训练状态 | group chat update 2026-05-13 | raw_artifact | high | fresh | AUX/DPCD responder |
-| F27 | FPGA/逻辑会在 eDP 配置速率、lane 数并发训练阶段后，直接向 eDP 侧返回训练 OK | group chat update 2026-05-13 | raw_artifact | high | fresh | synthetic CR/EQ status |
-| F28 | 用户当前怀疑 AUX 三根信号线存在问题，并认为这些问题可能导致 CR/EQ 概率失败 | group chat update 2026-05-13 | raw_artifact | high | fresh | AUX/HPD physical layer |
-| F29 | SerDes 眼图好坏不会直接影响 AUX 通信，除非 SerDes 状态实际接入了 AUX 返回逻辑，或二者存在共同供电/温度/时钟耦合 | group chat update 2026-05-13 | raw_artifact | medium | fresh | scope separation |
-| F30 | 在当前实现中，如果 CR/EQ 没有失败但仍无图，才进入 SerDes/图像链路稳定性怀疑分支 | group chat update 2026-05-13 | raw_artifact | high | fresh | routing gate |
-| F31 | 当前需要抓成功/失败两组 AUX transaction，确认 Source 是否读到完整一致的 DPCD CR/EQ/lane-align 状态 | derived from group chat update | derived | high | fresh | required evidence |
 
 ## 4. Judgments / Inferences / Hypotheses
 
@@ -79,11 +63,6 @@
 | J6 | IIC 指令/ini 参数对比完成会降低“前后两颗 decoder 下发参数明显不同”的概率，但不能替代故障态 readback/status | F18,F19 | high | 故障态 readback 发现参数未保持、关键状态异常或厂家确认缺失寄存器 |
 | J7 | 板间表现差异说明不能把问题简单归为单板问题或共性设计问题，需要按 board_id、chip_id、channel_id 建矩阵 | F5,F6,F7,F17 | high | 后续 6 块或更多板显示稳定单一模式 |
 | J8 | 当前仍不能下 root cause 结论；最有价值的是把 decoder channel output、Redriver output、AU15P input、receiver lock 放到同一故障窗口里切边界 | F4,F8,F9,F15,F19,F20,F21 | high | 任一待测项直接给出可复现的故障机制 |
-| J9 | 对 2026-05-13 的 CR/EQ fail 模式，优先边界应从 downstream SerDes/data path 前移到 AUX/DPCD 代答链路和训练状态机 | F22,F25,F26,F27,F30 | high | 抓包证明 AUX/DPCD 返回完全正确且 Source 仍因 Main Link 物理训练失败拒绝通过 |
-| J10 | 当前 A57 侧 CR/EQ fail 的直接含义是 Source 没有读到或没有接受它认可的 DPCD pass 状态，而不是 SerDes 眼图失败的直接证据 | F22,F25,F26,F27,F29 | high | SerDes feedback 被证明实际参与了 CR/EQ status 返回，或 Source 驱动日志显示 fail 来自真实 Main Link 判据 |
-| J11 | 降温降低概率说明有 margin/时序/电气敏感性，但不能把 root cause 直接定为 SerDes；AUX/HPD 物理层、FPGA responder 时序、公共电源/时钟同样可能受温度影响 | F23,F28,F29 | medium | 温度扫描证明只对 AU15P/SerDes 域敏感且 AUX/DPCD 交易始终无误 |
-| J12 | 如果 FPGA 理论上固定返回 OK 但 A57 仍报 CR/EQ fail，则重点应查 AUX timeout/NACK/DEFER、HPD 抖动、DPCD status bit 不完整、lane/rate/training-pattern 状态不一致或返回时序 race | F22,F26,F27,F28,F31 | high | AUX transaction 级证据显示这些项全部稳定正确 |
-| J13 | 原 Issue4 数据链路树仍有效，但只适用于 CR/EQ pass 后仍不出图，或 P0 AUX/DPCD 证据证明训练控制面已闭合的场景 | F30,F31 | high | 后续现象回到 CDR/comma fail 且 CR/EQ 始终通过 |
 
 ## 5. Actions Already Tried And Results
 
@@ -94,7 +73,6 @@
 | M3 | 重复测试时对 DS90UB984 重新上下电和重新配置 | decoder reinit loop | 重复过程中仍出现概率性出图异常 | 失败与 decoder power/reconfig loop 强相关；Redriver 动态 reconfig 不是当前重复变量 | F11,F12 |
 | M4 | 确认前后 2 通道 eDP SerDes 电路差异 | SerDes circuit path | 已确认无差异 | 降低“前后通道电路设计差异”作为主因，但不排除板级装配/SI/通道路径差异 | F14 |
 | M5 | 对比前 2 通道与后 2 通道 DS90UB984 IIC 指令、ini 和参数下发 | IIC/config intent | 未发现问题，已完成 | 降低“显式指令/参数不同”分支，但 readback/status 仍待查 | F18,F19 |
-| M6 | 复盘当前 AUX/DPCD training status 返回方式 | training-control architecture | 确认 CR/EQ 状态由 FPGA/逻辑代答，不来自 SerDes feedback | 当前 CR/EQ fail 的首查对象切到 AUX/DPCD transaction、status map、HPD 和 responder 时序 | F25,F26,F27,F30 |
 
 ## 6. Proposed Methods / Pending Actions
 
@@ -107,11 +85,6 @@
 | P4b | 和厂家确认是否存在模拟出图输出、stream-detect、output-valid、error/status 相关寄存器及解释 | 陈斌 per project table | decoder register semantics | vendor confirmation mapped back to P4a dump | M3 |
 | P5 | 测量 DS90UB984 关键管脚 | 陈斌、吴峰 per project table | decoder pins and prerequisites | per-pin voltage/timing/pass-fail table | B1/B2/M1 |
 | P6 | 在同一故障窗口记录 DS90UB984 output-valid/Redriver output/AU15P input/CDR/comma 状态 | candidate: 吴峰 + FPGA debug owner, PM/project lead to confirm | data boundary split | decoder output valid? Redriver output valid? AU15P input valid? receiver lock? | B1/B2/B3/B4/B5/M1-M6 |
-| P7 | 抓成功/失败两组完整 AUX transaction，覆盖 link rate、lane count、TRAINING_PATTERN_SET 写入、DPCD 0x202/0x203/0x204/0x206/0x207 读取、AUX timeout/NACK/DEFER | 吴志安 / FPGA debug owner 待确认 | AUX/DPCD training-control path | pass/fail transaction diff with timestamps | J9/J10/J12 |
-| P8 | 审核 FPGA/DPCD responder 的 CR_DONE、CHANNEL_EQ_DONE、SYMBOL_LOCKED、LANE_ALIGN_DONE、ADJUST_REQUEST 返回位和 lane 数/速率匹配关系 | FPGA debug owner 待确认 | synthetic CR/EQ status map | status-map checklist and source-expected bit coverage | J10/J12 |
-| P9 | 同窗口测 AUX+/AUX-/HPD 物理波形、电平、毛刺、复位/上下电期间状态，并和温度/风冷条件关联 | 硬件 owner 待确认 | AUX/HPD physical layer | good/fault waveform and environmental correlation | J11/J12 |
-| P10 | 给 FPGA AUX responder 增加或导出训练状态机日志：每次 Source 写入、每次读取、返回值、状态更新时间、HPD 事件 | FPGA debug owner 待确认 | responder timing/state machine | ordered log aligned to A57 driver fail timestamp | J9/J12 |
-| P11 | 只有 CR/EQ 稳定通过但仍无图时，再执行 P6 的 DS90UB984/Redriver/AU15P 主数据链路同窗口切分 | project lead to gate | routing gate | CR/EQ pass with no-image evidence | J13 |
 
 ## 7. Contradictions / Revisions
 
@@ -122,10 +95,6 @@
 | R3 | 可能把一颗 DS90UB984 的两个通道视为强一致单元 | 同一芯片下两个通道没有严格一致性 | F8,F9 | decoder-chip-level global branch 降级，per-channel branch 升级 |
 | R4 | Redriver 控制/配置可能被当作重复测试变量 | Redriver 设备上电后配置好，后续并未重新配置；重复变量是 DS90UB984 上下电和重新配置 | F10,F11,F12 | Redriver 动态 reconfig 分支降级，Redriver static path/PWDN 仍保留 |
 | R5 | 项目表中有“6块”计划和“2块板子多块板子测试”等表述 | 本次补充明确“一共测试了4块解码板”，但仍有另外 2 块待确认计划 | F5,F16 | 需要规范化 sample matrix，避免 test count 混乱影响结论 |
-| R6 | 旧模型把 AUX 正常作为降低 AUX-first debug 的依据 | 新补充说明当前 CR/EQ fail 发生在 AUX/DPCD training status 代答链路，必须重新抓当前窗口 AUX transaction | F22,F25,F26,F31 | 对 CR/EQ fail 模式，AUX/DPCD 重新升为 P0 |
-| R7 | 旧模型把 CDR/comma/SerDes 异常作为主要观测症状之一 | 新补充说明 CR/EQ 状态不取自 SerDes feedback；SerDes 眼图不应解释 Source 没读到训练 OK 的第一原因 | F25,F26,F29,F30 | AU15P/SerDes 分支降级到 CR/EQ pass 后或 AUX/DPCD 闭合后 |
-| R8 | 可能按标准 eDP Sink 训练闭环理解 CR/EQ status | 当前实现是 FPGA/逻辑在 AUX/DPCD 上合成返回训练 OK，属于非标准闭环 | F25,F26,F27 | 需要审 DPCD emulator/status-map/状态机，而不是只看标准协议框图 |
-| R9 | 温度影响可能被直接归因到高速 Main Link/SerDes margin | 温度影响只说明系统 margin 敏感，AUX/HPD 物理层、FPGA 状态机和公共供电/时钟也可能受影响 | F23,F28,F29 | 温度实验必须同时记录 AUX transaction 和 physical waveform |
 
 ## 8. Missing Information
 
@@ -139,11 +108,7 @@
 | G6 | AU15P input activity、CDR/comma 状态是否覆盖 eDP1-4 每个通道 | 验证 prior receiver symptom 是否适用于新的四通道矩阵 |
 | G7 | “单独勾选无法出图”的具体含义、勾选对象、操作顺序和是否影响 DS90UB984 reconfig | 可能解释通道选择、lane mapping 或 reinit 顺序问题 |
 | G8 | 厂家对 DS90UB984 模拟出图输出寄存器/诊断位的确认 | 决定能否低成本用 status split 替代高速探测 |
-| G9 | 失败窗口的 AUX transaction 逐笔记录，包括 request、address、data、ACK/NACK/DEFER/timeout、retry、timestamp | 决定 A57 是否真正读到 FPGA 代答的 CR/EQ OK |
-| G10 | FPGA/DPCD responder 对 0x202/0x203/0x204/0x206/0x207 等训练状态寄存器的完整返回表，按 lane 数和训练阶段区分 | 决定 status bit 是否满足 Source 驱动期望 |
-| G11 | AUX+/AUX-/HPD 的物理波形、电平、毛刺、上电/复位时序和温度条件对比 | 决定 CR/EQ fail 是否由 AUX/HPD 物理层或边界时序触发 |
-| G12 | A57/eDP Source 驱动日志中 CR/EQ fail 的直接错误码或阶段：AUX read fail、status bit fail、lane align fail、timeout 还是 HPD event | 决定软件看到的 fail 类型，防止把所有日志都泛化为 EQ/CR fail |
 
 ## 9. Router-Ready Case Brief
 
-A57 Issue4 现在分成两个症状模式。模式 A 是 2026-05-13 补充的 CR/EQ 概率失败、持续训练字、无图像：当前实现中 CR/EQ 状态由 FPGA/逻辑在 AUX/DPCD 上代答，不来自 SerDes feedback，因此首查 AUX/DPCD transaction、status-map、HPD/AUX 物理层和 responder 状态机时序；不能先把问题归到 SerDes 眼图。模式 B 是 CR/EQ 通过后仍无图：继续沿用 DS90UB984 解码板四通道概率性出图异常模型，切分 DS90UB984 per-channel 输出/状态、Redriver 静态 PWDN/I2C/path、AU15P input/CDR/comma、以及板/通道概率矩阵。架构上，eDP1/2 来自一颗 DS90UB984，eDP3/4 来自另一颗 DS90UB984；同一芯片下两个通道不严格同好同坏。降温只降低概率，说明 margin/时序/电气敏感，但不足以单独锁定 SerDes。当前仍不能下 root cause 结论。
+A57 Issue4 现在应建模为 DS90UB984 解码板上的四通道概率性 eDP 出图异常，而不是单纯的后两通道问题。架构上，eDP1/2 来自一颗 DS90UB984，eDP3/4 来自另一颗 DS90UB984；但同一芯片下两个通道并不严格同好同坏。已测试 4 块解码板，板间表现不同：一块板 eDP3/4 异常概率较高，另外三块板 eDP1/2 异常概率较高，且目前没有一块稳定 4 通道出图。Redriver 位于 eDP mainstream 中间，设备上电后已配置，重复测试过程中不重新配置；重复测试变量主要是 DS90UB984 重新上下电和重新配置。前后 SerDes 电路差异已确认无差异，前/后 DS90UB984 IIC 指令、ini 和参数下发对比未发现问题。当前最需要切分的是：DS90UB984 per-channel 输出/状态、Redriver 静态 PWDN/I2C/path、AU15P input/CDR/comma、以及板/通道概率矩阵；仍不能下 root cause 结论。

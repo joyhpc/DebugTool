@@ -15,6 +15,7 @@ Users should be able to access every debug function by ordinary language. Do not
 | "帮我更新一下排查策略" / "下一步怎么查" | Update current debug plan from new information | revised priority, stale branches, next 1-3 actions |
 | "刚测到..." / "示波器看到..." / "寄存器读到..." | Treat measurement as new evidence | measurement classification, affected hypotheses, updated action ranking |
 | "刚才的判断要不要改" / "这个线索说明什么" | Run evidence-impact review | raised/lowered hypotheses, evidence limits, action changes |
+| "这些信息记录到哪里" / "合并到之前那个案子" / "前面不是讨论过这个问题吗" | Check `pilot_runs/CASE_INDEX.md` and update the matched existing case | matched case id, current entry point, updated latest artifact, archive if needed |
 | "整理成 issue 同步" | Produce operational summary | current facts, likely domains, action owners, expected evidence, stop conditions |
 | "复盘/沉淀资产" | Run retrospective | root cause, misleading paths, case_record draft, regression candidate |
 | "资料/文章里学到什么" | Use pattern_bundle intake | extracted patterns, evidence limits, promotion blockers |

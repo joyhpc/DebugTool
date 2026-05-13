@@ -61,3 +61,21 @@
 - 当前多板数据仍缺标准化 `board_id / chip_id / channel_id / test_count / fail_count` 矩阵。
 - DS90UB984 output/status 寄存器和 Redriver PWDN/I2C/static config 仍未闭合。
 - AU15P CDR/comma 旧证据需要按新的 eDP1-4 四通道矩阵重新对齐。
+
+## 2026-05-13 Same-Case Retrieval Failure
+
+触发例子：用户补充 A57 eDP 群聊信息后问“这些信息记录到哪里？”，系统没有先匹配到已有 `pilot_runs/a57_edp/`，而是建议新建一个孤立文档。
+
+Skill layer diagnosis：
+
+- `artifact_lifecycle`：缺少全局 case index，只有 case 目录 README，短问句无法快速定位已有 case。
+- `routing`：record-location 请求没有被识别为“先查同案，再决定新建还是合并”。
+- `intake`：A57/eDP/AUX/CR/EQ/SerDes 等同案 tokens 没有被当成 case identity evidence。
+
+修复：
+
+- 新增 `pilot_runs/CASE_INDEX.md`，维护 case_id、aliases/current entry/status/routing note。
+- 更新 `lifecycle/case_artifact_hygiene.md`，要求保存或回答记录位置前先查 case index。
+- 更新 `SKILL.md`、`prompts/context_router.md`、`routing/natural_language_intent_map.md`，把“记录到哪里 / 合并之前案子 / 前面讨论过”路由到同案索引匹配。
+
+后续规则：A57/eDP/DS90UB984/AUX/CR/EQ/训练字/SerDes/解码板等词出现时，应强匹配 `A57-EDP`，先打开 `pilot_runs/a57_edp/README.md` 和 current `latest-*`，再更新或回复。

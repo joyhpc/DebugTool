@@ -18,17 +18,18 @@ This package is still an early-internal-pilot candidate, not V1.0 and not a form
 When the user gives any debug symptom, issue note, waveform description, chat excerpt, or "help me debug this" request:
 
 1. Run Input Cleaning using `output_contracts/input_cleaning.md`.
-2. Run Safety Gate before recommending actions.
-3. Route using `routing/mode_router.md`.
-4. Build the first link model and hypothesis tree from cleaned user input, explicit assumptions, and built-in assets.
-5. Treat external workspace knowledge as an escalation path, not the default path.
-6. When escalation is triggered, resolve workspace knowledge sources using `retrieval/knowledge_source_resolution.md` and extract compact documented claims using `output_contracts/wiki_claim_extraction.md`.
-7. Load only relevant assets after checking `reasoning/asset_priority.md`.
-8. Deliver through `output_contracts/default_debug_delivery.md` and the selected mode contract.
-9. Include a link model or influence map whenever the failure spans more than one component, interface, power domain, clock/reset path, or software-control boundary.
-10. Include possible causes with probability estimates whenever root cause is not confirmed.
-11. Include a hypothesis tree and an action decision tree in full debug outputs.
-12. If details are missing, make assumptions explicit and ask at most three high-value questions after giving the first safe evidence-gathering actions.
+2. If the workspace has `pilot_runs/CASE_INDEX.md`, check it for same-case aliases before deciding this is a new case or answering where to record it.
+3. Run Safety Gate before recommending actions.
+4. Route using `routing/mode_router.md`.
+5. Build the first link model and hypothesis tree from cleaned user input, explicit assumptions, and built-in assets.
+6. Treat external workspace knowledge as an escalation path, not the default path.
+7. When escalation is triggered, resolve workspace knowledge sources using `retrieval/knowledge_source_resolution.md` and extract compact documented claims using `output_contracts/wiki_claim_extraction.md`.
+8. Load only relevant assets after checking `reasoning/asset_priority.md`.
+9. Deliver through `output_contracts/default_debug_delivery.md` and the selected mode contract.
+10. Include a link model or influence map whenever the failure spans more than one component, interface, power domain, clock/reset path, or software-control boundary.
+11. Include possible causes with probability estimates whenever root cause is not confirmed.
+12. Include a hypothesis tree and an action decision tree in full debug outputs.
+13. If details are missing, make assumptions explicit and ask at most three high-value questions after giving the first safe evidence-gathering actions.
 
 Do not respond with only a questionnaire unless any action would be unsafe.
 
@@ -55,7 +56,7 @@ Users should not need to remember internal terms. Treat ordinary update language
 
 For these requests, run the same internal update flow:
 
-1. Preserve the previous case context.
+1. Preserve the previous case context. If the case is not explicit, use `pilot_runs/CASE_INDEX.md` aliases to find the existing current entry before creating any new artifact.
 2. Clean the new information into fact / judgment / method / missing-result buckets.
 3. Mark which old assumptions or branches are now weaker, stronger, or unchanged.
 4. Update the link model only where the new information changes a node, edge, observable, or downstream effect.
@@ -116,6 +117,8 @@ Treat the referenced case as a test fixture:
 37. `Cost / Probability Ranking` must expose priority tiers (`P0/P1/P2`) and explicit co-acquisition grouping through `co_acq_group_id`, `same_failure_window`, and `capture_channel`, because execution owners scan tiers faster than scores and same-window actions must be auditable.
 38. Input Cleaning facts must carry `provenance`; `team_attestation_unverified` facts are capped at `medium` confidence until backed by a raw artifact, instrument log, waveform, register dump, or same-window measurement.
 39. Architecture-First evidence ledgers must be mechanically linked: each evidence row states `criticality`, `gates_boundaries`, and `gates_mechanisms`; missing critical evidence caps gated boundary/mechanism probabilities at `0.50` unless a local override explains the cap, new value, and reason.
+40. Before creating a new pilot/debug artifact, answering where to record a case update, or processing a short follow-up with case-like tokens, check `pilot_runs/CASE_INDEX.md` when present. A strong or probable index match must update the existing case current entry point instead of creating or suggesting a new standalone record.
+41. If a user says a follow-up should have matched an earlier case, treat it as a routing/artifact-lifecycle defect. Add or correct the case-index aliases and update lifecycle/routing rules before committing the fix.
 
 ## Mode Selection Order
 

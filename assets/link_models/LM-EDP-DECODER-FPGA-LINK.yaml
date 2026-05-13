@@ -1,13 +1,15 @@
 asset_type: link_model
 id: LM-EDP-DECODER-FPGA-LINK
 title: eDP Decoder to FPGA Receiver Link Debug Model
-version: 0.99.6
+version: 0.99.7
 domain: high_speed
 applicability: general
 use_when:
 - condition: eDP or DisplayPort-derived video path has intermittent no-image behavior while control communication appears normal
   weight: high
 - condition: AUX or I2C access works but FPGA SerDes CDR, comma alignment, PCS lock, or video-valid status fails
+  weight: high
+- condition: CR/EQ training status is synthesized by FPGA or firmware over AUX/DPCD instead of derived from receiver SerDes status, and the source still reports CR/EQ failure
   weight: high
 - condition: front/rear, left/right, or lane-group comparison shows one receiver branch works while another branch fails
   weight: high
@@ -32,6 +34,7 @@ causal_order:
 - system command / video-source switching
 - host or MCU control sequence
 - AUX sideband communication
+- synthetic DPCD or firmware training-status responder, when present
 - I2C or SPI decoder/redriver configuration
 - decoder power, reset, reference clock, PLL, and stream-enable state
 - decoder eDP/DP input receiver
@@ -56,11 +59,28 @@ stage_model:
   - AUX transaction pass/fail
   - DPCD or equivalent status readback
   - link-training status
+  - HPD level and HPD events
   strong_indicators:
   - AUX succeeds while pixel data remains absent or invalid
   - old assumption blamed AUX but later evidence confirms AUX handshake
+  - source reports CR/EQ fail while a local FPGA or firmware block is expected to return training OK
   actions:
   - use successful AUX as a boundary marker; do not keep AUX as the dominant branch unless new evidence shows retries, NACKs, or stale status
+  - if CR/EQ status is locally synthesized, capture success and failure AUX transactions before using downstream SerDes evidence as the primary explanation
+- stage: synthetic DPCD or firmware training-status responder
+  measurement_points:
+  - DPCD link-training status registers
+  - lane count, link rate, and training-pattern write/read sequence
+  - CR_DONE, CHANNEL_EQ_DONE, SYMBOL_LOCKED, LANE_ALIGN_DONE, and ADJUST_REQUEST status
+  - responder timestamp log for each source write and read
+  strong_indicators:
+  - CR/EQ failure appears even though the responder is intended to force training OK
+  - behavior changes with temperature, reset timing, or mechanical disturbance before pixel data is enabled
+  - source driver reports CR/EQ fail, AUX timeout, NACK, DEFER, HPD event, or inconsistent status bits
+  actions:
+  - compare passing and failing AUX/DPCD transaction traces at the register and bit level
+  - audit the responder status map against the source driver's expected lane count, link rate, training pattern, and lane-align semantics
+  - treat downstream receiver CDR/comma as a later branch until the source is proven to read and accept complete pass status
 - stage: I2C or SPI decoder/redriver configuration
   measurement_points:
   - bus waveform
@@ -140,6 +160,7 @@ stage_model:
   - move downstream only after receiver lock and framing evidence are healthy
 debug_rules:
 - Successful AUX or I2C control does not prove pixel-data output is valid.
+- If CR/EQ status is synthesized by FPGA, firmware, or a DPCD emulator rather than derived from receiver status, source-side CR/EQ failure is a control/status-plane problem until AUX transaction, HPD, status-map, and responder timing evidence prove otherwise.
 - If receiver CDR and comma fail and receiver reset does not help, prioritize proving decoder output activity, power/reset/clock state, and redriver/path enable before deep FPGA logic changes.
 - Treat CDR lock failure as a symptom unless the input data eye/activity and receiver refclk/config have both been bounded.
 - A passing front/rear or branch A/B comparison is useful only when command order, power/reset timing, lane rate, mapping, and measurement point are aligned.
@@ -169,5 +190,5 @@ counterexamples:
 - description: Known-good decoder output is present at the FPGA pins but only one FPGA build fails.
   evidence_required: measured input activity and lane mapping are correct; compare FPGA refclk, SerDes config, constraints, reset, and PCS settings
 status: candidate
-last_validated: '2026-05-08'
+last_validated: '2026-05-13'
 review_due: ''
