@@ -1,5 +1,5 @@
 case_id: BE-CLR-123-JETSON-CSI-TIMEOUT
-source_record: training/closed_loop/records/CLR-123-NVIDIA-JETSON-CSI-MODE-SETTINGS.yaml
+source_record: training/closed_loop/synthetic_closures/CLR-123-NVIDIA-JETSON-CSI-MODE-SETTINGS.yaml
 actual_resolution_summary: "NVIDIA Jetson guidance maps camera timeouts to mode-specific device-tree fields such as num_lanes, tegra_sinterface, discontinuous_clk, mclk_multiplier, pix_clk_hz, and lane_polarity, while I2C errors route to power_on order."
 hit_criteria:
   must_include:

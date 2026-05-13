@@ -4,6 +4,11 @@ from pathlib import Path
 
 import yaml
 
+for _stream in (sys.stdout, sys.stderr):
+    _reconfigure = getattr(_stream, "reconfigure", None)
+    if _reconfigure is not None:
+        _reconfigure(encoding="utf-8")
+
 ROOT = Path(__file__).resolve().parents[1]
 suite = yaml.safe_load(
     (ROOT / "regression" / "minimal_regression_suite.yaml").read_text(encoding="utf-8")

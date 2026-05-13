@@ -1,5 +1,5 @@
 case_id: BE-CLR-113-FPGA-JTAG-ID
-source_record: training/closed_loop/records/CLR-113-INTEL-FPGA-JTAG-ID-NOT-RECOGNIZED.yaml
+source_record: training/closed_loop/synthetic_closures/CLR-113-INTEL-FPGA-JTAG-ID-NOT-RECOGNIZED.yaml
 actual_resolution_summary: "Intel/Altera configuration guidance prioritizes mode/status/JTAG pin setup, stable power, nCONFIG/nSTATUS release, and FPGA-end TDO/TDI/TCK evidence when the device ID is not recognized."
 hit_criteria:
   must_include:

@@ -29,10 +29,16 @@ The model separates control, power/reset/clock, data path, and receiver pipeline
 
 Probabilities are engineering priors and include raise/lower evidence.
 
-- The direct symptom's simplest physical interpretation is kept in the top two.
-- Boundary vs mechanism vs observability_gap separation is explicit, so boundary observations do not compete directly with causal mechanisms.
-- The hypothesis table includes an `unknown / model gap` branch.
-- Cost estimates cite `reasoning/cost_priors.yaml`; no local override is used.
+| semantic_check | verdict | evidence |
+|---|---|---|
+| fact vs inference split | pass | Fact and inference rows are separated in the reviewed artifact. |
+| fact provenance and confidence ceiling | pass | Provenance is reviewed and `team_attestation_unverified` cannot exceed the confidence ceiling. |
+| stale or non-same-interval evidence | pass | Stale / non-same-interval evidence is marked `requires_re_verification`. |
+| direct symptom simplest physical top two | pass | The direct symptom's simplest physical interpretation is kept in the top two. |
+| boundary vs mechanism separation | pass | Boundary vs mechanism vs observability_gap separation is explicit. |
+| unknown / model gap branch | pass | The hypothesis table includes an `unknown / model gap` branch. |
+| cost prior calibration | pass | Cost estimates cite `reasoning/cost_priors.yaml`; no local override is used. |
+| candidate owner vs assignment | pass | Candidate owner rows are labeled `candidate_owner` and require PM confirmation. |
 
 ## 7. Action Tree Findings
 

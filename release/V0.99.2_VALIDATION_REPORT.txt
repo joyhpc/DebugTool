@@ -8,7 +8,7 @@ validators, and documentation.
 
 Commands
 --------
-python -m py_compile scripts\output_validator.py scripts\run_output_validator_smoke.py scripts\lint_assets.py scripts\regression_suite_linter.py scripts\regression_runner.py scripts\lint_closed_loop.py scripts\lint_real_project_cases.py scripts\close_authoritative_queue.py
+python -m py_compile scripts\output_validator.py scripts\run_output_validator_smoke.py scripts\lint_assets.py scripts\regression_suite_linter.py scripts\lint_closed_loop.py scripts\lint_real_project_cases.py scripts\close_authoritative_queue.py
 python scripts\lint_assets.py
 python scripts\lint_closed_loop.py
 python scripts\regression_suite_linter.py

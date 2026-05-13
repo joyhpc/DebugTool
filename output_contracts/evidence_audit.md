@@ -77,7 +77,7 @@ Verify that:
 
 ## Required Semantic Checklist
 
-The audit must explicitly state whether these checks pass, fail, or are not applicable:
+The audit must explicitly state whether these checks pass, fail, or are not applicable. The pass/fail/n/a verdict must be on the same checklist line as the check label:
 
 - fact vs inference split;
 - fact provenance and confidence ceiling;
@@ -88,7 +88,7 @@ The audit must explicitly state whether these checks pass, fail, or are not appl
 - `reasoning/cost_priors.yaml` usage or a stated local override;
 - candidate owner wording vs confirmed assignment.
 
-These phrases are intentionally stable because `scripts/output_validator.py --mode evidence_audit` checks for them mechanically.
+These phrases are intentionally stable because `scripts/output_validator.py --mode evidence_audit` checks for them mechanically, but the validator also requires an explicit verdict so the audit cannot pass by merely mentioning the keywords.
 
 ## Action Tree Checks
 

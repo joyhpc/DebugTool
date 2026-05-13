@@ -1,5 +1,5 @@
 case_id: BE-CLR-119-ARRIA10-IOPLL-LOCKED
-source_record: training/closed_loop/records/CLR-119-INTEL-ARRIA10-IOPLL-LOCKED-BEHAVIOR.yaml
+source_record: training/closed_loop/synthetic_closures/CLR-119-INTEL-ARRIA10-IOPLL-LOCKED-BEHAVIOR.yaml
 actual_resolution_summary: "Intel describes lock output as low during reset, low while the released PLL lacks a stable input clock, and asserted only after a digital filter observes internal lock for the required consecutive cycles."
 hit_criteria:
   must_include:

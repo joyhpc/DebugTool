@@ -1,0 +1,6 @@
+case_id: rtl8370_switch_packet_loss
+aliases:
+  - RTL8370
+attention_patterns:
+  - RTL8370
+  - packet loss

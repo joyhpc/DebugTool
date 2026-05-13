@@ -72,3 +72,18 @@ For a quick recovery-oriented case summary, run:
 ```bash
 python scripts/case_status_report.py a57_edp
 ```
+
+## Maintenance Rules
+
+Stop adding generic assets when they lack real cases, duplicate existing assets,
+or do not change the optimal debug path.
+
+## Regression Policy
+
+Run regression when adding assets, changing routing, modifying output contracts,
+safety rules, validators, or lifecycle governance.
+
+## Retrospective Rules
+
+Capture root cause, effective fix, strong indicators, misleading or low-value
+paths, coverage scores, and regression candidates.

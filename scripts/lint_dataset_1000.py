@@ -7,9 +7,15 @@ from typing import Any
 
 import yaml
 
+for _stream in (sys.stdout, sys.stderr):
+    _reconfigure = getattr(_stream, "reconfigure", None)
+    if _reconfigure is not None:
+        _reconfigure(encoding="utf-8")
+
 ROOT = Path(__file__).resolve().parents[1]
 DATASET = ROOT / "training" / "dataset_1000"
 RECORDS = ROOT / "training" / "closed_loop" / "records"
+SYNTHETIC_CLOSURES = ROOT / "training" / "closed_loop" / "synthetic_closures"
 VALID_TIERS = {"T0", "T1", "T2", "T3", "T4", "T5"}
 VALID_QUEUE_STATUS = {
     "queued_blind",
@@ -50,6 +56,16 @@ def warn(path: Path, msg: str) -> None:
 
 def as_list(value: object) -> list[Any]:
     return value if isinstance(value, list) else []
+
+
+def collect_record_ids() -> set[str]:
+    record_ids: set[str] = set()
+    for record_dir in [RECORDS, SYNTHETIC_CLOSURES]:
+        for path in record_dir.glob("CLR-*.yaml"):
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            if data.get("id"):
+                record_ids.add(data["id"])
+    return record_ids
 
 
 target_path = DATASET / "target_mix.yaml"
@@ -114,15 +130,25 @@ if status_path.exists():
         if not isinstance(value, int) or value < 0:
             fail(status_path, f"current_counts.{key} must be non-negative integer")
     closed_total = counts.get("closed_loop_records_total", 0)
-    official_closed = counts.get("official_source_prior_closed", 0)
+    synthetic_total = counts.get("synthetic_closures_total", 0)
+    official_closed = counts.get(
+        "official_source_prior_synthetic_closures",
+        counts.get("official_source_prior_closed", 0),
+    )
     if (
         isinstance(closed_total, int)
+        and isinstance(synthetic_total, int)
         and isinstance(official_closed, int)
-        and closed_total < official_closed
+        and closed_total + synthetic_total < official_closed
     ):
         fail(
             status_path,
-            "closed_loop_records_total cannot be lower than official_source_prior_closed",
+            "closed_loop_records_total + synthetic_closures_total cannot be lower than official_source_prior_synthetic_closures",
+        )
+    if isinstance(closed_total, int) and closed_total == 0:
+        warn(
+            status_path,
+            "closed_loop_records_total is zero; regression signal must come from blind/frozen eval",
         )
     real_project_reviewed = counts.get("real_project_reviewed_cases", 0)
     if isinstance(real_project_reviewed, int) and real_project_reviewed < 1:
@@ -165,11 +191,7 @@ if public_queue_path.exists():
 
 if public_index_path.exists():
     index = yaml.safe_load(public_index_path.read_text(encoding="utf-8")) or {}
-    record_ids = set()
-    for path in RECORDS.glob("CLR-*.yaml"):
-        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-        if data.get("id"):
-            record_ids.add(data["id"])
+    record_ids = collect_record_ids()
     if index.get("target_count") != 300:
         fail(public_index_path, "target_count must be 300 for public solved cases")
     reviewed = index.get("reviewed_public_cases")
@@ -203,11 +225,7 @@ for queue_path, index_path, label in specialized_queues:
         validate_source_queue(queue_path, label)
     if index_path.exists():
         index = yaml.safe_load(index_path.read_text(encoding="utf-8")) or {}
-        record_ids = set()
-        for path in RECORDS.glob("CLR-*.yaml"):
-            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-            if data.get("id"):
-                record_ids.add(data["id"])
+        record_ids = collect_record_ids()
         reviewed = index.get("reviewed_cases")
         mappings = as_list(index.get("case_to_records"))
         if not isinstance(reviewed, int) or reviewed < 0:

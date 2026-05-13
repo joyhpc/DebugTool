@@ -4,8 +4,16 @@
 from __future__ import annotations
 
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+import yaml
+
+for _stream in (sys.stdout, sys.stderr):
+    _reconfigure = getattr(_stream, "reconfigure", None)
+    if _reconfigure is not None:
+        _reconfigure(encoding="utf-8")
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -16,14 +24,6 @@ CURRENT_ARTIFACT_RE = re.compile(
     r"^(latest-.+\.md|visual-architecture-brief\.md|field-action-plan\.md)$"
 )
 CASE_REF_RE = re.compile(r"`([^`]+\.(?:md|yaml|yml|json|txt|toml))`")
-
-CASE_SPECIFIC_PATTERNS = [
-    re.compile(r"\bA57\b", re.I),
-    re.compile(r"\bDS90UB984\b", re.I),
-    re.compile(r"\bAU15P\b", re.I),
-    re.compile(r"\bRTL8370\b", re.I),
-    re.compile(r"\bRedriver\s+PWDN\b", re.I),
-]
 
 STALE_TRIGGERS = [
     "stale",
@@ -57,18 +57,14 @@ STALE_GOVERNANCE_MARKERS = [
     "旧证据",
 ]
 
-HIGH_ATTENTION_PATTERNS = [
+BASE_HIGH_ATTENTION_PATTERNS = [
     re.compile(r"\bhot[- ]?plug\b", re.I),
     re.compile(r"\bfuse\b|\befuse\b", re.I),
     re.compile(r"\bshort\b", re.I),
     re.compile(r"\bburn(?:s|ed|ing)?\b", re.I),
-    re.compile(r"\bPWDN\b", re.I),
     re.compile(r"\bCDR\b", re.I),
     re.compile(r"\bcomma\b", re.I),
     re.compile(r"\bpacket[- ]?loss\b", re.I),
-    re.compile(r"\bDS90UB984\b", re.I),
-    re.compile(r"\bAU15P\b", re.I),
-    re.compile(r"\bRTL8370\b", re.I),
 ]
 HIGH_ATTENTION_MARKERS = [
     "evidence_id",
@@ -107,6 +103,12 @@ VISUAL_BRIEF_REQUIRED_SECTIONS = [
 
 
 @dataclass(frozen=True)
+class CaseGovernanceConfig:
+    aliases: tuple[str, ...]
+    attention_patterns: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class LintMessage:
     path: Path
     message: str
@@ -124,6 +126,46 @@ def read_text(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
         raise ValueError(f"{path} is not valid UTF-8: {exc}") from exc
+
+
+def as_list(value: object) -> list[object]:
+    return value if isinstance(value, list) else []
+
+
+def literal_pattern(term: str) -> re.Pattern[str]:
+    escaped = re.escape(term.strip())
+    if not escaped:
+        escaped = r"a^"
+    return re.compile(rf"(?<![A-Za-z0-9_]){escaped}(?![A-Za-z0-9_])", re.I)
+
+
+def load_case_governance_configs(root: Path) -> list[CaseGovernanceConfig]:
+    configs: list[CaseGovernanceConfig] = []
+    for case_dir in case_directories(root):
+        path = case_dir / "case_config.yaml"
+        if not path.exists():
+            continue
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        aliases = tuple(str(item) for item in as_list(data.get("aliases")) if str(item).strip())
+        attention = tuple(
+            str(item) for item in as_list(data.get("attention_patterns")) if str(item).strip()
+        )
+        configs.append(CaseGovernanceConfig(aliases=aliases, attention_patterns=attention))
+    return configs
+
+
+def case_specific_patterns(root: Path) -> list[re.Pattern[str]]:
+    patterns: list[re.Pattern[str]] = []
+    for config in load_case_governance_configs(root):
+        patterns.extend(literal_pattern(alias) for alias in config.aliases)
+    return patterns
+
+
+def high_attention_patterns(root: Path) -> list[re.Pattern[str]]:
+    patterns = list(BASE_HIGH_ATTENTION_PATTERNS)
+    for config in load_case_governance_configs(root):
+        patterns.extend(literal_pattern(term) for term in config.attention_patterns)
+    return patterns
 
 
 def contains_any(text: str, needles: list[str]) -> bool:
@@ -166,13 +208,14 @@ def reference_exists(root: Path, case_dir: Path, ref: str) -> bool:
 def lint_global_case_specific_leaks(root: Path) -> list[LintMessage]:
     messages: list[LintMessage] = []
     self_path = (root / "scripts" / "lint_case_governance.py").resolve()
+    patterns = case_specific_patterns(root)
     for dirname in GLOBAL_SCAN_DIRS:
         for path in iter_files(root, dirname, GLOBAL_SCAN_SUFFIXES):
             if path.resolve() == self_path:
                 continue
             text = read_text(path)
             for line_no, line in enumerate(text.splitlines(), start=1):
-                for pattern in CASE_SPECIFIC_PATTERNS:
+                for pattern in patterns:
                     if pattern.search(line):
                         messages.append(
                             LintMessage(
@@ -242,6 +285,7 @@ def lint_case_readmes(root: Path) -> list[LintMessage]:
 
 def lint_current_artifact_governance(root: Path) -> list[LintMessage]:
     messages: list[LintMessage] = []
+    patterns = high_attention_patterns(root)
     for case_dir in case_directories(root):
         for path in sorted(case_dir.glob("*.md")):
             if not CURRENT_ARTIFACT_RE.fullmatch(path.name):
@@ -256,9 +300,7 @@ def lint_current_artifact_governance(root: Path) -> list[LintMessage]:
                     )
                 )
 
-            high_attention_terms = [
-                pattern.pattern for pattern in HIGH_ATTENTION_PATTERNS if pattern.search(text)
-            ]
+            high_attention_terms = [pattern.pattern for pattern in patterns if pattern.search(text)]
             if high_attention_terms and not contains_any(text, HIGH_ATTENTION_MARKERS):
                 messages.append(
                     LintMessage(
@@ -305,7 +347,7 @@ def lint_field_action_plans(root: Path) -> list[LintMessage]:
     return messages
 
 
-def case_is_complex(case_dir: Path) -> bool:
+def case_is_complex(root: Path, case_dir: Path) -> bool:
     has_architecture = (case_dir / "latest-architecture-first.md").exists()
     has_field_plan = (case_dir / "field-action-plan.md").exists()
     if has_architecture and has_field_plan:
@@ -317,14 +359,14 @@ def case_is_complex(case_dir: Path) -> bool:
     )
     if contains_any(current_text, ["mode gate", "subsystem", "same-window", "同窗口"]):
         return True
-    return any(pattern.search(current_text) for pattern in HIGH_ATTENTION_PATTERNS)
+    return any(pattern.search(current_text) for pattern in high_attention_patterns(root))
 
 
 def lint_visual_architecture_briefs(root: Path) -> list[LintMessage]:
     messages: list[LintMessage] = []
     for case_dir in case_directories(root):
         brief = case_dir / "visual-architecture-brief.md"
-        if case_is_complex(case_dir) and not brief.exists():
+        if case_is_complex(root, case_dir) and not brief.exists():
             messages.append(
                 LintMessage(
                     brief,

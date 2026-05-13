@@ -172,21 +172,21 @@ flowchart LR
 
 本表是 validator-friendly 的合并边界索引，表示当前最新 CR/EQ fail 窗口下的路由权重；Mode A 是当前直接症状，Mode B 是 CR/EQ pass 后无图的 fallback 分支。直接物理症状 / direct symptom 的最简解释在 top two：TB1 AUX/HPD physical 与 TB2 DPCD responder status-map。
 
-| id | type | first_fail_boundary | p | mode | why now |
-|---|---|---|---:|---|---|
-| TB1 | boundary | AUX/HPD physical layer | 0.20 | Mode A | 当前 CR/EQ fail 依赖 Source 是否通过 AUX/HPD 读到状态 |
-| TB2 | boundary | FPGA/DPCD responder status-map | 0.20 | Mode A | CR/EQ OK 是代答，status bit 语义是首要边界 |
-| TB3 | boundary | FPGA responder timing race or stale status | 0.16 | Mode A | 概率性和温度敏感可由返回时序边缘触发 |
-| TB4 | boundary | link rate / lane count / training pattern semantic mismatch | 0.12 | Mode A | Source 可能交叉检查训练阶段和返回状态 |
-| TB5 | boundary | shared temperature / power / clock margin affecting training control | 0.08 | Mode A | 风冷影响概率但不根治 |
-| TB0 | boundary | training-control unknown / model gap | 0.04 | Mode A | 仍缺 Source driver fail reason |
-| B1 | boundary | DS90UB984 internal lock/PLL/state boundary | 0.07 | Mode B fallback | CR/EQ pass 后仍无图时保留 |
-| B2 | boundary | DS90UB984 output pin / mainstream boundary | 0.05 | Mode B fallback | CR/EQ pass 后仍需确认 decoder output |
-| B3 | boundary | Redriver input-output boundary | 0.025 | Mode B fallback | Redriver static state 未闭合 |
-| B4 | boundary | AU15P input pin before RX | 0.02 | Mode B fallback | 板/通道差异可能落在 lane path |
-| B5 | boundary | AU15P SerDes RX CDR/comma/rate boundary | 0.02 | Mode B fallback | 仅在 input 有效后进入 |
-| B6 | boundary | downstream video pipeline | 0.005 | Mode B fallback | 只在 receiver/framing 全部正常后进入 |
-| B0 | boundary | unknown / model gap | 0.01 | Mode B fallback | 主数据链未解释时保留 |
+| id | type | first_fail_boundary | p | evidence_refs | mode | why now |
+| --- | --- | --- | ---: | --- | --- | --- |
+| TB1 | boundary | AUX/HPD physical layer | 0.20 | AF-F9,AF-F16 | Mode A | 当前 CR/EQ fail 依赖 Source 是否通过 AUX/HPD 读到状态 |
+| TB2 | boundary | FPGA/DPCD responder status-map | 0.20 | AF-F6,AF-F9 | Mode A | CR/EQ OK 是代答，status bit 语义是首要边界 |
+| TB3 | boundary | FPGA responder timing race or stale status | 0.16 | AF-F3,AF-F9 | Mode A | 概率性和温度敏感可由返回时序边缘触发 |
+| TB4 | boundary | link rate / lane count / training pattern semantic mismatch | 0.12 | AF-F9 | Mode A | Source 可能交叉检查训练阶段和返回状态 |
+| TB5 | boundary | shared temperature / power / clock margin affecting training control | 0.08 | AF-F3,AF-F9 | Mode A | 风冷影响概率但不根治 |
+| TB0 | boundary | training-control unknown / model gap | 0.04 | AF-F9 | Mode A | 仍缺 Source driver fail reason |
+| B1 | boundary | DS90UB984 internal lock/PLL/state boundary | 0.07 | AF-F1,AF-F6 | Mode B fallback | CR/EQ pass 后仍无图时保留 |
+| B2 | boundary | DS90UB984 output pin / mainstream boundary | 0.05 | AF-F1,AF-F2 | Mode B fallback | CR/EQ pass 后仍需确认 decoder output |
+| B3 | boundary | Redriver input-output boundary | 0.025 | AF-F5 | Mode B fallback | Redriver static state 未闭合 |
+| B4 | boundary | AU15P input pin before RX | 0.02 | AF-F9 | Mode B fallback | 板/通道差异可能落在 lane path |
+| B5 | boundary | AU15P SerDes RX CDR/comma/rate boundary | 0.02 | AF-F9 | Mode B fallback | 仅在 input 有效后进入 |
+| B6 | boundary | downstream video pipeline | 0.005 | AF-F2 | Mode B fallback | 只在 receiver/framing 全部正常后进入 |
+| B0 | boundary | unknown / model gap | 0.01 | AF-F9 | Mode B fallback | 主数据链未解释时保留 |
 
 ### Mode A Boundary Distribution: CR/EQ Fail / Training Words
 
@@ -392,19 +392,19 @@ Not Applied：
 
 本表使用 `reasoning/cost_priors.yaml` 的经验中位数，并按 Architecture-First 模式的 `exclude_weight = 0.7` 计算。当前若仍是 CR/EQ fail，A_TP0a/A_TP0b/A_TP0c/A_TP0d 共享 `CO-A57-AUX-CR-EQ-FAILWIN-1`，优先级高于 data-path batch。A_P0a/A_P0b/A_P0c/A_P0d 共享 `CO-A57-EDP-FAILWIN-1`，只在 CR/EQ pass 后仍无图，或 training-control batch 已闭合后进入。A_P0m 是 standalone matrix-normalization action，不要求同窗口。
 
-| action_id | tier | co_acq_group_id | same_failure_window | capture_channel | action | boundary_subset | mechanism_subset | p_hit | p_exclude | time_min | safety | priority_score | reason |
-|---|---|---|---|---|---|---|---|---:|---:|---:|---|---:|---|
-| A_TP0a | P0 | CO-A57-AUX-CR-EQ-FAILWIN-1 | true | aux_transaction_log | 抓成功/失败两组 AUX transaction，含 DPCD 地址、数据、ACK/NACK/DEFER/timeout、retry、timestamp | TB1,TB2,TB3,TB4,TB0 | M8,M9,M10,M11,M12 | 0.35 | 0.70 | 45 | S0 | 0.031 | 当前症状是 CR/EQ fail，先证明 Source 实际读到了什么 |
-| A_TP0b | P0 | CO-A57-AUX-CR-EQ-FAILWIN-1 | true | dpcd_status_map_audit | 审核 FPGA/DPCD responder 对 CR_DONE、EQ_DONE、SYMBOL_LOCKED、LANE_ALIGN_DONE、ADJUST_REQUEST、lane/rate 映射的返回 | TB2,TB4 | M9,M11 | 0.30 | 0.65 | 60 | S0 | 0.020 | 代答架构下最直接检查 status bit 是否完整一致 |
-| A_TP0c | P0 | CO-A57-AUX-CR-EQ-FAILWIN-1 | true | aux_hpd_waveform | 同窗口测 AUX+/AUX-/HPD 电平、毛刺、复位窗口、温度/风冷条件 | TB1,TB5 | M8 | 0.25 | 0.60 | 75 | S1 | 0.014 | 解释温度/机械扰动概率影响，避免直接跳到 SerDes |
-| A_TP0d | P0 | CO-A57-AUX-CR-EQ-FAILWIN-1 | true | fpga_responder_log | 导出 FPGA AUX responder 日志：Source 写入、Source 读取、返回值、状态更新时间、HPD event | TB3,TB4,TB0 | M10,M11,M12 | 0.25 | 0.60 | 75 | S0 | 0.014 | 切分返回时序 race、stale status 和驱动阶段不一致 |
-| A_P0a | P0 | CO-A57-EDP-FAILWIN-1 | true | register_dump + vendor_point_check | DS90UB984 per-channel fault-state/status raw readback，厂家寄存器语义并行点查 | B1,B2,B0 | M2,M3 | 0.22 | 0.65 | 45 | S0 | 0.015 | 低成本同时压缩 observability gap 和 DS90UB984 boundary |
-| A_P0m | P0 | CO-A57-MATRIX-STANDALONE | false | test_matrix_spreadsheet | 补齐 board/chip/channel/test_count/fail_count/operation 标准矩阵 | B0,B2,B3,B4 | M5 | 0.12 | 0.65 | 60 | S0 | 0.010 | standalone prerequisite：防止继续用混乱样本描述做概率判断，不要求同窗口 |
-| A_P0b | P0 | CO-A57-EDP-FAILWIN-1 | true | scope_rails_reset_refclk | DS90UB984 rails、reset、refclk/PLL、SerDes reference failing-vs-passing scope capture | B1,B2,B5 | M1 | 0.25 | 0.55 | 90 | S1 | 0.007 | 直接验证“上电时序/参考时钟”机制，但不和 boundary 项竞争 |
-| A_P0d | P0 | CO-A57-EDP-FAILWIN-1 | true | redriver_status_and_io | Redriver PWDN/I2C/EQ/static state 与每通道 input/output activity | B3,B4 | M4,M5 | 0.18 | 0.55 | 90 | S1 | 0.007 | 切 Redriver/static path、lane path 与 AU15P input 前边界 |
-| A_P0c | P0 | CO-A57-EDP-FAILWIN-1 | true | fpga_status_cdr_comma | AU15P input activity、CDR、comma、lane status 按 eDP1-4 同窗口记录 | B4,B5 | M6,M5 | 0.15 | 0.50 | 90 | S1 | 0.006 | 切 AU15P input 前后边界，刷新旧 CDR/comma context |
-| A_P1a | P1 | none | false | fpga_register_review | 只有 AU15P input 有效后，检查 AU15P SerDes refclk/config/rate/polarity/comma 设置 | B5 | M6 | 0.07 | 0.45 | 75 | S0 | 0.005 | receiver mechanism 的前置条件是 input 有效 |
-| A_P1b | P1 | none | false | operation_sequence_log | 复核单独勾选、decoder reconfig 顺序和串行化/固定顺序测试 | B1,B2 | M2 | 0.12 | 0.45 | 120 | S0 | 0.004 | 验证 operation/selection coupling，但应在 P0 batch 后解释 |
+| action_id | tier | co_acq_group_id | same_failure_window | capture_channel | action | boundary_subset | mechanism_subset | prior_source | p_hit | p_exclude | time_min | safety | priority_score | reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- | ---: | --- |
+| A_TP0a | P0 | CO-A57-AUX-CR-EQ-FAILWIN-1 | true | aux_transaction_log | 抓成功/失败两组 AUX transaction，含 DPCD 地址、数据、ACK/NACK/DEFER/timeout、retry、timestamp | TB1,TB2,TB3,TB4,TB0 | M8,M9,M10,M11,M12 | cost_priors.yaml:bus_log_capture | 0.35 | 0.70 | 45 | S0 | 0.031 | 当前症状是 CR/EQ fail，先证明 Source 实际读到了什么 |
+| A_TP0b | P0 | CO-A57-AUX-CR-EQ-FAILWIN-1 | true | dpcd_status_map_audit | 审核 FPGA/DPCD responder 对 CR_DONE、EQ_DONE、SYMBOL_LOCKED、LANE_ALIGN_DONE、ADJUST_REQUEST、lane/rate 映射的返回 | TB2,TB4 | M9,M11 | cost_priors.yaml:register_audit | 0.30 | 0.65 | 60 | S0 | 0.020 | 代答架构下最直接检查 status bit 是否完整一致 |
+| A_TP0c | P0 | CO-A57-AUX-CR-EQ-FAILWIN-1 | true | aux_hpd_waveform | 同窗口测 AUX+/AUX-/HPD 电平、毛刺、复位窗口、温度/风冷条件 | TB1,TB5 | M8 | cost_priors.yaml:scope_capture | 0.25 | 0.60 | 75 | S1 | 0.014 | 解释温度/机械扰动概率影响，避免直接跳到 SerDes |
+| A_TP0d | P0 | CO-A57-AUX-CR-EQ-FAILWIN-1 | true | fpga_responder_log | 导出 FPGA AUX responder 日志：Source 写入、Source 读取、返回值、状态更新时间、HPD event | TB3,TB4,TB0 | M10,M11,M12 | cost_priors.yaml:fpga_log_capture | 0.25 | 0.60 | 75 | S0 | 0.014 | 切分返回时序 race、stale status 和驱动阶段不一致 |
+| A_P0a | P0 | CO-A57-EDP-FAILWIN-1 | true | register_dump + vendor_point_check | DS90UB984 per-channel fault-state/status raw readback，厂家寄存器语义并行点查 | B1,B2,B0 | M2,M3 | cost_priors.yaml:register_dump | 0.22 | 0.65 | 45 | S0 | 0.015 | 低成本同时压缩 observability gap 和 DS90UB984 boundary |
+| A_P0m | P0 | CO-A57-MATRIX-STANDALONE | false | test_matrix_spreadsheet | 补齐 board/chip/channel/test_count/fail_count/operation 标准矩阵 | B0,B2,B3,B4 | M5 | cost_priors.yaml:matrix_normalization | 0.12 | 0.65 | 60 | S0 | 0.010 | standalone prerequisite：防止继续用混乱样本描述做概率判断，不要求同窗口 |
+| A_P0b | P0 | CO-A57-EDP-FAILWIN-1 | true | scope_rails_reset_refclk | DS90UB984 rails、reset、refclk/PLL、SerDes reference failing-vs-passing scope capture | B1,B2,B5 | M1 | cost_priors.yaml:scope_capture | 0.25 | 0.55 | 90 | S1 | 0.007 | 直接验证“上电时序/参考时钟”机制，但不和 boundary 项竞争 |
+| A_P0d | P0 | CO-A57-EDP-FAILWIN-1 | true | redriver_status_and_io | Redriver PWDN/I2C/EQ/static state 与每通道 input/output activity | B3,B4 | M4,M5 | cost_priors.yaml:status_io_capture | 0.18 | 0.55 | 90 | S1 | 0.007 | 切 Redriver/static path、lane path 与 AU15P input 前边界 |
+| A_P0c | P0 | CO-A57-EDP-FAILWIN-1 | true | fpga_status_cdr_comma | AU15P input activity、CDR、comma、lane status 按 eDP1-4 同窗口记录 | B4,B5 | M6,M5 | cost_priors.yaml:fpga_status_capture | 0.15 | 0.50 | 90 | S1 | 0.006 | 切 AU15P input 前后边界，刷新旧 CDR/comma context |
+| A_P1a | P1 | none | false | fpga_register_review | 只有 AU15P input 有效后，检查 AU15P SerDes refclk/config/rate/polarity/comma 设置 | B5 | M6 | cost_priors.yaml:generic_debug_action | 0.07 | 0.45 | 75 | S0 | 0.005 | receiver mechanism 的前置条件是 input 有效 |
+| A_P1b | P1 | none | false | operation_sequence_log | 复核单独勾选、decoder reconfig 顺序和串行化/固定顺序测试 | B1,B2 | M2 | cost_priors.yaml:generic_debug_action | 0.12 | 0.45 | 120 | S0 | 0.004 | 验证 operation/selection coupling，但应在 P0 batch 后解释 |
 
 ## 11. Optimal Troubleshooting Path
 

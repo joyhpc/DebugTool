@@ -7,8 +7,15 @@ from typing import Any
 
 import yaml
 
+for _stream in (sys.stdout, sys.stderr):
+    _reconfigure = getattr(_stream, "reconfigure", None)
+    if _reconfigure is not None:
+        _reconfigure(encoding="utf-8")
+
 ROOT = Path(__file__).resolve().parents[1]
 TRAINING = ROOT / "training" / "closed_loop"
+RECORDS = TRAINING / "records"
+SYNTHETIC_CLOSURES = TRAINING / "synthetic_closures"
 VALID_RESULTS = {"hit", "near_hit", "miss", "blocked"}
 VALID_STATUS = {"draft", "reviewed", "promoted"}
 VALID_QUEUE_STATUS = {"queued_blind", "in_review", "processed", "reference_only"}
@@ -114,9 +121,16 @@ closure_index = None
 if closure_index_path.exists():
     closure_index = yaml.safe_load(closure_index_path.read_text(encoding="utf-8")) or {}
 
-record_paths = sorted((TRAINING / "records").glob("*.yaml"))
+reviewed_record_paths = sorted(RECORDS.glob("*.yaml"))
+synthetic_record_paths = sorted(SYNTHETIC_CLOSURES.glob("*.yaml"))
+record_paths = reviewed_record_paths + synthetic_record_paths
 if not record_paths:
-    fail(TRAINING / "records", "no closed-loop records found")
+    fail(TRAINING, "no closed-loop records or synthetic closures found")
+elif not reviewed_record_paths:
+    warn(
+        RECORDS,
+        "no non-synthetic closed-loop records found; default regression must use blind/frozen eval",
+    )
 
 record_ids: set[str] = set()
 
@@ -253,7 +267,10 @@ if errors:
             print("-", w)
     sys.exit(1)
 
-print(f"CLOSED LOOP LINT PASSED: {len(record_paths)} records")
+print(
+    "CLOSED LOOP LINT PASSED: "
+    f"{len(reviewed_record_paths)} records, {len(synthetic_record_paths)} synthetic closures"
+)
 if warnings:
     print("WARNINGS")
     for w in warnings:
