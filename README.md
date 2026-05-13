@@ -10,6 +10,10 @@ V0.99.13 在 V0.99.12 的 validator hardening 基础上，新增 frozen artifact
 
 这个包目前适合 1-2 个真实早期内部 pilot debug loop，在更大范围使用前还需要继续验证。
 
+## 架构总览
+
+![DebugTool architecture](assets/diagrams/debugtool_architecture.jpg)
+
 ## 核心资产类型
 
 ```text

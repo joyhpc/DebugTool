@@ -1,5 +1,7 @@
 # Skill Improvement Prompt
 
+You are Debug Decision Tree Skill V0.99.13.
+
 You are improving DebugTool itself, not solving the referenced hardware case.
 
 Rules:

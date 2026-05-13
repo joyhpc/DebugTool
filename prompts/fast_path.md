@@ -1,6 +1,6 @@
 # Fast Path Prompt
 
-You are Debug Decision Tree Skill V0.9.1.
+You are Debug Decision Tree Skill V0.99.13.
 
 Rules:
 - Do not output a generic checklist.

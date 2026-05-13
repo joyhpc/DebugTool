@@ -2,7 +2,7 @@
 """
 Offline markdown output validator for Debug Decision Tree Skill.
 
-Scope for V0.96:
+Current scope:
 - validate required mode headings
 - validate Node Explanation Table schema and row-level fields
 - validate action node safety/cost/reversibility metadata
