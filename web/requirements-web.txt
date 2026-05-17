@@ -1,0 +1,5 @@
+# Web layer dependencies — kept separate from the repo-root requirements.txt
+# so the skill core never depends on a web stack. Install only when running
+# the web service:  pip install -r web/requirements-web.txt
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.27,<1.0

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebugTool</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 960px; margin: 1.5rem auto;
+         padding: 0 1rem; color: #1a1a1a; }
+  h1 { font-size: 1.3rem; }
+  h2 { font-size: 1rem; margin-top: 1.4rem; }
+  textarea { width: 100%; height: 9rem; font-family: ui-monospace, monospace;
+             font-size: .85rem; box-sizing: border-box; }
+  .row { display: flex; gap: 1rem; align-items: center; margin: .6rem 0; flex-wrap: wrap; }
+  label { font-size: .85rem; }
+  select, button { font-size: .85rem; padding: .3rem .5rem; }
+  button { cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  pre { background: #f4f4f4; padding: .7rem; overflow: auto; font-size: .8rem;
+        white-space: pre-wrap; word-break: break-word; }
+  #progress { max-height: 16rem; }
+  #deliverable { max-height: 30rem; }
+  .ok { color: #137333; font-weight: 600; }
+  .err { color: #c5221f; font-weight: 600; }
+  ul { margin: .3rem 0; padding-left: 1.2rem; font-size: .8rem; }
+  .muted { color: #777; font-size: .8rem; }
+</style>
+</head>
+<body>
+<h1>DebugTool — 硬件调试</h1>
+<p class="muted">贴入 bug 描述,后端调用 codex/claude CLI 在仓库内跑完整 debug loop。</p>
+
+<textarea id="input" placeholder="例:A57 板子 eDP 无显示,LP11 已见,HS clock 没起来..."></textarea>
+
+<div class="row">
+  <label>校验模式
+    <select id="mode"><option value="">(不结构校验)</option></select>
+  </label>
+  <label>CLI
+    <select id="cli">
+      <option value="codex">codex</option>
+      <option value="claude">claude</option>
+    </select>
+  </label>
+  <button id="run">运行</button>
+</div>
+
+<h2>进度</h2>
+<pre id="progress" class="muted">(空闲)</pre>
+
+<h2>交付物</h2>
+<pre id="deliverable" class="muted">(空闲)</pre>
+
+<h2>结构校验</h2>
+<div id="validation" class="muted">(空闲)</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>]/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+}
+
+async function loadModes() {
+  try {
+    const res = await fetch('/modes');
+    const data = await res.json();
+    for (const m of data.modes) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      $('mode').appendChild(opt);
+    }
+  } catch (e) {
+    /* keep the default empty option */
+  }
+}
+
+function renderValidation(v) {
+  const box = $('validation');
+  box.className = '';
+  if (!v) {
+    box.className = 'muted';
+    box.textContent = '(本次未选校验模式)';
+    return;
+  }
+  let html = v.ok
+    ? '<p class="ok">结构校验通过</p>'
+    : '<p class="err">结构校验未通过</p>';
+  if (v.errors && v.errors.length) {
+    html += '<b>errors</b><ul>' +
+      v.errors.map((e) => '<li>' + escapeHtml(e) + '</li>').join('') + '</ul>';
+  }
+  if (v.warnings && v.warnings.length) {
+    html += '<b>warnings</b><ul>' +
+      v.warnings.map((w) => '<li>' + escapeHtml(w) + '</li>').join('') + '</ul>';
+  }
+  box.innerHTML = html;
+}
+
+function handleEvent(ev) {
+  if (ev.type === 'progress') {
+    const p = $('progress');
+    if (p.classList.contains('muted')) { p.className = ''; p.textContent = ''; }
+    p.textContent += ev.text + '\n';
+    p.scrollTop = p.scrollHeight;
+  } else if (ev.type === 'result') {
+    const d = $('deliverable');
+    d.className = '';
+    let text = ev.deliverable || '(交付物为空)';
+    if (!ev.deliverable_found) {
+      text = '[未找到交付物标记 — 以下为 CLI 原始输出]\n\n' + text;
+    }
+    d.textContent = text;
+    renderValidation(ev.validation);
+  } else if (ev.type === 'error') {
+    const box = $('validation');
+    box.className = '';
+    box.innerHTML = '<p class="err">错误:' + escapeHtml(ev.message) + '</p>';
+  }
+}
+
+async function run() {
+  const input = $('input').value.trim();
+  if (!input) { alert('请先输入 bug 描述'); return; }
+  $('progress').className = '';
+  $('progress').textContent = '';
+  $('deliverable').className = 'muted';
+  $('deliverable').textContent = '(运行中...)';
+  $('validation').className = 'muted';
+  $('validation').textContent = '(运行中...)';
+  $('run').disabled = true;
+  try {
+    const res = await fetch('/debug', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        input: input,
+        mode: $('mode').value || null,
+        cli: $('cli').value,
+      }),
+    });
+    if (!res.ok) { throw new Error('HTTP ' + res.status); }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let idx;
+      while ((idx = buffer.indexOf('\n\n')) !== -1) {
+        const chunk = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+        const dataLine = chunk.split('\n').find((l) => l.startsWith('data: '));
+        if (dataLine) {
+          try { handleEvent(JSON.parse(dataLine.slice(6))); }
+          catch (e) { /* skip malformed event */ }
+        }
+      }
+    }
+  } catch (e) {
+    $('validation').className = '';
+    $('validation').innerHTML =
+      '<p class="err">请求失败:' + escapeHtml(e.message) + '</p>';
+  } finally {
+    $('run').disabled = false;
+  }
+}
+
+$('run').addEventListener('click', run);
+loadModes();
+</script>
+</body>
+</html>
