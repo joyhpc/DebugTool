@@ -48,7 +48,7 @@ def _sse(event: dict) -> str:
 
 def _debug_stream(req: DebugRequest) -> Iterator[str]:
     with _run_slots:
-        for event in run_debug(req.input, req.cli):
+        for event in run_debug(req.input, req.cli, req.mode):
             if event["type"] == "deliverable":
                 validation = run_validation(event["markdown"], req.mode) if req.mode else None
                 yield _sse(

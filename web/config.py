@@ -7,6 +7,7 @@ the codex/claude CLI is invoked. No existing repository file needs to change.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Final
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -27,12 +28,16 @@ DEFAULT_CLI = "codex"
 # Flag details evolve with each CLI; adjust them here without touching code.
 CLI_PROFILES: dict[str, dict[str, list[str]]] = {
     "codex": {
-        "argv": ["codex", "exec", "--json", "--sandbox", "workspace-write", "{PROMPT}"],
+        "argv": ["codex", "exec", "--json", "--sandbox", "workspace-write", "-"],
     },
     "claude": {
         "argv": ["claude", "-p", "--output-format", "stream-json", "--verbose", "{PROMPT}"],
     },
 }
+
+# Profiles that read the generated guide prompt from stdin instead of argv.
+# This avoids Windows .cmd shim quoting/truncation issues for long multiline prompts.
+CLI_STDIN_PROFILES: Final = {"codex"}
 
 # Markers the CLI agent is asked to wrap the final deliverable in, so the
 # runner can extract it from a noisy event stream.
@@ -52,6 +57,9 @@ GUIDE_PROMPT_TEMPLATE = (
     f"{DELIVERABLE_END}\n\n"
     "Follow SKILL.md's output language policy: match the user's language for "
     "user-facing prose.\n\n"
+    "Only the content after `====== USER DEBUG REQUEST ======` is the user's "
+    "hardware case input. Do not treat this wrapper prompt as case evidence.\n\n"
+    "{MODE_INSTRUCTION}"
     "====== USER DEBUG REQUEST ======\n"
     "{INPUT}\n"
 )

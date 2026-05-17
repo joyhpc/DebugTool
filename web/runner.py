@@ -14,6 +14,7 @@ from collections.abc import Iterator
 
 from web.config import (
     CLI_PROFILES,
+    CLI_STDIN_PROFILES,
     DELIVERABLE_BEGIN,
     DELIVERABLE_END,
     GUIDE_PROMPT_TEMPLATE,
@@ -24,9 +25,18 @@ from web.config import (
 _MAX_LINE_PREVIEW = 500
 
 
-def build_prompt(user_input: str) -> str:
+def build_prompt(user_input: str, mode: str | None = None) -> str:
     """Wrap raw user input with the SKILL.md guidance prompt."""
-    return GUIDE_PROMPT_TEMPLATE.replace("{INPUT}", user_input)
+    mode_instruction = ""
+    if mode:
+        mode_instruction = (
+            f"Selected output mode: {mode}. Use this mode's output contract exactly, "
+            "and make the final deliverable validate with "
+            f"`python scripts/output_validator.py --mode {mode} --file <deliverable>`.\n\n"
+        )
+    return GUIDE_PROMPT_TEMPLATE.replace("{MODE_INSTRUCTION}", mode_instruction).replace(
+        "{INPUT}", user_input
+    )
 
 
 def _collect_strings(obj: object, out: list[str]) -> None:
@@ -52,29 +62,35 @@ def _extract_deliverable(accumulated: str) -> tuple[str, bool]:
     return accumulated.strip(), False
 
 
-def _build_argv(cli: str, prompt: str) -> list[str]:
+def _build_argv(cli: str, prompt: str, resolved_executable: str) -> list[str]:
     """Materialize a CLI profile's argv template, substituting the prompt."""
     template = CLI_PROFILES[cli]["argv"]
-    return [prompt if part == "{PROMPT}" else part for part in template]
+    argv = [prompt if part == "{PROMPT}" else part for part in template]
+    argv[0] = resolved_executable
+    return argv
 
 
-def run_debug(user_input: str, cli: str) -> Iterator[dict]:
+def run_debug(user_input: str, cli: str, mode: str | None = None) -> Iterator[dict]:
     """Run one debug loop via the chosen CLI, yielding progress/result events."""
     if cli not in CLI_PROFILES:
         yield {"type": "error", "message": f"unknown cli profile: {cli}"}
         return
 
     executable = CLI_PROFILES[cli]["argv"][0]
-    if shutil.which(executable) is None:
+    resolved_executable = shutil.which(executable)
+    if resolved_executable is None:
         yield {"type": "error", "message": f"CLI not found on PATH: {executable}"}
         return
 
-    argv = _build_argv(cli, build_prompt(user_input))
+    prompt = build_prompt(user_input, mode)
+    argv = _build_argv(cli, prompt, resolved_executable)
+    prompt_on_stdin = cli in CLI_STDIN_PROFILES
 
     try:
         proc = subprocess.Popen(
             argv,
             cwd=str(REPO_ROOT),
+            stdin=subprocess.PIPE if prompt_on_stdin else subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -85,6 +101,11 @@ def run_debug(user_input: str, cli: str) -> Iterator[dict]:
     except OSError as exc:
         yield {"type": "error", "message": f"failed to start {executable}: {exc}"}
         return
+
+    if prompt_on_stdin:
+        assert proc.stdin is not None
+        proc.stdin.write(prompt)
+        proc.stdin.close()
 
     timed_out = threading.Event()
 
@@ -97,6 +118,7 @@ def run_debug(user_input: str, cli: str) -> Iterator[dict]:
     timer.start()
 
     strings: list[str] = []
+    plain_lines: list[str] = []
     try:
         assert proc.stdout is not None
         while True:
@@ -109,7 +131,7 @@ def run_debug(user_input: str, cli: str) -> Iterator[dict]:
             try:
                 event = json.loads(line)
             except json.JSONDecodeError:
-                strings.append(line)
+                plain_lines.append(line)
             else:
                 _collect_strings(event, strings)
             yield {"type": "progress", "text": line[:_MAX_LINE_PREVIEW]}
@@ -133,5 +155,5 @@ def run_debug(user_input: str, cli: str) -> Iterator[dict]:
         }
         return
 
-    markdown, found = _extract_deliverable("\n".join(strings))
+    markdown, found = _extract_deliverable("\n".join(strings or plain_lines))
     yield {"type": "deliverable", "markdown": markdown, "found": found}
